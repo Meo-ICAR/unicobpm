@@ -59,5 +59,23 @@ class DatabaseSeeder extends Seeder
                 $user->save();
             }
         }
+
+        $this->call([
+            // 1. Anagrafiche di base (nessuna Foreign Key)
+            //  CompanySeeder::class,
+            ChecklistSeeder::class,
+            ProcessSeeder::class,
+            BusinessFunctionSeeder::class,
+
+            // 2. Dipendenze di primo livello
+            ProcessTaskSeeder::class,          // Necessita di Processes e BusinessFunctions
+
+            // 3. Dipendenze di secondo livello
+            ProcessTaskRaciSeeder::class,      // Necessita di ProcessTasks e BusinessFunctions
+            ChecklistItemSeeder::class,        // Necessita di Checklists, ProcessTasks e BusinessFunctions
+
+            // 4. Dipendenze finali (Tabelle pivot o di risposta)
+            // ChecklistAnswerSeeder::class,      // Necessita di ChecklistAnswers e ChecklistItems - DISABILITATO fino a migration completa
+        ]);
     }
 }
