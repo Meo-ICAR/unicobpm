@@ -50,7 +50,7 @@ class BusinessFunctionSeeder extends Seeder
                 'description' => 'Gestione della rete di agenti e intermediari per lo sviluppo del business.',
                 'outsourcable_status' => 'yes',
                 'managed_by_code' => 'BUS-DIRCOM',
-                'mission' => "Fornire supporto e consulenza alla rete di agenti.",
+                'mission' => 'Fornire supporto e consulenza alla rete di agenti.',
                 'responsibility' => "• Coordina gli agenti\n• Fornisce supporto...",
                 'created_at' => $now,
                 'updated_at' => $now,
