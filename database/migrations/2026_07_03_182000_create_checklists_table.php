@@ -14,6 +14,8 @@ return new class extends Migration
             $table->string('code')->unique()->comment('Codice identificativo interno univoco');
             $table->text('description')->nullable()->comment('Descrizione generale della checklist e dei suoi scopi');
             $table->boolean('is_active')->default(true)->comment('Indica se la checklist è attualmente utilizzabile');
+            // Regole di Compliance (Knockout)
+
             $table->timestamps();
 
             $table->comment('Anagrafica delle tipologie di checklist disponibili nel sistema');

@@ -13,6 +13,12 @@ return new class extends Migration
     {
         Schema::create('checklist_answers', function (Blueprint $table) {
             $table->id();
+
+            $table->foreignId('process_instance_id')->constrained('process_instances')->cascadeOnDelete();
+            $table->foreignId('checklist_item_id')->constrained('checklist_items')->cascadeOnDelete();
+
+            $table->boolean('value_boolean')->nullable();
+            $table->text('value_text')->nullable();
             $table->timestamps();
         });
     }

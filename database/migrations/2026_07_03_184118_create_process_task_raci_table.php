@@ -14,6 +14,7 @@ return new class extends Migration
             $table->unsignedBigInteger('business_function_id')->index()->comment('Funzione di business coinvolta');
             $table->enum('raci_role', ['R', 'A', 'C', 'I'])->comment('Ruolo nella matrice: R(Responsible), A(Accountable), C(Consulted), I(Informed)');
             $table->text('notes')->nullable()->comment('Note specifiche sull\'assegnazione del ruolo per questo task');
+
             $table->timestamps();
 
             // Vincoli di unicità (una funzione ha un solo ruolo specifico per un determinato task)
