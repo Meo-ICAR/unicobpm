@@ -13,8 +13,8 @@ return new class extends Migration
 
             $table->id()->comment('ID univoco del task di processo');
             $table->unsignedBigInteger('process_id')->index()->comment('Riferimento al macro processo di appartenenza'); // <-- Chiave Esterna
-            $table->string('code')->unique()->comment('Codice univoco interno del task');
-            $table->string('name')->comment('Nome esplicativo del task');
+            $table->string('code')->nullable()->comment('Codice univoco interno del task');
+            $table->string('name')->nullable()->comment('Nome esplicativo del task');
             $table->text('description')->nullable()->comment('Descrizione dettagliata delle attività del task');
 
             $table->integer('ordine')->default(0)->comment('Ordine sequenziale di esecuzione nel processo');

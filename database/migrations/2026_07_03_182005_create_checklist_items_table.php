@@ -13,9 +13,10 @@ return new class extends Migration
             $table->unsignedBigInteger('checklist_id')->index()->comment('Modulo/Checklist di appartenenza');
 
             // UI e Contenuto della domanda
-            $table->string('item_code')->unique()->comment('Codice univoco della domanda (utile per API o integrazioni)');
+            $table->string('item_code')->nullable()->unique()->comment('Codice univoco della domanda (utile per API o integrazioni)');
             $table->integer('ordine')->default(0)->comment('Ordine di apparizione nel form');
-            $table->string('name')->comment('Label breve o nome della domanda');
+            $table->string('name')->nullable()->comment('Label breve o nome della domanda');
+            $table->string('label')->nullable()->comment('Label breve o nome della domanda');
             $table->text('question')->nullable()->comment('Testo esteso della domanda o istruzione esplicativa');
             $table->enum('type', ['boolean', 'text', 'number', 'date', 'select', 'multiselect'])->default('boolean')->comment('Tipo di input HTML da generare');
             $table->text('options')->nullable()->comment('JSON con le opzioni se type è select o multiselect');
@@ -23,6 +24,7 @@ return new class extends Migration
 
             // --- AUTOMAZIONI DATA-DRIVEN ---
             // Se questi campi sono popolati, l'Observer aggiorna l'anagrafica in automatico
+            $table->string('trigger_model')->nullable()->comment('Campo del modello da controllare');
             $table->string('trigger_field')->nullable()->comment('Campo del modello da controllare');
             $table->string('trigger_state')->nullable()->comment('filled, empty, equals');
             $table->string('trigger_value')->nullable()->comment('Il valore specifico da controllare');

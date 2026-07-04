@@ -13,7 +13,7 @@ return new class extends Migration
             $table->unsignedBigInteger('process_task_id')->index();
 
             // Dati dell'azione
-            $table->string('name')->comment('Nome dell\'azione (es. Compila Questionario, Carica Visura)');
+            $table->string('name')->nullable()->comment('Nome dell\'azione (es. Compila Questionario, Carica Visura)');
             $table->integer('ordine')->default(0)->comment('Ordine di visualizzazione all\'interno del task');
 
             // Il "Router" dell'azione: dice al frontend cosa renderizzare a schermo
@@ -28,6 +28,7 @@ return new class extends Migration
             // Riferimenti opzionali in base all'action_type
             $table->string('document_type_code')->nullable()->comment('Popolato se action_type = document_upload (es. VIS_CAM)');
             $table->unsignedBigInteger('checklist_id')->nullable()->comment('Popolato se action_type = fill_checklist');
+            $table->unsignedBigInteger('document_type_id')->nullable()->comment('Popolato se action_type = fill_checklist');
 
             $table->boolean('is_required')->default(true)->comment('Se false, il task può essere chiuso anche senza questa azione');
             $table->string('handler_job')->nullable()->comment('Classe Job Laravel, es: App\Jobs\AIVerifyDocumentJob');

@@ -61,6 +61,14 @@ class DatabaseSeeder extends Seeder
         }
 
         $this->call([
+            DocumentTypeSeeder::class,
+            BusinessFunctionSeeder::class,
+            BpmDesignSeeder::class,
+
+            // Opzionale: aggiungi qui un eventuale UserSeeder
+            // per creare gli amministratori di test
+
+            /*
             // 1. Anagrafiche di base (nessuna Foreign Key)
             //  CompanySeeder::class,
             ChecklistSeeder::class,
@@ -76,6 +84,7 @@ class DatabaseSeeder extends Seeder
 
             // 4. Dipendenze finali (Tabelle pivot o di risposta)
             // ChecklistAnswerSeeder::class,      // Necessita di ChecklistAnswers e ChecklistItems - DISABILITATO fino a migration completa
+            */
         ]);
     }
 }

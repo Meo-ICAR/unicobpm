@@ -10,8 +10,8 @@ return new class extends Migration
     {
         Schema::create('checklists', function (Blueprint $table) {
             $table->id()->comment('ID univoco checklist');
-            $table->string('name')->comment('Nome della checklist (es. Antiriciclaggio, Trasparenza)');
-            $table->string('code')->unique()->comment('Codice identificativo interno univoco');
+            $table->string('name')->nullable()->comment('Nome della checklist (es. Antiriciclaggio, Trasparenza)');
+            $table->string('code')->nullable()->comment('Codice identificativo interno univoco');
             $table->text('description')->nullable()->comment('Descrizione generale della checklist e dei suoi scopi');
             $table->boolean('is_active')->default(true)->comment('Indica se la checklist è attualmente utilizzabile');
             // Regole di Compliance (Knockout)
