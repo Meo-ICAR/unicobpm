@@ -14,7 +14,7 @@ class ProcessInstance extends Model
     /**
      * La tabella associata al modello.
      */
-    protected $table = 'process_instances';
+    protected $table = 'unicobpm.process_instances';
 
     /**
      * I campi assegnabili in massa (Mass Assignment).
@@ -161,5 +161,39 @@ class ProcessInstance extends Model
         return $this->hasOne(ProcessTaskExecution::class, 'process_instance_id')
             ->where('process_task_id', $this->current_task_id)
             ->whereNull('completed_at');
+    }
+
+    /**
+     * Scope per filtrare solo le pratiche che l'utente può prendere in carico (RACI - Responsible).
+     */
+    public function scopeInCodaPerUtente(Builder $query, Model $user): Builder
+    {
+        return $query->where('status', 'in_progress')
+            ->whereNull('current_assignee_id') // Devono essere libere in coda
+            ->whereHas('currentTask.raciAssignments', function ($q) use ($user) {
+                // Modifica questa logica in base a come associ la RACI (ruoli, reparti, permessi)
+                // Esempio: Il task richiede una specifica funzione aziendale che l'utente possiede
+                $q->where('role_type', 'responsible')
+                    ->whereIn('business_function_id', $user->business_functions->pluck('id'));
+
+                // Oppure se usi Spatie Permission:
+                // ->whereIn('permission_name', $user->getAllPermissions()->pluck('name'));
+            });
+    }
+
+    /**
+     * Helper per verificare al volo se un singolo record è prendibile dall'utente
+     */
+    public function canBeClaimedBy(Model $user): bool
+    {
+        if ($this->status !== 'in_progress' || ! is_null($this->current_assignee_id)) {
+            return false;
+        }
+
+        // Ripete la stessa logica dello scope per il singolo record
+        return $this->currentTask?->raciAssignments()
+            ->where('role_type', 'responsible')
+            ->whereIn('business_function_id', $user->business_functions->pluck('id'))
+            ->exists() ?? false;
     }
 }

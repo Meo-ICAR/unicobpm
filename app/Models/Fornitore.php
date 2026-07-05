@@ -1,31 +1,31 @@
 <?php
-// app/Models/Fornitore.php
-namespace App\Models\PROFORMA;
 
-use App\Models\PROFORMA\Provvigione;
-use App\Models\Branch;
-use App\Models\ComplaintRegistry;
-use App\Models\Document;
-use App\Models\TrainingRecord;
-use App\Models\Website;
+// app/Models/Fornitore.php
+
+namespace App\Models;
+
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Str;
 
 class Fornitore extends Model
 {
     use HasFactory, HasUuids, SoftDeletes;
 
-    protected $connection = 'mysql_proforma';
+    protected $connection = 'proforma';
+
     protected $table = 'fornitoris';
+
     protected $primaryKey = 'id';
+
     public $incrementing = false;
+
     protected $keyType = 'string';
+
     protected $orderBy = 'name';
+
     protected $orderDirection = 'asc';
 
     protected $fillable = [
@@ -149,9 +149,6 @@ class Fornitore extends Model
     /**
      * Cerca un cliente per name, prende la piva, cerca il fornitore con la stessa piva
      * e flag is_dummy = false, e ritorna il campo nome del fornitore.
-     *
-     * @param string $name
-     * @return string|null
      */
     public static function getFornitoreNomeByName(string $name): ?string
     {
@@ -184,5 +181,11 @@ class Fornitore extends Model
     public function branch()
     {
         return $this->belongsTo(Branch::class, 'branch_id');
+    }
+
+    public function processInstances(): MorphMany
+    {
+        // 'subject' è il nome del campo polimorfo usato in ProcessInstance (subject_type / subject_id)
+        return $this->morphMany(ProcessInstance::class, 'subject');
     }
 }
