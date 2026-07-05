@@ -9,17 +9,18 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\KeyValue;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\RelationManagers\RelationManager;
-use Filament\Schemas\Components\Repeater;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 
 class ProcessTasksRelationManager extends RelationManager
 {
@@ -51,25 +52,26 @@ class ProcessTasksRelationManager extends RelationManager
                 ]),
             // ==========================================
             //       NUOVA SEZIONE: ASSEGNAZIONE RACI
-            // ==========================================
             Section::make('Matrice RACI dello Step')
                 ->description('Associa le funzioni aziendali incaricate (Responsible, Accountable, Consulted, Informed)')
                 ->collapsible()
                 ->schema([
                     Repeater::make('raciAssignments')
-                        ->relationship('raciAssignments') // Relazione HasMany verso process_task_raci
-                        ->grid(2) // Dispone le assegnazioni su due colonne per risparmiare spazio verticale
+                        ->relationship('raciAssignments')
                         ->label('Assegnazioni')
                         ->addActionLabel('Aggiungi Assegnazione RACI')
                         ->schema([
-                            Select::make('business_function_code') // o business_function_id a seconda del tuo DB
+                            // CAMBIATO: mappiamo business_function_id al posto di business_function_code
+                            Select::make('business_function_id')
                                 ->label('Funzione di Business')
-                                ->options(BusinessFunction::pluck('name', 'code'))
+                                // Recuperiamo l'ID come chiave del select e il Nome come etichetta
+                                ->options(BusinessFunction::pluck('name', 'id'))
                                 ->required()
                                 ->searchable()
                                 ->preload(),
 
-                            Select::make('role')
+                            // CORRETTO: Cambiato da 'role' a 'raci_role'
+                            Select::make('raci_role')
                                 ->label('Ruolo RACI')
                                 ->options([
                                     'R' => 'R - Responsible (Esegue)',
@@ -78,7 +80,8 @@ class ProcessTasksRelationManager extends RelationManager
                                     'I' => 'I - Informed (Informato)',
                                 ])
                                 ->required(),
-                        ]),
+                        ])
+                        ->columns(2),
                 ]),
             // ==========================================
             Textarea::make('description')
@@ -154,50 +157,58 @@ class ProcessTasksRelationManager extends RelationManager
                 //       NUOVE COLONNE PER VISUALIZZARE RACI
                 // ==========================================
 
-                // 1. COLONNA: RESPONSIBLE (R)
+                // ==========================================
+                //   COLONNE RACI CORRETTE CON EAGER LOADING
+                // ==========================================
+
+                // 1. RESPONSIBLE (R)
                 Tables\Columns\TextColumn::make('raci_r')
-                    ->label('R (Responsible)')
+                    ->label('R')
                     ->badge()
                     ->color('info')
                     ->state(fn (Model $record) => $record->raciAssignments
-                        ->where('role', 'R')
-                        ->map(fn ($assignment) => $assignment->business_function_code ?? $assignment->business_function_id)
+                        ->where('raci_role', 'R')
+                        ->map(fn ($assignment) => $assignment->businessFunction?->name) // Mostra il nome dell'ufficio
+                        ->filter()
                         ->toArray()
                     )
                     ->placeholder('—'),
 
-                // 2. COLONNA: ACCOUNTABLE (A)
+                // 2. ACCOUNTABLE (A)
                 Tables\Columns\TextColumn::make('raci_a')
-                    ->label('A (Accountable)')
+                    ->label('A')
                     ->badge()
-                    ->color('danger') // Rosso per evidenziare chi approva ed è l'ultimo responsabile
+                    ->color('danger')
                     ->state(fn (Model $record) => $record->raciAssignments
                         ->where('role', 'A')
-                        ->map(fn ($assignment) => $assignment->business_function_code ?? $assignment->business_function_id)
+                        ->map(fn ($assignment) => $assignment->businessFunction?->name)
+                        ->filter()
                         ->toArray()
                     )
                     ->placeholder('—'),
 
-                // 3. COLONNA: CONSULTED (C)
+                // 3. CONSULTED (C)
                 Tables\Columns\TextColumn::make('raci_c')
-                    ->label('C (Consulted)')
+                    ->label('C')
                     ->badge()
                     ->color('success')
                     ->state(fn (Model $record) => $record->raciAssignments
-                        ->where('role', 'C')
-                        ->map(fn ($assignment) => $assignment->business_function_code ?? $assignment->business_function_id)
+                        ->where('raci_role', 'C')
+                        ->map(fn ($assignment) => $assignment->businessFunction?->name)
+                        ->filter()
                         ->toArray()
                     )
                     ->placeholder('—'),
 
-                // 4. COLONNA: INFORMED (I)
+                // 4. INFORMED (I)
                 Tables\Columns\TextColumn::make('raci_i')
-                    ->label('I (Informed)')
+                    ->label('I')
                     ->badge()
                     ->color('warning')
                     ->state(fn (Model $record) => $record->raciAssignments
-                        ->where('role', 'I')
-                        ->map(fn ($assignment) => $assignment->business_function_code ?? $assignment->business_function_id)
+                        ->where('raci_role', 'I')
+                        ->map(fn ($assignment) => $assignment->businessFunction?->name)
+                        ->filter()
                         ->toArray()
                     )
                     ->placeholder('—'),
@@ -206,9 +217,7 @@ class ProcessTasksRelationManager extends RelationManager
                 Tables\Columns\IconColumn::make('has_reminders')
                     ->boolean()
                     ->label('Solleciti'),
-                Tables\Columns\TextColumn::make('reminder_interval_days')
-                    ->label('Intervallo (gg)')
-                    ->placeholder('—'),
+
                 Tables\Columns\TextColumn::make('max_reminders')
                     ->label('Max Solleciti')
                     ->placeholder('—'),
