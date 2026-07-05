@@ -2,88 +2,117 @@
 
 namespace App\Observers;
 
-use App\Models\ProcessInstance;
-use App\Models\ProcessTask;
+use App\Models\ProcessInstanceLog;
+use App\Models\ProcessTaskExecution;
 use App\Models\ProcessTaskItemAnswer;
 
 class ProcessTaskItemAnswerObserver
 {
-    public function saved(ProcessTaskItemAnswer $answer): void
+    /**
+     * Quando viene salvata una risposta/azione (es. caricato un file, inviata un'email)
+     */
+    public function created(ProcessTaskItemAnswer $answer): void
     {
-        // 1. Recuperiamo la pratica in esecuzione
-        $pratica = ProcessInstance::find($answer->process_instance_id);
+        $instance = $answer->processInstance;
+        $currentTask = $instance->currentTask;
+        $item = $answer->processTaskItem;
 
-        // Se la pratica è già chiusa o respinta, ci fermiamo
-        if (! $pratica || in_array($pratica->status, ['completed', 'rejected', 'cancelled'])) {
-            return;
-        }
+        // 1. Log dell'azione completata
+        ProcessInstanceLog::create([
+            'process_instance_id' => $instance->id,
+            'user_id' => auth()->id() ?? 0,
+            'event' => 'action_completed',
+            'payload' => [
+                'action_name' => $item->name,
+                'action_type' => $item->action_type,
+            ],
+        ]);
 
-        $currentTaskId = $pratica->current_task_id;
+        // 2. Controllo Avanzamento: Il Task è finito?
+        $this->checkTaskCompletion($instance, $currentTask);
+    }
 
-        // Se non c'è un task corrente impostato, c'è un'anomalia, ci fermiamo
-        if (! $currentTaskId) {
-            return;
-        }
+    /**
+     * Verifica se tutte le azioni obbligatorie del task corrente sono state completate.
+     */
+    protected function checkTaskCompletion($instance, $currentTask): void
+    {
+        // Quante azioni sono obbligatorie in questo task?
+        $requiredItemsCount = $currentTask->items()->where('is_required', true)->count();
 
-        // 2. Troviamo tutte le azioni OBBLIGATORIE per il task corrente
-        $requiredItemsCount = \DB::table('process_task_items')
-            ->where('process_task_id', $currentTaskId)
-            ->where('is_required', true)
-            ->count();
+        // Quante risposte abbiamo nel DB per le azioni obbligatorie di QUESTO task?
+        $completedRequiredItemsCount = $instance->taskItemAnswers()
+            ->whereHas('processTaskItem', function ($query) use ($currentTask) {
+                $query->where('process_task_id', $currentTask->id)
+                    ->where('is_required', true);
+            })->count();
 
-        // 3. Contiamo quante di queste azioni obbligatorie hanno già una risposta
-        $answeredItemsCount = \DB::table('process_task_item_answers')
-            ->join('process_task_items', 'process_task_items.id', '=', 'process_task_item_answers.process_task_item_id')
-            ->where('process_task_item_answers.process_instance_id', $pratica->id)
-            ->where('process_task_items.process_task_id', $currentTaskId)
-            ->where('process_task_items.is_required', true)
-            ->count();
-
-        // 4. Se abbiamo risposto a tutto, AVANZIAMO!
-        if ($answeredItemsCount >= $requiredItemsCount) {
-            $this->advanceToNextTask($pratica, $currentTaskId);
+        // Se abbiamo risposto a tutte le azioni obbligatorie, il task è concluso!
+        if ($completedRequiredItemsCount >= $requiredItemsCount) {
+            $this->advanceToNextTask($instance, $currentTask);
         }
     }
 
     /**
-     * Metodo helper per trovare il prossimo task e far avanzare la pratica
+     * Chiude il task attuale e sposta la pratica a quello successivo.
      */
-    private function advanceToNextTask(ProcessInstance $pratica, int $currentTaskId): void
+    protected function advanceToNextTask($instance, $currentTask): void
     {
-        // Troviamo l'ordine del task attuale
-        $currentTask = ProcessTask::find($currentTaskId);
+        // 1. Chiudiamo l'esecuzione attuale
+        $currentExecution = ProcessTaskExecution::where('process_instance_id', $instance->id)
+            ->where('process_task_id', $currentTask->id)
+            ->whereNull('completed_at')
+            ->first();
 
-        // Recuperiamo tutti i task successivi del processo, in ordine
-        $futureTasks = ProcessTask::where('process_id', $pratica->process_id)
+        if ($currentExecution) {
+            $currentExecution->update([
+                'completed_at' => now(),
+                'execution_status' => 'completed',
+            ]);
+        }
+
+        // 2. Troviamo il prossimo task
+        $nextTask = $instance->process->tasks()
             ->where('ordine', '>', $currentTask->ordine)
-            ->orderBy('ordine', 'asc')
-            ->get();
+            ->orderBy('ordine')
+            ->first();
 
-        $nextValidTask = null;
+        if ($nextTask) {
+            // Avanziamo al prossimo Task
+            $instance->update([
+                'current_task_id' => $nextTask->id,
+                'current_assignee_type' => null, // Resettiamo l'assegnatario, andrà riclaimato dal nuovo reparto!
+                'current_assignee_id' => null,
+            ]);
 
-        // Iteriamo sui futuri task per trovare il primo APPLICABILE a questo agente
-        foreach ($futureTasks as $task) {
-            // isRequiredFor() è il metodo che avevamo creato per il conditional branching!
-            if ($task->isRequiredFor($pratica->subject)) {
-                $nextValidTask = $task;
-                break;
-            }
-        }
+            // Creiamo la nuova coda di esecuzione
+            ProcessTaskExecution::create([
+                'process_instance_id' => $instance->id,
+                'process_task_id' => $nextTask->id,
+                'started_at' => now(),
+                'execution_status' => 'pending',
+            ]);
 
-        if ($nextValidTask) {
-            // Passiamo al prossimo task
-            $pratica->current_task_id = $nextValidTask->id;
-            $pratica->status = 'in_progress';
-            // Qui potresti anche far partire un evento/email per avvisare l'ufficio competente (RACI)
+            ProcessInstanceLog::create([
+                'process_instance_id' => $instance->id,
+                'user_id' => 0, // Sistema
+                'event' => 'task_advanced',
+                'payload' => ['new_task' => $nextTask->name],
+            ]);
+
         } else {
-            // Non ci sono più task da eseguire: PRATICA COMPLETATA!
-            $pratica->current_task_id = null;
-            $pratica->status = 'completed';
-            $pratica->completed_at = now();
+            // Nessun task successivo? Il processo è finito!
+            $instance->update([
+                'status' => 'completed',
+                'completed_at' => now(),
+            ]);
 
-            // Opzionale: aggiornare lo stato dell'Agente a "attivo" in via definitiva
+            ProcessInstanceLog::create([
+                'process_instance_id' => $instance->id,
+                'user_id' => 0,
+                'event' => 'process_completed',
+                'payload' => ['message' => 'Pratica conclusa con successo'],
+            ]);
         }
-
-        $pratica->save();
     }
 }

@@ -23,6 +23,7 @@ return new class extends Migration
             $table->string('managed_by_code')->nullable();
             $table->longText('mission')->nullable()->comment('What does the function do');
             $table->longText('responsibility')->nullable()->comment('List of activities and responsibilities');
+            $table->string('email')->nullable()->comment('Email di contatto della funzione');
             $table->timestamps();
 
             $table->comment('Funzioni aziendali per funzionogramma');

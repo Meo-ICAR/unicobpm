@@ -6,43 +6,44 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
-        Schema::create('process_task_items', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('process_task_id')->index();
+        Schema::create('process_task_items', function (Blueprint $blueprint) {
+            $blueprint->id();
+            // Chiave esterna verso il task padre
+            $blueprint->foreignId('process_task_id')
+                ->constrained('process_tasks')
+                ->cascadeOnDelete();
 
-            // Dati dell'azione
-            $table->string('name')->nullable()->comment('Nome dell\'azione (es. Compila Questionario, Carica Visura)');
-            $table->integer('ordine')->default(0)->comment('Ordine di visualizzazione all\'interno del task');
+            $blueprint->string('name');
+            $blueprint->integer('ordine')->default(0);
 
-            // Il "Router" dell'azione: dice al frontend cosa renderizzare a schermo
-            $table->enum('action_type', [
-                'document_upload', // Mostra un dropzone per i file
-                'fill_checklist',  // Mostra un modulo di domande
-                'approval_toggle', // Mostra uno switch di approvazione semplice
-                'system_task',     // Mostra un task di sistema
-                'text_input',       // Mostra un campo di testo libero
-            ])->comment('Tipologia di UI e logica da caricare');
+            // Tipi azione: 'document_upload', 'fill_checklist', 'text_input', 'system_task', 'external_url', 'custom_email', ecc.
+            $blueprint->string('action_type');
+            $blueprint->boolean('is_required')->default(true);
 
-            // Riferimenti opzionali in base all'action_type
-            $table->string('document_type_code')->nullable()->comment('Popolato se action_type = document_upload (es. VIS_CAM)');
-            $table->unsignedBigInteger('checklist_id')->nullable()->comment('Popolato se action_type = fill_checklist');
-            $table->unsignedBigInteger('document_type_id')->nullable()->comment('Popolato se action_type = fill_checklist');
+            // Relazione opzionale: valorizzata solo se action_type è 'document_upload'
+            $blueprint->foreignId('document_type_id')
+                ->nullable()
+                ->constrained('document_types')
+                ->nullOnDelete();
 
-            $table->boolean('is_required')->default(true)->comment('Se false, il task può essere chiuso anche senza questa azione');
-            $table->string('handler_job')->nullable()->comment('Classe Job Laravel, es: App\Jobs\AIVerifyDocumentJob');
+            // Stringa opzionale per i system_task (Job Laravel da lanciare)
+            $blueprint->string('handler_job')->nullable();
 
-            $table->timestamps();
+            // Campo JSON fondamentale: ospita la configurazione di URL, template email, ecc.
+            $blueprint->json('config')->nullable();
 
-            // Vincoli di integrità
-            $table->foreign('process_task_id')->references('id')->on('process_tasks')->cascadeOnDelete();
-            $table->foreign('checklist_id')->references('id')->on('checklists')->nullOnDelete();
-
-            $table->comment('Le singole azioni (upload, form, flag) richieste dentro un Task');
+            $blueprint->timestamps();
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
         Schema::dropIfExists('process_task_items');
