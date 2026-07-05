@@ -1,0 +1,254 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Creare la struttura di directory necessaria": [
+      {
+        "executionId": "1bd9895e-f1c5-4592-a8fb-b999c268c286",
+        "chatSessionId": "sess_68147b8b-1dcc-4da4-97bf-23ad74c107ed",
+        "timestamp": 1783239094612
+      },
+      {
+        "executionId": "1bd9895e-f1c5-4592-a8fb-b999c268c286",
+        "chatSessionId": "sess_68147b8b-1dcc-4da4-97bf-23ad74c107ed",
+        "timestamp": 1783239103570
+      },
+      {
+        "executionId": "1bd9895e-f1c5-4592-a8fb-b999c268c286",
+        "chatSessionId": "sess_68147b8b-1dcc-4da4-97bf-23ad74c107ed",
+        "timestamp": 1783239154034
+      }
+    ],
+    "1.2 Aggiungere la relazione `businessFunction()` al modello `ProcessTask`": [
+      {
+        "executionId": "1bd9895e-f1c5-4592-a8fb-b999c268c286",
+        "chatSessionId": "sess_68147b8b-1dcc-4da4-97bf-23ad74c107ed",
+        "timestamp": 1783239094953
+      },
+      {
+        "executionId": "1bd9895e-f1c5-4592-a8fb-b999c268c286",
+        "chatSessionId": "sess_68147b8b-1dcc-4da4-97bf-23ad74c107ed",
+        "timestamp": 1783239104339
+      },
+      {
+        "executionId": "1bd9895e-f1c5-4592-a8fb-b999c268c286",
+        "chatSessionId": "sess_68147b8b-1dcc-4da4-97bf-23ad74c107ed",
+        "timestamp": 1783239154840
+      }
+    ],
+    "2.1 Creare `app/Filament/Resources/ProcessResource.php`": [
+      {
+        "executionId": "1bd9895e-f1c5-4592-a8fb-b999c268c286",
+        "chatSessionId": "sess_68147b8b-1dcc-4da4-97bf-23ad74c107ed",
+        "timestamp": 1783239095187
+      },
+      {
+        "executionId": "1bd9895e-f1c5-4592-a8fb-b999c268c286",
+        "chatSessionId": "sess_68147b8b-1dcc-4da4-97bf-23ad74c107ed",
+        "timestamp": 1783239162103
+      },
+      {
+        "executionId": "cd60f821-70b0-47a7-b065-70d5525a12c8",
+        "chatSessionId": "sess_68147b8b-1dcc-4da4-97bf-23ad74c107ed",
+        "timestamp": 1783240298337
+      }
+    ],
+    "3.1 Creare `app/Filament/Resources/ProcessResource/Pages/ListProcesses.php`": [
+      {
+        "executionId": "1bd9895e-f1c5-4592-a8fb-b999c268c286",
+        "chatSessionId": "sess_68147b8b-1dcc-4da4-97bf-23ad74c107ed",
+        "timestamp": 1783239095514
+      },
+      {
+        "executionId": "cd60f821-70b0-47a7-b065-70d5525a12c8",
+        "chatSessionId": "sess_68147b8b-1dcc-4da4-97bf-23ad74c107ed",
+        "timestamp": 1783240301288
+      },
+      {
+        "executionId": "cd60f821-70b0-47a7-b065-70d5525a12c8",
+        "chatSessionId": "sess_68147b8b-1dcc-4da4-97bf-23ad74c107ed",
+        "timestamp": 1783240351908
+      }
+    ],
+    "3.2 Creare `app/Filament/Resources/ProcessResource/Pages/CreateProcess.php`": [
+      {
+        "executionId": "1bd9895e-f1c5-4592-a8fb-b999c268c286",
+        "chatSessionId": "sess_68147b8b-1dcc-4da4-97bf-23ad74c107ed",
+        "timestamp": 1783239095866
+      },
+      {
+        "executionId": "cd60f821-70b0-47a7-b065-70d5525a12c8",
+        "chatSessionId": "sess_68147b8b-1dcc-4da4-97bf-23ad74c107ed",
+        "timestamp": 1783240302045
+      },
+      {
+        "executionId": "cd60f821-70b0-47a7-b065-70d5525a12c8",
+        "chatSessionId": "sess_68147b8b-1dcc-4da4-97bf-23ad74c107ed",
+        "timestamp": 1783240352605
+      }
+    ],
+    "3.3 Creare `app/Filament/Resources/ProcessResource/Pages/EditProcess.php`": [
+      {
+        "executionId": "1bd9895e-f1c5-4592-a8fb-b999c268c286",
+        "chatSessionId": "sess_68147b8b-1dcc-4da4-97bf-23ad74c107ed",
+        "timestamp": 1783239096212
+      },
+      {
+        "executionId": "cd60f821-70b0-47a7-b065-70d5525a12c8",
+        "chatSessionId": "sess_68147b8b-1dcc-4da4-97bf-23ad74c107ed",
+        "timestamp": 1783240302783
+      },
+      {
+        "executionId": "cd60f821-70b0-47a7-b065-70d5525a12c8",
+        "chatSessionId": "sess_68147b8b-1dcc-4da4-97bf-23ad74c107ed",
+        "timestamp": 1783240353269
+      }
+    ],
+    "4. Checkpoint — Verificare form e hook": [
+      {
+        "executionId": "1bd9895e-f1c5-4592-a8fb-b999c268c286",
+        "chatSessionId": "sess_68147b8b-1dcc-4da4-97bf-23ad74c107ed",
+        "timestamp": 1783239096553
+      },
+      {
+        "executionId": "cd60f821-70b0-47a7-b065-70d5525a12c8",
+        "chatSessionId": "sess_68147b8b-1dcc-4da4-97bf-23ad74c107ed",
+        "timestamp": 1783240364413
+      },
+      {
+        "executionId": "04a8ff61-9791-48c9-a79b-c93660c33c04",
+        "chatSessionId": "sess_68147b8b-1dcc-4da4-97bf-23ad74c107ed",
+        "timestamp": 1783240546050
+      }
+    ],
+    "5.1 Creare `app/Filament/Resources/ProcessResource/RelationManagers/ProcessTasksRelationManager.php`": [
+      {
+        "executionId": "1bd9895e-f1c5-4592-a8fb-b999c268c286",
+        "chatSessionId": "sess_68147b8b-1dcc-4da4-97bf-23ad74c107ed",
+        "timestamp": 1783239096828
+      },
+      {
+        "executionId": "04a8ff61-9791-48c9-a79b-c93660c33c04",
+        "chatSessionId": "sess_68147b8b-1dcc-4da4-97bf-23ad74c107ed",
+        "timestamp": 1783240554344
+      }
+    ],
+    "6.1 Creare `app/Filament/Resources/ProcessInstanceResource/Pages/ListProcessInstances.php`": [
+      {
+        "executionId": "1bd9895e-f1c5-4592-a8fb-b999c268c286",
+        "chatSessionId": "sess_68147b8b-1dcc-4da4-97bf-23ad74c107ed",
+        "timestamp": 1783239097180
+      },
+      {
+        "executionId": "04a8ff61-9791-48c9-a79b-c93660c33c04",
+        "chatSessionId": "sess_68147b8b-1dcc-4da4-97bf-23ad74c107ed",
+        "timestamp": 1783240557897
+      }
+    ],
+    "6.2 Creare `app/Filament/Resources/ProcessInstanceResource.php`": [
+      {
+        "executionId": "1bd9895e-f1c5-4592-a8fb-b999c268c286",
+        "chatSessionId": "sess_68147b8b-1dcc-4da4-97bf-23ad74c107ed",
+        "timestamp": 1783239097571
+      },
+      {
+        "executionId": "04a8ff61-9791-48c9-a79b-c93660c33c04",
+        "chatSessionId": "sess_68147b8b-1dcc-4da4-97bf-23ad74c107ed",
+        "timestamp": 1783240558495
+      }
+    ],
+    "7. Checkpoint finale — Verificare tutto": [
+      {
+        "executionId": "1bd9895e-f1c5-4592-a8fb-b999c268c286",
+        "chatSessionId": "sess_68147b8b-1dcc-4da4-97bf-23ad74c107ed",
+        "timestamp": 1783239097830
+      },
+      {
+        "executionId": "c1527968-d77a-4d8d-baba-3b04ad53e42e",
+        "chatSessionId": "sess_68147b8b-1dcc-4da4-97bf-23ad74c107ed",
+        "timestamp": 1783242582449
+      },
+      {
+        "executionId": "c1527968-d77a-4d8d-baba-3b04ad53e42e",
+        "chatSessionId": "sess_68147b8b-1dcc-4da4-97bf-23ad74c107ed",
+        "timestamp": 1783242620660
+      }
+    ],
+    "1. Setup struttura directory e aggiunta relazione al modello": [
+      {
+        "executionId": "1bd9895e-f1c5-4592-a8fb-b999c268c286",
+        "chatSessionId": "sess_68147b8b-1dcc-4da4-97bf-23ad74c107ed",
+        "timestamp": 1783239155241
+      }
+    ],
+    "2. Implementare ProcessResource (classe principale)": [
+      {
+        "executionId": "cd60f821-70b0-47a7-b065-70d5525a12c8",
+        "chatSessionId": "sess_68147b8b-1dcc-4da4-97bf-23ad74c107ed",
+        "timestamp": 1783240298647
+      }
+    ],
+    "3. Implementare le pagine Create e Edit con hook post-salvataggio": [
+      {
+        "executionId": "cd60f821-70b0-47a7-b065-70d5525a12c8",
+        "chatSessionId": "sess_68147b8b-1dcc-4da4-97bf-23ad74c107ed",
+        "timestamp": 1783240353485
+      }
+    ],
+    "5. Implementare ProcessTasksRelationManager": [
+      {
+        "executionId": "c1527968-d77a-4d8d-baba-3b04ad53e42e",
+        "chatSessionId": "sess_68147b8b-1dcc-4da4-97bf-23ad74c107ed",
+        "timestamp": 1783242560974
+      }
+    ],
+    "6. Implementare ProcessInstanceResource (sola lettura)": [
+      {
+        "executionId": "c1527968-d77a-4d8d-baba-3b04ad53e42e",
+        "chatSessionId": "sess_68147b8b-1dcc-4da4-97bf-23ad74c107ed",
+        "timestamp": 1783242561636
+      }
+    ],
+    "2.2 Scrivere unit test per la visibilità condizionale di `cron_expression`": [
+      {
+        "executionId": "c1527968-d77a-4d8d-baba-3b04ad53e42e",
+        "chatSessionId": "sess_68147b8b-1dcc-4da4-97bf-23ad74c107ed",
+        "timestamp": 1783242575425
+      }
+    ],
+    "3.4 Scrivere property test per `updateNextRunDate()` — Proprietà 1": [
+      {
+        "executionId": "c1527968-d77a-4d8d-baba-3b04ad53e42e",
+        "chatSessionId": "sess_68147b8b-1dcc-4da4-97bf-23ad74c107ed",
+        "timestamp": 1783242576273
+      }
+    ],
+    "3.5 Scrivere property test per `updateNextRunDate()` — Proprietà 2": [
+      {
+        "executionId": "c1527968-d77a-4d8d-baba-3b04ad53e42e",
+        "chatSessionId": "sess_68147b8b-1dcc-4da4-97bf-23ad74c107ed",
+        "timestamp": 1783242576996
+      }
+    ],
+    "5.2 Scrivere unit test per il RelationManager": [
+      {
+        "executionId": "c1527968-d77a-4d8d-baba-3b04ad53e42e",
+        "chatSessionId": "sess_68147b8b-1dcc-4da4-97bf-23ad74c107ed",
+        "timestamp": 1783242577640
+      }
+    ],
+    "6.3 Scrivere property test per la colonna \"Ultimo Log\" — Proprietà 3": [
+      {
+        "executionId": "c1527968-d77a-4d8d-baba-3b04ad53e42e",
+        "chatSessionId": "sess_68147b8b-1dcc-4da4-97bf-23ad74c107ed",
+        "timestamp": 1783242578411
+      }
+    ],
+    "6.4 Scrivere property test per la mappatura badge — Proprietà 4": [
+      {
+        "executionId": "c1527968-d77a-4d8d-baba-3b04ad53e42e",
+        "chatSessionId": "sess_68147b8b-1dcc-4da4-97bf-23ad74c107ed",
+        "timestamp": 1783242579128
+      }
+    ]
+  }
+}

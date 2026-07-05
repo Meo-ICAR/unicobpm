@@ -2,10 +2,11 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
-use Illuminate\Database\Eloquent\Model;
+
 // use Wildside\Userstamps\HasUserstamps;
 
 class Client extends Model
@@ -114,5 +115,12 @@ class Client extends Model
     public function addresses(): MorphMany
     {
         return $this->morphMany(Address::class, 'addressable');
+    }
+
+    public function businessFunctions(): MorphToMany
+    {
+        return $this->morphToMany(BusinessFunction::class, 'member', 'business_function_members')
+            ->withPivot('is_manager')
+            ->withTimestamps();
     }
 }

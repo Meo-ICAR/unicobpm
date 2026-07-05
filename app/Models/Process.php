@@ -11,12 +11,19 @@ class Process extends Model
     protected $fillable = [
         'name',
         'code',
+        'description',
         'version',
         'is_active',
         'is_periodic',
         'cron_expression',
         'target_model',
-        'target_filters',
+        'trigger_filters',
+        'trigger_field',
+        'trigger_state',
+        'trigger_value',
+        'exclude_field',
+        'exclude_state',
+        'exclude_value',
         'last_activated_at',
         'next_run_at',
     ];
@@ -30,7 +37,7 @@ class Process extends Model
             'version' => 'integer',
             'is_active' => 'boolean',
             'is_periodic' => 'boolean',
-            'target_filters' => 'array', // Converte automaticamente il JSON in array PHP
+            'trigger_filters' => 'array', // Converte automaticamente il JSON in array PHP
             'last_activated_at' => 'datetime',
             'next_run_at' => 'datetime',
         ];

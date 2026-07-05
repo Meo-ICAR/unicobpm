@@ -2,12 +2,11 @@
 
 namespace App\Models;
 
-use App\Models\ComplaintRegistry;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Employee extends Model
@@ -109,5 +108,12 @@ class Employee extends Model
     public function documents(): MorphMany
     {
         return $this->morphMany(Document::class, 'documentable');
+    }
+
+    public function businessFunctions(): MorphToMany
+    {
+        return $this->morphToMany(BusinessFunction::class, 'member', 'business_function_members')
+            ->withPivot('is_manager')
+            ->withTimestamps();
     }
 }

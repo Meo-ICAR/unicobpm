@@ -11,7 +11,16 @@ class ProcessTask extends Model
     protected $fillable = [
         'process_id',
         'name',
+        'code',
+        'description',
         'ordine',
+        'business_function_id',
+        'trigger_field',
+        'trigger_state',
+        'trigger_value',
+        'exclude_field',
+        'exclude_state',
+        'exclude_value',
         'condition_field',
         'condition_operator',
         'condition_value',
@@ -37,13 +46,18 @@ class ProcessTask extends Model
         return $this->belongsTo(Process::class);
     }
 
+    public function businessFunction(): BelongsTo
+    {
+        return $this->belongsTo(BusinessFunction::class);
+    }
+
     public function items(): HasMany
     {
         return $this->hasMany(ProcessTaskItem::class)->orderBy('ordine');
     }
 
-    public function raci(): HasMany
+    public function raciAssignments(): HasMany
     {
-        return $this->hasMany(ProcessTaskRaci::class);
+        return $this->hasMany(ProcessTaskRaci::class, 'process_task_id');
     }
 }

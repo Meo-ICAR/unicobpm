@@ -22,7 +22,7 @@ class BusinessFunction extends Model
 
     public function consultants(): MorphToMany
     {
-        return $this->morphedByMany(Consultant::class, 'member', 'business_function_members')
+        return $this->morphedByMany(Client::class, 'member', 'business_function_members')
             ->withPivot('is_manager')
             ->withTimestamps();
     }
