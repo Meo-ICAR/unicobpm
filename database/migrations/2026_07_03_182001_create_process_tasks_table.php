@@ -33,6 +33,10 @@ return new class extends Migration
             $table->integer('reminder_interval_days')->default(3);
             $table->integer('max_reminders')->default(5);
 
+            // --- SLA & ESCALATION ---
+            // JSON contenente i livelli di sollecito e i tempi massimi
+            $table->json('escalation_rules')->nullable();
+
             $table->timestamps();
 
             // Vincoli d'integrità referenziale

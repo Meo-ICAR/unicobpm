@@ -19,6 +19,10 @@ return new class extends Migration
             $table->timestamp('started_at')->comment('Quando il task è entrato in coda per l\'ufficio');
             $table->timestamp('claimed_at')->nullable()->comment('Quando l\'operatore ha preso in carico il task');
             $table->timestamp('completed_at')->nullable()->comment('Quando il task è stato chiuso (successo o rifiuto)');
+            $table->integer('escalation_level')->default(0)->comment('Livello di escalation del task');
+
+            // (Opzionale) La data entro cui il task andava chiuso
+            $table->dateTime('due_at')->nullable()->comment('Data entro cui il task andava chiuso');
 
             $table->string('execution_status')->default('completed')->comment('completed, rejected_and_rewinded');
             $table->timestamps();

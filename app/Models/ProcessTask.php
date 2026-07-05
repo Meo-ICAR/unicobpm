@@ -18,6 +18,7 @@ class ProcessTask extends Model
         'has_reminders',
         'reminder_interval_days',
         'max_reminders',
+        'escalation_rules',
     ];
 
     protected function casts(): array
@@ -27,6 +28,7 @@ class ProcessTask extends Model
             'has_reminders' => 'boolean',
             'reminder_interval_days' => 'integer',
             'max_reminders' => 'integer',
+            'escalation_rules' => 'array', // Converte automaticamente il JSON in array PHP
         ];
     }
 
