@@ -29,4 +29,4 @@ Schedule::call(function () {
     foreach ($manuallyScheduled as $process) {
         ExecutePeriodicProcessJob::dispatch($process->id);
     }
-})->everyHour();
+})->everyMinute(60);
