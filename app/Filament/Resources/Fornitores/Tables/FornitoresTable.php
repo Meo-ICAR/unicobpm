@@ -119,7 +119,20 @@ class FornitoresTable
                     ->label('Prendi in carico')
                     ->icon('heroicon-o-hand-raised')
                     ->color('success')
-                    ->visible(fn ($record) => $record->canBeClaimedBy(auth()->user()))
+                    ->visible(function ($record) {
+                        // 1. Recuperiamo la pratica attiva in corso per questo fornitore
+                        $activeInstance = $record->processInstances()
+                            ->where('status', 'in_progress')
+                            ->first();
+
+                        // 2. Se non c'è una pratica attiva, il bottone non deve essere visibile
+                        if (! $activeInstance) {
+                            return false;
+                        }
+
+                        // 3. Chiamiamo il metodo sulla ProcessInstance (non sul Fornitore!)
+                        return $activeInstance->canBeClaimedBy(auth()->user());
+                    })
                     ->action(function ($record) {
                         $user = auth()->user();
 
@@ -145,13 +158,13 @@ class FornitoresTable
                     ->icon('heroicon-o-play')
                     ->color('success')
                     ->form([
-                                            Select::make('process_id')
-                                                ->label('Seleziona il Processo da avviare')
-                                                ->options(Process::pluck('name', 'id'))
-                                                ->required()
-                                                ->searchable()
-                                                ->preload(),
-                                        ])
+                        Select::make('process_id')
+                            ->label('Seleziona il Processo da avviare')
+                            ->options(Process::pluck('name', 'id'))
+                            ->required()
+                            ->searchable()
+                            ->preload(),
+                    ])
                     // Iniettiamo la classe StartProcessAction direttamente nei parametri
                     ->action(function (array $data, $record, StartProcessAction $action): void {
 
