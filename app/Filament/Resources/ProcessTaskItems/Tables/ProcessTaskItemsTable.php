@@ -1,34 +1,35 @@
 <?php
 
-namespace App\Filament\Resources\BusinessFunctions\Tables;
+namespace App\Filament\Resources\ProcessTaskItems\Tables;
 
 use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
-class BusinessFunctionsTable
+class ProcessTaskItemsTable
 {
     public static function configure(Table $table): Table
     {
         return $table
             ->columns([
-                TextColumn::make('code')
-                    ->searchable(),
-                TextColumn::make('macro_area')
-                    ->badge(),
+                TextColumn::make('process_task_id')
+                    ->numeric()
+                    ->sortable(),
                 TextColumn::make('name')
                     ->searchable(),
-                TextColumn::make('type')
-                    ->badge(),
-                TextColumn::make('outsourcable_status')
-                    ->badge(),
-                TextColumn::make('managed_by_code')
+                TextColumn::make('ordine')
+                    ->numeric()
+                    ->sortable(),
+                TextColumn::make('action_type')
                     ->searchable(),
-                TextColumn::make('email')
-                    ->label('Email address')
+                IconColumn::make('is_required')
+                    ->boolean(),
+                TextColumn::make('documentType.name')
+                    ->searchable(),
+                TextColumn::make('handler_job')
                     ->searchable(),
                 TextColumn::make('created_at')
                     ->dateTime()
@@ -42,11 +43,10 @@ class BusinessFunctionsTable
             ->filters([
                 //
             ])
-            ->actions([
+            ->recordActions([
                 EditAction::make(),
-                DeleteAction::make(),
             ])
-            ->bulkActions([
+            ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                 ]),

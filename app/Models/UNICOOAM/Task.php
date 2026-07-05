@@ -2,20 +2,20 @@
 
 namespace App\Models;
 
-use App\Models\Document;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Pivot;
-use Illuminate\Support\Facades\Log;
 
 class Task extends Model
 {
     use HasFactory;
 
-    protected $connection = 'mysql';
+    protected $connection = 'mysql_unicooam';
+
     protected $orderBy = 'name';
+
     protected $orderDirection = 'asc';
+
     protected $fillable = ['name', 'description', 'taskable', 'trigger_field', 'trigger_state', 'trigger_value', 'exclude_field', 'exclude_state', 'exclude_value', 'is_active'];
 
     /**
@@ -33,9 +33,9 @@ class Task extends Model
     /**
      * Crea la documentazione mancante per questo specifico task.
      *
-     * @param int $companyId ID dell'azienda principale
-     * @param int $documentableId ID del record di destinazione (ID Azienda o ID Fornitore)
-     * @param bool $is_debug Abilita il debug
+     * @param  int  $companyId  ID dell'azienda principale
+     * @param  int  $documentableId  ID del record di destinazione (ID Azienda o ID Fornitore)
+     * @param  bool  $is_debug  Abilita il debug
      * @return int Numero di documenti creati
      */
     public function createDocumentation(string $companyId, string $documentableId, bool $is_debug = false): int
@@ -53,7 +53,7 @@ class Task extends Model
                     'is_template',
                     'is_signed',
                     'is_monitored',
-                    'doctype'
+                    'doctype',
                 ])
                 ->toArray();
 
@@ -101,12 +101,12 @@ class Task extends Model
         // 2. Filtra i task in base allo stato dei campi del record
         return $tasks->filter(function ($task) use ($record) {
             // Verifica condizioni di esclusione
-            if (!empty($task->exclude_field)) {
+            if (! empty($task->exclude_field)) {
                 $excludeValue = $record->{$task->exclude_field};
 
                 // Condizione di esclusione: il campo deve essere valorizzato
                 if ($task->exclude_state === 'filled') {
-                    if (!empty($excludeValue)) {
+                    if (! empty($excludeValue)) {
                         return false;
                     }
                 }
@@ -135,7 +135,7 @@ class Task extends Model
 
             // Condizione: il campo deve essere valorizzato (NOT NULL)
             if ($task->trigger_state === 'filled') {
-                return !empty($fieldValue);
+                return ! empty($fieldValue);
             }
 
             // Condizione: il campo deve essere vuoto (NULL)

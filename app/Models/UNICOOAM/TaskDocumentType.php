@@ -15,7 +15,7 @@ class TaskDocumentType extends Pivot
      *
      * @var string
      */
-    protected $connection = 'mysql';
+    protected $connection = 'mysql_unicooam';
 
     protected $table = 'task_document_types';
 

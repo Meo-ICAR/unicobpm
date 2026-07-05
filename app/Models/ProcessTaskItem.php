@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ProcessTaskItem extends Model
 {
+    protected $orderBy = 'ordine';
+
     protected $fillable = [
         'process_task_id',
         'name',

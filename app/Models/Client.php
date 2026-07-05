@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
 // use Wildside\Userstamps\HasUserstamps;
 
@@ -25,6 +26,9 @@ class Client extends Model
      *
      * }
      */
+    protected $connection = 'proforma';
+
+    protected $table = 'proforma.clients';
 
     protected $fillable = [
         'company_id',
@@ -119,7 +123,7 @@ class Client extends Model
 
     public function businessFunctions(): MorphToMany
     {
-        return $this->morphToMany(BusinessFunction::class, 'member', 'business_function_members')
+        return $this->morphToMany(BusinessFunction::class, 'member', 'unicobpm.business_function_members')
             ->withPivot('is_manager')
             ->withTimestamps();
     }

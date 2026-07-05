@@ -4,10 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
-use Illuminate\Database\Eloquent\Model;
 
 class Company extends Model
 {
@@ -18,7 +18,7 @@ class Company extends Model
      *
      * @var array<int, string>
      */
-    protected $connection = 'mysql';
+    protected $connection = 'mysql_unicooam';
 
     protected $orderBy = 'name';
 

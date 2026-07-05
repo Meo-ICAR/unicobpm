@@ -5,21 +5,23 @@ namespace App\Filament\Resources\BusinessFunctions;
 use App\Filament\Resources\BusinessFunctions\Pages\CreateBusinessFunction;
 use App\Filament\Resources\BusinessFunctions\Pages\EditBusinessFunction;
 use App\Filament\Resources\BusinessFunctions\Pages\ListBusinessFunctions;
+use App\Filament\Resources\BusinessFunctions\RelationManagers\ClientsRelationManager;
+use App\Filament\Resources\BusinessFunctions\RelationManagers\EmployeesRelationManager;
 use App\Filament\Resources\BusinessFunctions\Schemas\BusinessFunctionForm;
 use App\Filament\Resources\BusinessFunctions\Tables\BusinessFunctionsTable;
 use App\Models\BusinessFunction;
-use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 
 class BusinessFunctionResource extends Resource
 {
     protected static ?string $model = BusinessFunction::class;
-
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
-
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-building-office-2';
+    protected static string|\UnitEnum|null $navigationGroup = 'BPM';
+    protected static ?int $navigationSort = 3;
+    protected static ?string $label = 'Funzione Aziendale';
+    protected static ?string $pluralLabel = 'Funzioni Aziendali';
     protected static ?string $recordTitleAttribute = 'name';
 
     public static function form(Schema $schema): Schema
@@ -35,16 +37,17 @@ class BusinessFunctionResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            EmployeesRelationManager::class,
+            ClientsRelationManager::class,
         ];
     }
 
     public static function getPages(): array
     {
         return [
-            'index' => ListBusinessFunctions::route('/'),
+            'index'  => ListBusinessFunctions::route('/'),
             'create' => CreateBusinessFunction::route('/create'),
-            'edit' => EditBusinessFunction::route('/{record}/edit'),
+            'edit'   => EditBusinessFunction::route('/{record}/edit'),
         ];
     }
 }

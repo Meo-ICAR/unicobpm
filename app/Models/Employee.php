@@ -13,7 +13,9 @@ class Employee extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $connection = 'mysql';
+    protected $connection = 'mysql_unicooam';
+
+    protected $table = 'unicooam.employees';
 
     protected $orderBy = 'name';
 
@@ -112,7 +114,7 @@ class Employee extends Model
 
     public function businessFunctions(): MorphToMany
     {
-        return $this->morphToMany(BusinessFunction::class, 'member', 'business_function_members')
+        return $this->morphToMany(BusinessFunction::class, 'member', 'unicobpm.business_function_members')
             ->withPivot('is_manager')
             ->withTimestamps();
     }

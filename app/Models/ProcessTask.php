@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ProcessTask extends Model
 {
+    protected $orderBy = 'ordine';
+
     protected $fillable = [
         'process_id',
         'name',
@@ -51,7 +53,7 @@ class ProcessTask extends Model
         return $this->belongsTo(BusinessFunction::class);
     }
 
-    public function items(): HasMany
+    public function processTaskItems(): HasMany
     {
         return $this->hasMany(ProcessTaskItem::class)->orderBy('ordine');
     }
