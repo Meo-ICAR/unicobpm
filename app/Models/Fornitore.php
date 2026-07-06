@@ -20,7 +20,7 @@ class Fornitore extends Model
 
     protected $connection = 'proforma';
 
-    protected $table = 'fornitoris';
+    protected $table = 'proforma.fornitoris';
 
     protected $primaryKey = 'id';
 
