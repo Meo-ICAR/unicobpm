@@ -4,12 +4,15 @@ namespace App\Filament\Resources\Processes\Schemas;
 
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\KeyValue;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Str;
 
 class ProcessForm
 {
@@ -21,7 +24,7 @@ class ProcessForm
                 ->columns(3)
                 ->schema([
                     TextInput::make('code')
-                        ->required()
+                     //   ->required()
                         ->unique(ignoreRecord: true)
                         ->maxLength(50),
                     TextInput::make('name')
@@ -43,10 +46,25 @@ class ProcessForm
                 ->columns(3)
                 ->collapsible()
                 ->schema([
-                    TextInput::make('target_model')
+                    Select::make('target_model')
+                        ->label('Modello Principale del Processo (Target)')
+                        ->placeholder('Seleziona il modello associato a questo workflow')
+                        ->options(function () {
+                            // Recupera l'array del morphMap centralizzato nel tuo AppServiceProvider
+                            $morphMap = Relation::morphMap();
+
+                            // Trasforma le classi in nomi leggibili per l'interfaccia utente
+                            return collect($morphMap)->mapWithKeys(function ($className, $alias) {
+                                $readableName = Str::afterLast($className, '\\');
+
+                                return [$alias => $readableName];
+                            })->toArray();
+                        })
+                        ->searchable()
+                        ->preload()
                         ->nullable()
-                        ->placeholder('App\\Models\\Client')
-                        ->columnSpanFull(),
+                        ->columnSpanFull()
+                        ->hint('Indica quale entità aziendale è il soggetto principale di questo tipo di processo.'),
                     KeyValue::make('trigger_filters')
                         ->nullable()
                         ->keyLabel('Chiave')

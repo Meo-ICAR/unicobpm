@@ -5,27 +5,19 @@ namespace App\Filament\Actions;
 use App\Models\ProcessInstance;
 use App\Models\ProcessTask;
 use App\Models\ProcessTaskExecution;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
 class AdvanceProcessAction
 {
-    /**
-     * Avanza o retrocede una pratica nel workflow.
-     *
-     * @param  ProcessInstance  $instance  L'istanza della pratica
-     * @param  Model  $user  L'operatore loggato che sta eseguendo l'azione
-     * @param  string  $actionType  'complete' per andare avanti, 'reject' per tornare indietro
-     */
     public function execute(ProcessInstance $instance, Model $user, string $actionType = 'complete'): ProcessInstance
     {
         return DB::transaction(function () use ($instance, $user, $actionType) {
 
-            // 1. Recuperiamo l'esecuzione attiva per lo step corrente
+            // 1. Chiusura del task precedente (rimane invariata)
             $currentExecution = $instance->currentTaskExecution;
-
             if ($currentExecution) {
-                // Chiudiamo l'esecuzione attuale impostando l'operatore e il timestamp
                 $currentExecution->update([
                     'assignee_type' => get_class($user),
                     'assignee_id' => $user->getKey(),
@@ -34,49 +26,74 @@ class AdvanceProcessAction
                 ]);
             }
 
-            // 2. Calcoliamo il prossimo step in base all'ordinamento del template del processo
+            // 2. Calcolo del prossimo task (rimane invariata)
             $currentTask = $instance->currentTask;
             $nextTask = null;
 
             if ($actionType === 'complete') {
-                // Cerchiamo il primo task con un ordine superiore a quello attuale
                 $nextTask = ProcessTask::where('process_id', $instance->process_id)
                     ->where('order', '>', $currentTask->order)
                     ->orderBy('order', 'asc')
                     ->first();
             } else {
-                // REWIND: Cerchiamo il task immediatamente precedente
                 $nextTask = ProcessTask::where('process_id', $instance->process_id)
                     ->where('order', '<', $currentTask->order)
                     ->orderBy('order', 'desc')
                     ->first();
             }
 
-            // 3. Applichiamo i cambiamenti di stato all'istanza master della pratica
+            // 3. Gestione del prossimo step con controllo di auto-assegnazione
             if ($nextTask) {
-                // C'è un altro step da fare (avanti o indietro)
+
+                $autoAssigneeId = null;
+                $autoAssigneeType = null;
+                $claimedAt = null;
+
+                // Controlliamo i responsabili del nuovo task
+                $responsibleAssignment = $nextTask->raciAssignments()
+                    ->where('role_type', 'responsible')
+                    ->first();
+
+                if ($responsibleAssignment) {
+                    $usersInFunction = User::whereHas('business_functions', function ($q) use ($responsibleAssignment) {
+                        $q->where('business_functions.id', $responsibleAssignment->business_function_id);
+                    })->get();
+
+                    // Se c'è una sola persona in quel reparto, assegnazione istantanea
+                    if ($usersInFunction->count() === 1) {
+                        $soleUser = $usersInFunction->first();
+                        $autoAssigneeId = $soleUser->id;
+                        $autoAssigneeType = get_class($soleUser);
+                        $claimedAt = now();
+                    }
+                }
+
+                // Aggiorniamo l'istanza master con i dati (o null, o l'utente unico)
                 $instance->update([
                     'current_task_id' => $nextTask->id,
-                    'current_assignee_type' => null, // Torna libero in coda per il nuovo reparto RACI
-                    'current_assignee_id' => null,
+                    'current_assignee_type' => $autoAssigneeType,
+                    'current_assignee_id' => $autoAssigneeId,
                     'status' => 'in_progress',
                 ]);
 
-                // Generiamo la nuova riga di esecuzione in coda per il prossimo ufficio
                 $dueAt = $nextTask->days_to_complete
                     ? now()->addDays($nextTask->days_to_complete)
                     : null;
 
+                // Generiamo la riga di esecuzione
                 ProcessTaskExecution::create([
                     'process_instance_id' => $instance->id,
                     'process_task_id' => $nextTask->id,
+                    'assignee_type' => $autoAssigneeType,
+                    'assignee_id' => $autoAssigneeId,
                     'started_at' => now(),
+                    'claimed_at' => $claimedAt,
                     'due_at' => $dueAt,
                     'execution_status' => 'in_progress',
                 ]);
 
             } else {
-                // Non ci sono più task successivi: Il processo è terminato con successo!
+                // Fine del processo (rimane invariata)
                 $instance->update([
                     'current_task_id' => null,
                     'current_assignee_type' => null,

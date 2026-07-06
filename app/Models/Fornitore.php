@@ -4,14 +4,18 @@
 
 namespace App\Models;
 
+use App\Traits\HasBpmTriggers;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Fornitore extends Model
 {
+    use HasBpmTriggers;
     use HasFactory, HasUuids, SoftDeletes;
 
     protected $connection = 'proforma';
@@ -156,6 +160,20 @@ class Fornitore extends Model
         $nome = $cliente?->nome;
 
         return $nome;
+    }
+
+    /**
+     * Relazione: Account di Login
+     */
+    public function user(): MorphOne
+    {
+        return $this->morphOne(User::class, 'profile');
+    }
+
+    public function profile(): MorphTo
+    {
+        // Cerca automaticamente i campi profile_type e profile_id nella tabella users
+        return $this->morphTo();
     }
 
     public function websites()

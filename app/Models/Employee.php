@@ -78,9 +78,21 @@ class Employee extends Model
     /**
      * Relazione: Account di Login
      */
-    public function user(): BelongsTo
+    public function user(): MorphOne
     {
-        return $this->belongsTo(User::class);
+        return $this->morphOne(User::class, 'profile');
+    }
+
+    public function profile(): MorphTo
+    {
+        // Cerca automaticamente i campi profile_type e profile_id nella tabella users
+        return $this->morphTo();
+    }
+
+    public function business_functions(): BelongsToMany
+    {
+        return $this->belongsToMany(BusinessFunction::class, 'business_function_operables');
+        // adatta il nome della tabella pivot alle tue esigenze
     }
 
     /**

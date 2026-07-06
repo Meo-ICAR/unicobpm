@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
 // use Wildside\Userstamps\HasUserstamps;
@@ -126,5 +127,19 @@ class Client extends Model
         return $this->morphToMany(BusinessFunction::class, 'member', 'unicobpm.business_function_members')
             ->withPivot('is_manager')
             ->withTimestamps();
+    }
+
+    /**
+     * Relazione: Account di Login
+     */
+    public function user(): MorphOne
+    {
+        return $this->morphOne(User::class, 'profile');
+    }
+
+    public function profile(): MorphTo
+    {
+        // Cerca automaticamente i campi profile_type e profile_id nella tabella users
+        return $this->morphTo();
     }
 }

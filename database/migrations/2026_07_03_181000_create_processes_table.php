@@ -12,7 +12,7 @@ return new class extends Migration
             $table->comment('Processi aziendali principali che rappresentano le attività strategiche e operative dell’organizzazione');
 
             $table->id()->comment('ID univoco del processo macro aziendale');
-            $table->string('code')->unique()->comment('Codice identificativo univoco del processo (es. PRC-AML)');
+            $table->string('code')->nullable()->unique()->comment('Codice identificativo univoco del processo (es. PRC-AML)');
             $table->string('name')->comment('Nome esplicativo del processo');
             $table->text('description')->nullable()->comment('Descrizione dettagliata delle finalità e dell’ambito del processo');
             $table->integer('version')->default(1)->comment('Incrementato se cambiano i task del processo');
@@ -28,7 +28,8 @@ return new class extends Migration
 
             // --- CONFIGURAZIONE PERIODICITÀ (Trigger Automativi) ---
             $table->boolean('is_periodic')->default(false);
-            $table->string('cron_expression')->nullable(); // Es. "0 1 10 * *" (Il 10 di ogni mese all'1:00)
+            $table->string('recurrence_frequency')->nullable(); // 'daily', 'weekly', 'monthly', 'yearly'
+            $table->integer('recurrence_day')->nullable(); // Giorno del mese (es. 10) o della settimana (1-7)
 
             // --- TRACCIAMENTO TEMPORALE JOB ---
             $table->dateTime('last_activated_at')->nullable(); // Ultima esecuzione del processo
