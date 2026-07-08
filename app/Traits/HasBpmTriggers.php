@@ -2,13 +2,21 @@
 
 namespace App\Traits;
 
-use App\Actions\StartProcessAction;
+use App\Filament\Actions\StartProcessAction;
 use App\Models\ProcessTrigger;
 
 trait HasBpmTriggers
 {
     public static function bootHasBpmTriggers()
     {
+        /**
+         * PROCEDURA DI INIZIALIZZAZIONE TRIGGER BPM (BOOT TRAIT):
+         * Questo metodo viene invocato automaticamente al boot del modello Eloquent che include il trait.
+         * Nello specifico:
+         * 1. Registra un hook sull'evento static::created() per valutare le regole BPM all'atto della creazione del record.
+         * 2. Registra un hook sull'evento static::updated() per intercettare le modifiche allo stato o ad altri campi
+         *    rilevanti e avviare il corrispondente workflow.
+         */
         // 1. Trigger alla CREAZIONE
         static::created(function ($model) {
             self::checkAndRunTriggers($model, 'created');

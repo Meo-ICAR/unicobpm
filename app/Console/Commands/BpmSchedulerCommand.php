@@ -2,13 +2,13 @@
 
 namespace App\Console\Commands;
 
-use App\Actions\StartProcessAction;
+use App\Filament\Actions\StartProcessAction;
 use App\Models\Process;
 use App\Models\ProcessInstance;
 use App\Models\ProcessTrigger;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
-use App\Models\ProcessTrigger;
+
 
 class BpmSchedulerCommand extends Command
 {
@@ -18,6 +18,17 @@ class BpmSchedulerCommand extends Command
 
     public function handle(StartProcessAction $startProcessAction)
     {
+        /**
+         * PROCEDURA DI SCHEDULING BPM:
+         * Questo comando viene eseguito quotidianamente dallo scheduler di Laravel.
+         * Svolge due compiti principali:
+         * 1. Gestione solleciti per inattività (event_type = 'idle'): scansiona i record dei modelli configurati
+         *    che sono fermi nello stato descritto dalle condizioni del trigger da oltre 'idle_days' giorni
+         *    e avvia il relativo processo di workflow.
+         * 2. Avvio dei processi ricorrenti (is_recurring = true): scansiona i processi pianificati
+         *    e crea una nuova istanza (senza soggetto polimorfo specifico, es: null) in base alla frequenza
+         *    temporale stabilita (giornaliera, settimanale, mensile, annuale).
+         */
         $oggi = now();
         // Inserisci questo blocco dentro il metodo handle() di app/Console/Commands/BpmSchedulerCommand.php
 

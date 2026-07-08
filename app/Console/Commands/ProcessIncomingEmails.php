@@ -17,6 +17,15 @@ class ProcessIncomingEmails extends Command
 
     public function handle()
     {
+        /**
+         * PROCEDURA DI ELABORAZIONE EMAIL IN INGRESSO:
+         * Questo comando legge in background la casella di posta dedicata per integrare l'acquisizione documentale automatica.
+         * Nello specifico:
+         * 1. Stabilisce una connessione IMAP ed interroga la cartella INBOX per estrarre tutti i messaggi non letti.
+         * 2. Tramite espressione regolare sul subject dell'email, ricerca un pattern del tipo "[ID: X]" per identificare la pratica (ProcessInstance) associata.
+         * 3. Se la pratica viene trovata ed è in corso ('in_progress'), delega l'estrazione e il salvataggio degli allegati al metodo helper.
+         * 4. Al termine del processamento, contrassegna l'email come letta ('Seen') per escluderla dalle successive esecuzioni.
+         */
         // 1. Ci colleghiamo alla casella email configurata
         $client = Client::account('default');
         $client->connect();

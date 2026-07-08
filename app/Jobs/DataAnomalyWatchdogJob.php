@@ -16,6 +16,15 @@ class DataAnomalyWatchdogJob implements ShouldQueue
 
     public function handle(): void
     {
+        /**
+         * PROCEDURA DI SCANSIONE ANOMALIE DATI (WATCHDOG ANAGRAFICHE):
+         * Questo Job in background analizza periodicamente i database aziendali per individuare record non conformi e avviare i workflow di rettifica.
+         * Nello specifico:
+         * 1. Recupera il processo con codice 'correzione_anagrafica' se attivo.
+         * 2. Esegue una query sul modello Customer per rilevare i clienti attivi che presentano una Partita IVA incompleta (meno di 11 caratteri).
+         * 3. Per evitare ridondanze, verifica se è già aperta una pratica di correzione ('pending' o 'running') per il cliente anomalo.
+         * 4. Qualora non ci siano processi già aperti, genera una nuova ProcessInstance (pratica di correzione) per tracciare e guidare la risoluzione manuale dell'incongruenza.
+         */
         // 1. Troviamo il processo di correzione
         $process = Process::where('code', 'correzione_anagrafica')->where('is_active', true)->first();
 

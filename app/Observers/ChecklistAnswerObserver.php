@@ -10,6 +10,17 @@ class ChecklistAnswerObserver
 {
     public function saved(ChecklistAnswer $answer): void
     {
+        /**
+         * PROCEDURA DI ELABORAZIONE RISPOSTE CHECKLIST (SALVATAGGIO):
+         * Questo observer reagisce al salvataggio delle risposte alle domande di controllo (checklist).
+         * Nello specifico:
+         * 1. Verifica se la domanda fa parte di una regola Knockout (KO) ('is_knockout' = true).
+         * 2. Compara la risposta fornita dall'utente (boolean o testuale) con il valore configurato come KO.
+         * 3. In caso di corrispondenza KO, imposta lo stato della ProcessInstance (pratica) a 'rejected',
+         *    marchia la data di completamento e opzionalmente respinge anche l'anagrafica del soggetto collegato.
+         * 4. Registra l'evento KO nel canale log dedicato ('bpm') a scopo di audit.
+         * 5. Se la risposta non attiva regole di KO, procede con il fluire standard del processo.
+         */
         $item = $answer->item;
 
         // --- 1. CONTROLLO KNOCKOUT (KO) ---

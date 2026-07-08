@@ -13,6 +13,17 @@ class ProcessTaskItemAnswerObserver
      */
     public function created(ProcessTaskItemAnswer $answer): void
     {
+        /**
+         * PROCEDURA DI COMPLETAMENTO AZIONE (POST-SALVATAGGIO RISPOSTA):
+         * Questo observer reagisce alla creazione di una risposta (ProcessTaskItemAnswer)
+         * relativa a un'azione all'interno di un task del workflow.
+         * Nello specifico:
+         * 1. Registra un log dettagliato (ProcessInstanceLog) per memorizzare quale utente o bot ha completato l'azione.
+         * 2. Chiama il metodo checkTaskCompletion() per contare le azioni obbligatorie configurate per il task attuale
+         *    e confrontarle con quelle effettivamente compilate per questa istanza.
+         * 3. Se tutte le azioni obbligatorie risultano fornite, chiama advanceToNextTask() per chiudere il task corrente
+         *    e avviare il successivo (o completare definitivamente la pratica se non ci sono ulteriori task).
+         */
         $instance = $answer->processInstance;
         $currentTask = $instance->currentTask;
         $item = $answer->processTaskItem;

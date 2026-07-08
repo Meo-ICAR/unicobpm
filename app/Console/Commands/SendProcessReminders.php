@@ -16,6 +16,17 @@ class SendProcessReminders extends Command
 
     public function handle()
     {
+        /**
+         * PROCEDURA DI INVIO SOLLECITI DOCUMENTALI:
+         * Questo comando viene eseguito pianificato per sollecitare i soggetti esterni a completare i propri task documentali pendenti.
+         * Nello specifico:
+         * 1. Seleziona le istanze di processo attive ('in_progress') bloccate su un task che prevede solleciti attivi ('has_reminders').
+         * 2. Per ciascuna pratica, effettua controlli sui limiti configurati:
+         *    - Non deve aver superato la soglia 'max_reminders' specificata nel task.
+         *    - Devono essere trascorsi almeno 'reminder_interval_days' giorni dall'ultimo sollecito inviato.
+         * 3. Se idonea, genera una URL firmata e temporanea (Magic Link) per consentire l'upload sicuro senza autenticazione.
+         * 4. Invia l'email tramite il mailer dedicato ed aggiorna la data di ultimo invio e il contatore dei solleciti inviati.
+         */
         // 1. Trova le pratiche attive ferme su task che hanno i solleciti attivi
         $praticheDaSollecitare = ProcessInstance::where('status', 'in_progress')
             ->whereHas('currentTask', function ($query) {

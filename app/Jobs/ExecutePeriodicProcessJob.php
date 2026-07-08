@@ -16,6 +16,16 @@ class ExecutePeriodicProcessJob implements ShouldQueue
 
     public function handle(): void
     {
+        /**
+         * PROCEDURA DI ESECUZIONE PROCESSI PERIODICI BATCH:
+         * Questo Job asincrono viene lanciato per creare massivamente le istanze di processo per tutti i soggetti di business
+         * idonei (es: tutti i clienti attivi) in risposta a un trigger temporale.
+         * Nello specifico:
+         * 1. Recupera il processo tramite ID e verifica la validità della classe di business di riferimento (target_model).
+         * 2. Aggiorna i metadati temporali del template di processo (last_activated_at) e calcola la data di prossima esecuzione.
+         * 3. Costruisce una query dinamica sul modello target applicando eventuali filtri configurati (es. status = 'active').
+         * 4. Cicla i soggetti estratti e istanzia per ognuno una nuova ProcessInstance in stato 'pending'.
+         */
         $process = Process::find($this->processId);
 
         // Se attivato manualmente, potremmo voler forzare l'esecuzione anche se is_active è false,

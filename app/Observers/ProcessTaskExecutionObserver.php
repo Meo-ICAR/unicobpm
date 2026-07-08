@@ -47,6 +47,21 @@ class ProcessTaskExecutionObserver
      */
     public function created(ProcessTaskExecution $execution): void
     {
+        /**
+         * PROCEDURA DI AUTOMAZIONE TASK SYSTEM (AVVIO ESECUZIONE):
+         * Questo observer intercetta l'inizio di una nuova esecuzione di task (ProcessTaskExecution)
+         * per individuare ed eseguire istantaneamente tutte le azioni di sistema automatiche configurate.
+         * Nello specifico:
+         * 1. Recupera gli elementi di tipo 'automated_email' e 'validation_rule' legati al task corrente.
+         * 2. Esegue in loop ciascuna azione automatica:
+         *    - Per le email (automated_email): risolve il destinatario (Business Function o mail diretta),
+         *      compila dinamicamente oggetto e testo con i placeholder del soggetto,
+         *      recupera e allega documenti statici e dinamici della pratica, spedisce l'email
+         *      e infine crea una ProcessTaskItemAnswer a nome del bot (user_id = 0) per marcare l'azione come completata.
+         *    - Per le validazioni (validation_rule): estrae dinamicamente il valore da validare sul modello
+         *      tramite 'data_get', applica le regole impostate (es: lunghezza minima) e, in caso di fallimento,
+         *      sospende la pratica ('suspended') registrando l'anomalia nel log. Se valida, crea la risposta di completamento.
+         */
         $instance = $execution->processInstance;
         $task = $execution->processTask;
 

@@ -16,6 +16,17 @@ class TaskEscalationWatchdogJob implements ShouldQueue
 
     public function handle(): void
     {
+        /**
+         * PROCEDURA DI RILEVAZIONE E GESTIONE ESCALATION TASK (WATCHDOG SLA):
+         * Questo Job scansiona periodicamente i task di workflow pendenti per verificare il rispetto degli SLA (Service Level Agreement)
+         * ed avviare azioni correttive (notifiche o riassegnazioni) in caso di ritardo.
+         * Nello specifico:
+         * 1. Recupera tutte le esecuzioni di task ancora aperte ('pending') con le relative definizioni del task e le regole di escalation associate.
+         * 2. Calcola le ore trascorse dall'apertura del task (created_at).
+         * 3. Ricerca nei metadati del task la regola corrispondente al livello di escalation successivo (escalation_level + 1).
+         * 4. Se le ore trascorse superano la soglia specificata nella regola (delay_hours), esegue il metodo triggerEscalation()
+         *    per inoltrare solleciti, notificare i manager o riassegnare d'ufficio il task, incrementando poi il livello di escalation.
+         */
         // Peschiamo solo i task ancora aperti (es. non completati o non annullati)
         $openExecutions = ProcessTaskExecution::where('status', 'pending')->with('processTask')->get();
 
