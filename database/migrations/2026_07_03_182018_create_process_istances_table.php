@@ -12,8 +12,9 @@ return new class extends Migration
             $table->id()->comment('ID univoco della pratica/istanza di processo');
             $table->unsignedBigInteger('process_id')->index()->comment('Quale processo si sta eseguendo (es. Onboarding)');
 
-            // Il soggetto della pratica (es: l\'Agente Rossi)
-            $table->morphs('subject');
+            // Il soggetto della pratica (es: l\'Agente Rossi). Nullable perché i processi interni/ricorrenti
+            // (StartProcessAction con $subject = null) creano pratiche senza un soggetto polimorfo specifico.
+            $table->nullableMorphs('subject');
 
             // Coda di lavoro: Chi ha preso in carico la pratica (Employer o Consultant)
             $table->nullableMorphs('current_assignee', 'assignee_index');

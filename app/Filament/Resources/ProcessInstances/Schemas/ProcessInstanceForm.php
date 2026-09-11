@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\ProcessInstances\Schemas;
 
-use App\Models\Consultant;
+use App\Models\Client;
 use App\Models\Employee;
 use App\Models\ProcessTask;
 use App\Models\User;
@@ -54,8 +54,8 @@ class ProcessInstanceForm
                                                 MorphToSelect\Type::make(Employee::class)
                                                     ->label('Dipendente')
                                                     ->titleAttribute('name'),
-                                                MorphToSelect\Type::make(Consultant::class)
-                                                    ->label('Consulente')
+                                                MorphToSelect\Type::make(Client::class)
+                                                    ->label('Cliente/Mediatore')
                                                     ->titleAttribute('name'),
                                             ])
                                             ->required()
@@ -102,13 +102,12 @@ class ProcessInstanceForm
                                                         }
 
                                                         // Filtriamo i dipendenti in base alla RACI e alla specializzazione della pratica
-                                                        return $query->whereHas('business_functions', function ($q) use ($task) {
-                                                            $q->where('business_functions.id', function ($sub) use ($task) {
+                                                        return $query->whereHas('businessFunctions', function ($q) use ($task) {
+                                                            $q->whereIn('business_functions.id', function ($sub) use ($task) {
                                                                 $sub->select('business_function_id')
-                                                                    ->from('raci_assignments') // Adatta al nome della tua tabella pivot RACI
+                                                                    ->from('process_task_raci')
                                                                     ->where('process_task_id', $task->id)
-                                                                    ->where('role_type', 'responsible')
-                                                                    ->first();
+                                                                    ->where('raci_role', 'R');
                                                             });
                                                         })
                                                             ->when(! empty($record?->type), function ($q) use ($record) {
@@ -116,9 +115,9 @@ class ProcessInstanceForm
                                                             });
                                                     }),
 
-                                                // 2. GESTIONE CONSULENTI OPERATORI
-                                                MorphToSelect\Type::make(Consultant::class)
-                                                    ->label('Consulente Operatore')
+                                                // 2. GESTIONE CLIENTI/MEDIATORI OPERATORI
+                                                MorphToSelect\Type::make(Client::class)
+                                                    ->label('Cliente/Mediatore Operatore')
                                                     ->titleAttribute('name')
                                                     ->modifyOptionsQueryUsing(function ($query, $get, $record) {
                                                         $taskId = $get('current_task_id');
@@ -131,14 +130,13 @@ class ProcessInstanceForm
                                                             return $query->whereRaw('1 = 0');
                                                         }
 
-                                                        // Stessa logica di filtro applicata ai Consulenti
-                                                        return $query->whereHas('business_functions', function ($q) use ($task) {
-                                                            $q->where('business_functions.id', function ($sub) use ($task) {
+                                                        // Stessa logica di filtro applicata ai Clienti/Mediatori
+                                                        return $query->whereHas('businessFunctions', function ($q) use ($task) {
+                                                            $q->whereIn('business_functions.id', function ($sub) use ($task) {
                                                                 $sub->select('business_function_id')
-                                                                    ->from('raci_assignments')
+                                                                    ->from('process_task_raci')
                                                                     ->where('process_task_id', $task->id)
-                                                                    ->where('role_type', 'responsible')
-                                                                    ->first();
+                                                                    ->where('raci_role', 'R');
                                                             });
                                                         })
                                                             ->when(! empty($record?->type), function ($q) use ($record) {
@@ -159,7 +157,7 @@ class ProcessInstanceForm
                                                     return false;
                                                 }
 
-                                                // Recuperiamo il totale degli utenti idonei incrociando sia Employee che Consultant
+                                                // Recuperiamo il totale degli utenti idonei incrociando sia Employee che Client
                                                 // Usando l'helper statico fatto in precedenza sul modello User (o duplicato per supportare i due modelli)
                                                 $totalEligible = User::getResponsibleUsersForInstance($task, $record)->count();
 

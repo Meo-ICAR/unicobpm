@@ -21,7 +21,7 @@ class ChecklistAnswerObserver
          * 4. Registra l'evento KO nel canale log dedicato ('bpm') a scopo di audit.
          * 5. Se la risposta non attiva regole di KO, procede con il fluire standard del processo.
          */
-        $item = $answer->item;
+        $item = $answer->checklistItem;
 
         // --- 1. CONTROLLO KNOCKOUT (KO) ---
         if ($item->is_knockout) {

@@ -46,6 +46,17 @@ class ProcessTaskItem extends Model
     }
 
     /**
+     * Recupera il template email configurato per le azioni di tipo 'automated_email',
+     * tramite l'ID salvato in $this->config['email_template_id'].
+     */
+    public function getEmailTemplate(): ?EmailTemplate
+    {
+        $templateId = $this->config['email_template_id'] ?? null;
+
+        return $templateId ? EmailTemplate::find($templateId) : null;
+    }
+
+    /**
      * Compila un testo stringa (es. URL, oggetto email o corpo email)
      * sostituendo i placeholder racchiusi tra graffe {...} con i dati reali della pratica.
      * * Esempio placeholder: {id}, {status}, {subject.name}, {subject.email}

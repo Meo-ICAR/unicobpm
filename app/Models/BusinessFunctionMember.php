@@ -41,7 +41,7 @@ class BusinessFunctionMember extends MorphPivot
     }
 
     /**
-     * Relazione Polimorfica verso il membro (Employee o Consultant).
+     * Relazione Polimorfica verso il membro (Employee o Client).
      */
     public function member()
     {

@@ -7,26 +7,20 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
-
-// use Wildside\Userstamps\HasUserstamps;
 
 class Client extends Model
 {
-    //  use HasUserstamps;
+    protected static function booted(): void
+    {
+        static::creating(function (self $client) {
+            if (empty($client->company_id) && auth()->check()) {
+                $client->company_id = auth()->user()->profile?->company_id;
+            }
+        });
+    }
 
-    /*
-     * protected static function booted()
-     * {
-     *
-     *      * static::creating(function ($client) {
-     *      *     if (auth()->check() && empty($client->company_id)) {
-     *      *         $client->company_id = auth()->user()->company_id;
-     *      *     }
-     *      * });
-     *
-     * }
-     */
     protected $connection = 'proforma';
 
     protected $table = 'proforma.clients';

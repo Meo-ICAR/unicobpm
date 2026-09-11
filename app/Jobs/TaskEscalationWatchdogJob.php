@@ -2,13 +2,11 @@
 
 namespace App\Jobs;
 
-use App\Models\ProcessInstanceLog;
 use App\Models\ProcessTaskExecution;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 
 class TaskEscalationWatchdogJob implements ShouldQueue
 {
@@ -28,7 +26,7 @@ class TaskEscalationWatchdogJob implements ShouldQueue
          *    per inoltrare solleciti, notificare i manager o riassegnare d'ufficio il task, incrementando poi il livello di escalation.
          */
         // Peschiamo solo i task ancora aperti (es. non completati o non annullati)
-        $openExecutions = ProcessTaskExecution::where('status', 'pending')->with('processTask')->get();
+        $openExecutions = ProcessTaskExecution::where('execution_status', 'pending')->with('processTask')->get();
 
         foreach ($openExecutions as $execution) {
             $task = $execution->processTask;
@@ -90,11 +88,10 @@ class TaskEscalationWatchdogJob implements ShouldQueue
         $execution->increment('escalation_level');
 
         // Tracciamo l'evento nel log della pratica
-        ProcessInstanceLog::create([
-            'process_instance_id' => $instance->id,
-            'user_id' => 0, // Bot
-            'event' => 'escalation_triggered',
-            'payload' => ['level' => $rule['level'], 'action' => $rule['action']],
-        ]);
+        activity('bpm')
+            ->performedOn($instance)
+            ->event('escalation_triggered')
+            ->withProperties(['level' => $rule['level'], 'action' => $rule['action']])
+            ->log("Escalation Livello {$rule['level']} sul task: {$taskName}");
     }
 }

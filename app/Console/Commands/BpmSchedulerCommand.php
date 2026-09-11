@@ -7,8 +7,6 @@ use App\Models\Process;
 use App\Models\ProcessInstance;
 use App\Models\ProcessTrigger;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Log;
-
 
 class BpmSchedulerCommand extends Command
 {
@@ -25,7 +23,7 @@ class BpmSchedulerCommand extends Command
          * 1. Gestione solleciti per inattività (event_type = 'idle'): scansiona i record dei modelli configurati
          *    che sono fermi nello stato descritto dalle condizioni del trigger da oltre 'idle_days' giorni
          *    e avvia il relativo processo di workflow.
-         * 2. Avvio dei processi ricorrenti (is_recurring = true): scansiona i processi pianificati
+         * 2. Avvio dei processi ricorrenti (is_periodic = true): scansiona i processi pianificati
          *    e crea una nuova istanza (senza soggetto polimorfo specifico, es: null) in base alla frequenza
          *    temporale stabilita (giornaliera, settimanale, mensile, annuale).
          */
@@ -72,7 +70,7 @@ class BpmSchedulerCommand extends Command
             }
         }
         // Recuperiamo tutti i processi ripetitivi attivi
-        $recurringProcesses = Process::where('is_recurring', true)->get();
+        $recurringProcesses = Process::where('is_periodic', true)->get();
 
         foreach ($recurringProcesses as $process) {
             $devePartire = false;

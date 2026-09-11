@@ -2,9 +2,12 @@
 
 namespace App\Models;
 
+use App\Observers\ChecklistAnswerObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+#[ObservedBy(ChecklistAnswerObserver::class)]
 class ChecklistAnswer extends Model
 {
     protected $table = 'checklist_answers';

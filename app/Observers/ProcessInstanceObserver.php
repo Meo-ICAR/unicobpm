@@ -3,7 +3,6 @@
 namespace App\Observers;
 
 use App\Models\ProcessInstance;
-use App\Models\ProcessInstanceLog;
 use App\Models\ProcessTaskExecution;
 
 class ProcessInstanceObserver
@@ -27,7 +26,7 @@ class ProcessInstanceObserver
 
             if ($firstTask) {
                 $instance->current_task_id = $firstTask->id;
-                $instance->status = 'running';
+                $instance->status = 'in_progress';
             }
         }
     }
@@ -42,19 +41,16 @@ class ProcessInstanceObserver
          * PROCEDURA DI AVVIO ISTANZA (POST-SALVATAGGIO):
          * Reagisce alla avvenuta memorizzazione fisica dell'istanza del workflow.
          * Nello specifico:
-         * 1. Inserisce una riga nella tabella ProcessInstanceLog come audit log iniziale dell'avvio della pratica.
+         * 1. Registra l'evento di avvio nell'activity log (alizharb/filament-activity-log).
          * 2. Se è presente un task corrente ('current_task_id'), genera il primo record di esecuzione
          *    nella tabella ProcessTaskExecution con stato 'pending' per esporlo ai reparti di competenza.
          */
         // 1. Tracciamento Audit Log
-        ProcessInstanceLog::create([
-            'process_instance_id' => $instance->id,
-            'user_id' => auth()->id() ?? 0, // 0 = System
-            'event' => 'instance_started',
-            'payload' => [
-                'message' => 'Pratica avviata sulla versione '.$instance->process->version,
-            ],
-        ]);
+        activity('bpm')
+            ->causedBy(auth()->user())
+            ->performedOn($instance)
+            ->event('instance_started')
+            ->log('Pratica avviata sulla versione '.$instance->process->version);
 
         // 2. Creazione della coda di esecuzione per il primo Task
         if ($instance->current_task_id) {

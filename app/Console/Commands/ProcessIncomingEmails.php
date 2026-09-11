@@ -74,9 +74,9 @@ class ProcessIncomingEmails extends Command
                 // 1. Creo il record nella tabella centrale dei Documenti (DMS)
                 $document = Document::create([
                     'document_type_id' => $taskItem->document_type_id,
-                    'subject_type' => $pratica->subject_type,
-                    'subject_id' => $pratica->subject_id,
-                    'file_path' => $path,
+                    'documentable_type' => $pratica->subject_type,
+                    'documentable_id' => $pratica->subject_id,
+                    'document_url' => $path,
                     'name' => $attachment->getName(),
                 ]);
 

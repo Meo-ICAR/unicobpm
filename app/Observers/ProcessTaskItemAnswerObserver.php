@@ -2,7 +2,6 @@
 
 namespace App\Observers;
 
-use App\Models\ProcessInstanceLog;
 use App\Models\ProcessTaskExecution;
 use App\Models\ProcessTaskItemAnswer;
 
@@ -18,7 +17,7 @@ class ProcessTaskItemAnswerObserver
          * Questo observer reagisce alla creazione di una risposta (ProcessTaskItemAnswer)
          * relativa a un'azione all'interno di un task del workflow.
          * Nello specifico:
-         * 1. Registra un log dettagliato (ProcessInstanceLog) per memorizzare quale utente o bot ha completato l'azione.
+         * 1. Registra un log dettagliato nell'activity log per memorizzare quale utente o bot ha completato l'azione.
          * 2. Chiama il metodo checkTaskCompletion() per contare le azioni obbligatorie configurate per il task attuale
          *    e confrontarle con quelle effettivamente compilate per questa istanza.
          * 3. Se tutte le azioni obbligatorie risultano fornite, chiama advanceToNextTask() per chiudere il task corrente
@@ -29,15 +28,15 @@ class ProcessTaskItemAnswerObserver
         $item = $answer->processTaskItem;
 
         // 1. Log dell'azione completata
-        ProcessInstanceLog::create([
-            'process_instance_id' => $instance->id,
-            'user_id' => auth()->id() ?? 0,
-            'event' => 'action_completed',
-            'payload' => [
+        activity('bpm')
+            ->causedBy(auth()->user())
+            ->performedOn($instance)
+            ->event('action_completed')
+            ->withProperties([
                 'action_name' => $item->name,
                 'action_type' => $item->action_type,
-            ],
-        ]);
+            ])
+            ->log("Azione completata: {$item->name}");
 
         // 2. Controllo Avanzamento: Il Task è finito?
         $this->checkTaskCompletion($instance, $currentTask);
@@ -49,7 +48,7 @@ class ProcessTaskItemAnswerObserver
     protected function checkTaskCompletion($instance, $currentTask): void
     {
         // Quante azioni sono obbligatorie in questo task?
-        $requiredItemsCount = $currentTask->items()->where('is_required', true)->count();
+        $requiredItemsCount = $currentTask->processTaskItems()->where('is_required', true)->count();
 
         // Quante risposte abbiamo nel DB per le azioni obbligatorie di QUESTO task?
         $completedRequiredItemsCount = $instance->taskItemAnswers()
@@ -104,12 +103,11 @@ class ProcessTaskItemAnswerObserver
                 'execution_status' => 'pending',
             ]);
 
-            ProcessInstanceLog::create([
-                'process_instance_id' => $instance->id,
-                'user_id' => 0, // Sistema
-                'event' => 'task_advanced',
-                'payload' => ['new_task' => $nextTask->name],
-            ]);
+            activity('bpm')
+                ->performedOn($instance)
+                ->event('task_advanced')
+                ->withProperties(['new_task' => $nextTask->name])
+                ->log("Pratica avanzata al task: {$nextTask->name}");
 
         } else {
             // Nessun task successivo? Il processo è finito!
@@ -118,12 +116,10 @@ class ProcessTaskItemAnswerObserver
                 'completed_at' => now(),
             ]);
 
-            ProcessInstanceLog::create([
-                'process_instance_id' => $instance->id,
-                'user_id' => 0,
-                'event' => 'process_completed',
-                'payload' => ['message' => 'Pratica conclusa con successo'],
-            ]);
+            activity('bpm')
+                ->performedOn($instance)
+                ->event('process_completed')
+                ->log('Pratica conclusa con successo');
         }
     }
 }

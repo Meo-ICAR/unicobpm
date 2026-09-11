@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use Illuminate\Support\Collection;
 
 class BusinessFunction extends Model
 {
@@ -42,5 +43,18 @@ class BusinessFunction extends Model
     public function raciRoles(): HasMany
     {
         return $this->hasMany(ProcessTaskRaci::class);
+    }
+
+    /**
+     * Utenti applicativi (account di login) appartenenti a questa funzione aziendale,
+     * sia essi dipendenti (Employee) o clienti/mediatori (Client).
+     */
+    public function loginUsers(): Collection
+    {
+        return $this->employees()->with('user')->get()
+            ->merge($this->clients()->with('user')->get())
+            ->pluck('user')
+            ->filter()
+            ->values();
     }
 }

@@ -147,8 +147,16 @@ class Fornitore extends Model
         'contributo_description' => 'Contributo spese',
         'anticipo_description' => 'Anticipo attuale',
         'isdipendente' => false,
-        'company_id' => '5c044917-15b3-4471-90c9-38061fcca754',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $fornitore) {
+            if (empty($fornitore->company_id) && auth()->check()) {
+                $fornitore->company_id = auth()->user()->profile?->company_id;
+            }
+        });
+    }
 
     /**
      * Cerca un cliente per name, prende la piva, cerca il fornitore con la stessa piva

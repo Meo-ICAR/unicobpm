@@ -25,11 +25,10 @@ return new class extends Migration
             $blueprint->string('action_type');
             $blueprint->boolean('is_required')->default(true);
 
-            // Relazione opzionale: valorizzata solo se action_type è 'document_upload'
-            $blueprint->foreignId('document_type_id')
-                ->nullable()
-                ->constrained('document_types')
-                ->nullOnDelete();
+            // Relazione opzionale: valorizzata solo se action_type è 'document_upload'.
+            // "document_types" vive su un database separato (connessione mysql_unicooam), quindi qui
+            // teniamo solo l'ID senza vincolo di chiave esterna (non referenziabile cross-database).
+            $blueprint->unsignedBigInteger('document_type_id')->nullable()->index();
 
             // Stringa opzionale per i system_task (Job Laravel da lanciare)
             $blueprint->string('handler_job')->nullable();

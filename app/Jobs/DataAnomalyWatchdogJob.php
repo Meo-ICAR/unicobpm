@@ -43,7 +43,7 @@ class DataAnomalyWatchdogJob implements ShouldQueue
             $praticaAperta = ProcessInstance::where('process_id', $process->id)
                 ->where('subject_type', Customer::class)
                 ->where('subject_id', $customer->id)
-                ->whereIn('status', ['pending', 'running'])
+                ->whereIn('status', ['pending', 'in_progress'])
                 ->exists();
 
             if (! $praticaAperta) {

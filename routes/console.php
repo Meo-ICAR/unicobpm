@@ -1,7 +1,9 @@
 <?php
 
 use App\Jobs\ExecutePeriodicProcessJob;
+use App\Jobs\TaskEscalationWatchdogJob;
 use App\Models\Process;
+use Illuminate\Support\Facades\Log;
 
 // 1. Scheduler basato su CRON Espressione (Gira alle scadenze precise)
 try {
@@ -15,6 +17,11 @@ try {
             ->cron($process->cron_expression);
     }
 } catch (Exception $e) {
+    // Es. tabella non ancora migrata durante un'installazione pulita: non deve bloccare l'avvio di artisan,
+    // ma va comunque tracciato per non nascondere problemi reali di connessione al DB.
+    Log::warning('Impossibile registrare lo scheduling dei processi ricorrenti a cron_expression.', [
+        'exception' => $e->getMessage(),
+    ]);
 }
 
 // 2. Controllo Minutario per Rischedulazioni Manuali (Gira ogni minuto)
@@ -29,4 +36,10 @@ Schedule::call(function () {
     foreach ($manuallyScheduled as $process) {
         ExecutePeriodicProcessJob::dispatch($process->id);
     }
-})->everyMinute(60);
+})->everyMinute();
+
+// 3. Scansione giornaliera dei processi ricorrenti (daily/weekly/monthly/yearly) e dei trigger "idle"
+Schedule::command('bpm:run-scheduler')->dailyAt('06:00');
+
+// 4. Controllo orario degli SLA/escalation sui task pendenti
+Schedule::job(new TaskEscalationWatchdogJob)->hourly();

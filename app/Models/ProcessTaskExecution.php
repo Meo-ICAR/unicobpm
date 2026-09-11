@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Observers\ProcessTaskExecutionObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
+#[ObservedBy(ProcessTaskExecutionObserver::class)]
 class ProcessTaskExecution extends Model
 {
     protected $table = 'process_task_executions';
@@ -52,7 +55,7 @@ class ProcessTaskExecution extends Model
     }
 
     /**
-     * L'operatore (Employee o Consultant) che ha preso in carico l'esecuzione.
+     * L'operatore (Employee o Client) che ha preso in carico l'esecuzione.
      */
     public function assignee(): MorphTo
     {

@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Users\Schemas;
 
-use App\Models\Consultant;
+use App\Models\Client;
 use App\Models\Employee;
 use Filament\Forms\Components\MorphToSelect;
 use Filament\Forms\Components\Section;
@@ -49,9 +49,9 @@ class UserForm
                                     ->searchable()
                                     ->preload(),
 
-                                // Configurazione per i Consulenti
-                                MorphToSelect\Type::make(Consultant::class)
-                                    ->label('Consulente Esterno')
+                                // Configurazione per i Clienti/Mediatori
+                                MorphToSelect\Type::make(Client::class)
+                                    ->label('Cliente/Mediatore')
                                     ->titleAttribute('name')
                                     ->searchable()
                                     ->preload(),

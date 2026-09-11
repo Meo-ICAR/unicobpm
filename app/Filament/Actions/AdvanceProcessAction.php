@@ -2,10 +2,10 @@
 
 namespace App\Filament\Actions;
 
+use App\Models\BusinessFunction;
 use App\Models\ProcessInstance;
 use App\Models\ProcessTask;
 use App\Models\ProcessTaskExecution;
-use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
@@ -32,13 +32,13 @@ class AdvanceProcessAction
 
             if ($actionType === 'complete') {
                 $nextTask = ProcessTask::where('process_id', $instance->process_id)
-                    ->where('order', '>', $currentTask->order)
-                    ->orderBy('order', 'asc')
+                    ->where('ordine', '>', $currentTask->ordine)
+                    ->orderBy('ordine', 'asc')
                     ->first();
             } else {
                 $nextTask = ProcessTask::where('process_id', $instance->process_id)
-                    ->where('order', '<', $currentTask->order)
-                    ->orderBy('order', 'desc')
+                    ->where('ordine', '<', $currentTask->ordine)
+                    ->orderBy('ordine', 'desc')
                     ->first();
             }
 
@@ -51,13 +51,12 @@ class AdvanceProcessAction
 
                 // Controlliamo i responsabili del nuovo task
                 $responsibleAssignment = $nextTask->raciAssignments()
-                    ->where('role_type', 'responsible')
+                    ->where('raci_role', 'R')
                     ->first();
 
                 if ($responsibleAssignment) {
-                    $usersInFunction = User::whereHas('business_functions', function ($q) use ($responsibleAssignment) {
-                        $q->where('business_functions.id', $responsibleAssignment->business_function_id);
-                    })->get();
+                    $usersInFunction = BusinessFunction::find($responsibleAssignment->business_function_id)
+                        ?->loginUsers() ?? collect();
 
                     // Se c'è una sola persona in quel reparto, assegnazione istantanea
                     if ($usersInFunction->count() === 1) {

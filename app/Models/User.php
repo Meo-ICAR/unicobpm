@@ -44,7 +44,7 @@ class User extends Authenticatable
     {
         // 1. Recuperiamo la funzione aziendale "Responsible" dal task
         $responsibleAssignment = $task->raciAssignments()
-            ->where('role_type', 'responsible')
+            ->where('raci_role', 'R')
             ->first();
 
         if (! $responsibleAssignment) {
@@ -52,11 +52,8 @@ class User extends Authenticatable
         }
 
         // STEP 1: Recuperiamo TUTTI gli utenti della funzione aziendale (il reparto)
-        $repartoQuery = self::whereHas('business_functions', function ($q) use ($responsibleAssignment) {
-            $q->where('business_functions.id', $responsibleAssignment->business_function_id);
-        });
-
-        $utentiReparto = $repartoQuery->get();
+        $businessFunction = BusinessFunction::find($responsibleAssignment->business_function_id);
+        $utentiReparto = $businessFunction?->loginUsers() ?? collect();
 
         // SE NEL REPARTO C'È UNA SOLA PERSONA IN TOTALE -> La priorità va a lei (Ignora specializzazione)
         if ($utentiReparto->count() === 1) {
@@ -65,16 +62,11 @@ class User extends Authenticatable
 
         // STEP 2: Se nel reparto c'è più di una persona, controlliamo la specializzazione
         if (! empty($instance->type) && $utentiReparto->count() > 1) {
+            $utentiSpecializzati = $utentiReparto->filter(
+                fn (self $user) => is_null($user->specialization) || $user->specialization === $instance->type
+            );
 
-            // Rieseguiamo la query clonata applicando il filtro della specializzazione della pratica
-            $utentiSpecializzati = $repartoQuery->clone()
-                ->where(function ($q) use ($instance) {
-                    $q->where('specialization', $instance->type)
-                        ->orWhereNull('specialization'); // Tiene conto anche di eventuali generalisti se vuoi
-                })
-                ->get();
-
-            return $utentiSpecializzati;
+            return $utentiSpecializzati->values();
         }
 
         // Se non c'è nessuna specializzazione passata, restituisce l'intero reparto

@@ -4,7 +4,6 @@ namespace App\Observers;
 
 use App\Models\BusinessFunction;
 use App\Models\Document;
-use App\Models\ProcessInstanceLog;
 use App\Models\ProcessTaskExecution;
 use App\Models\ProcessTaskItemAnswer;
 use Illuminate\Support\Facades\Log;
@@ -66,7 +65,7 @@ class ProcessTaskExecutionObserver
         $task = $execution->processTask;
 
         // Recuperiamo tutte le azioni automatiche previste in questo task
-        $automatedItems = $task->items()
+        $automatedItems = $task->processTaskItems()
             ->whereIn('action_type', ['automated_email', 'validation_rule'])
             ->get();
 
@@ -131,23 +130,23 @@ class ProcessTaskExecutionObserver
                             // B) Allegati Dinamici (Documenti Pratica)
                             $targetDocCodes = $config['attach_document_types'] ?? [];
                             if (! empty($targetDocCodes)) {
+                                // Document vive su una connessione DB separata (mysql_unicooam): recuperiamo prima
+                                // gli ID sulla connessione locale, per poi filtrare i Document senza subquery cross-DB.
+                                $documentIds = ProcessTaskItemAnswer::where('process_instance_id', $instance->id)
+                                    ->whereNotNull('document_id')
+                                    ->pluck('document_id');
+
                                 $documents = Document::whereHas('documentType', function ($query) use ($targetDocCodes) {
                                     $query->whereIn('code', $targetDocCodes);
                                 })
-                                    ->whereIn('id', function ($query) use ($instance) {
-                                        $query->select('document_id')
-                                            ->from('process_task_item_answers')
-                                            ->where('process_instance_id', $instance->id)
-                                            ->whereNotNull('document_id');
-                                    })
+                                    ->whereIn('id', $documentIds)
                                     ->get();
 
                                 foreach ($documents as $doc) {
-                                    $absoluteDynamicPath = Storage::disk('public')->path($doc->file_path);
+                                    $absoluteDynamicPath = Storage::disk('public')->path($doc->document_url);
                                     if (file_exists($absoluteDynamicPath)) {
                                         $message->attach($absoluteDynamicPath, [
                                             'as' => $doc->name ?: 'documento_'.$doc->id,
-                                            'mime' => $doc->mime_type,
                                         ]);
                                     }
                                 }
@@ -193,12 +192,11 @@ class ProcessTaskExecutionObserver
                     } else {
                         $instance->update(['status' => 'suspended']);
 
-                        ProcessInstanceLog::create([
-                            'process_instance_id' => $instance->id,
-                            'user_id' => 0,
-                            'event' => 'validation_failed',
-                            'payload' => ['error' => $errorMessage],
-                        ]);
+                        activity('bpm')
+                            ->performedOn($instance)
+                            ->event('validation_failed')
+                            ->withProperties(['error' => $errorMessage])
+                            ->log($errorMessage);
                         // Il task rimane appeso e non si genera la answer
                     }
                     break;

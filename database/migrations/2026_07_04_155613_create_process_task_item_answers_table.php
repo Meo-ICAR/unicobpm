@@ -13,8 +13,10 @@ return new class extends Migration
             $table->foreignId('process_instance_id')->constrained('process_instances')->cascadeOnDelete();
             $table->foreignId('process_task_item_id')->constrained('process_task_items')->cascadeOnDelete();
 
-            // DMS Link: se l\'azione è un upload, punta al file salvato centralmente
-            $table->foreignId('document_id')->nullable()->constrained('documents')->nullOnDelete();
+            // DMS Link: se l'azione è un upload, punta al file salvato centralmente.
+            // "documents" vive su un database separato (connessione mysql_unicooam), quindi qui
+            // teniamo solo l'ID senza vincolo di chiave esterna (non referenziabile cross-database).
+            $table->unsignedBigInteger('document_id')->nullable()->index();
 
             // Valori generici di risposta
             $table->boolean('value_boolean')->nullable();

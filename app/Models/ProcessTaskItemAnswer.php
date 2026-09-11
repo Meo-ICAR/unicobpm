@@ -2,9 +2,12 @@
 
 namespace App\Models;
 
+use App\Observers\ProcessTaskItemAnswerObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+#[ObservedBy(ProcessTaskItemAnswerObserver::class)]
 class ProcessTaskItemAnswer extends Model
 {
     protected $fillable = [

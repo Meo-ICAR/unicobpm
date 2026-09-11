@@ -2,21 +2,21 @@
 
 namespace App\Filament\Actions;
 
+use App\Models\BusinessFunction;
 use App\Models\Process;
 use App\Models\ProcessInstance;
 use App\Models\ProcessTaskExecution;
-use App\Models\User; // Assicurati di importare il modello User o chi contiene la relazione con le funzioni
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
 class StartProcessAction
 {
-    public function execute(Model $subject, int $processId): ProcessInstance
+    public function execute(?Model $subject, int $processId): ProcessInstance
     {
         return DB::transaction(function () use ($subject, $processId) {
 
             $process = Process::with(['tasks' => function ($q) {
-                $q->orderBy('order');
+                $q->orderBy('ordine');
             }])->findOrFail($processId);
 
             $firstTask = $process->tasks->first();
@@ -29,15 +29,13 @@ class StartProcessAction
             if ($firstTask) {
                 // Recuperiamo la funzione aziendale "Responsible (R)" impostata per questo task
                 $responsibleAssignment = $firstTask->raciAssignments()
-                    ->where('role_type', 'responsible')
+                    ->where('raci_role', 'R')
                     ->first();
 
                 if ($responsibleAssignment) {
                     // Cerchiamo quanti utenti appartengono a questa specifica funzione aziendale
-                    // (Adatta questa query alla tua relazione, es: raggruppamento per business_function_id)
-                    $usersInFunction = User::whereHas('business_functions', function ($q) use ($responsibleAssignment) {
-                        $q->where('business_functions.id', $responsibleAssignment->business_function_id);
-                    })->get();
+                    $usersInFunction = BusinessFunction::find($responsibleAssignment->business_function_id)
+                        ?->loginUsers() ?? collect();
 
                     // SE C'È UN SOLO UTENTE, LO ASSEGNIAMO DIRETTAMENTE
                     if ($usersInFunction->count() === 1) {
@@ -56,7 +54,7 @@ class StartProcessAction
                 'subject_type' => $subject ? get_class($subject) : null,
                 'subject_id' => $subject ? $subject->getKey() : null,
 
-                'company_id' => $subject->company_id ?? null,
+                'company_id' => $subject?->company_id,
                 'status' => 'in_progress',
                 'current_task_id' => $firstTask ? $firstTask->id : null,
                 'current_assignee_type' => $autoAssigneeType,

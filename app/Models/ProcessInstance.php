@@ -2,13 +2,18 @@
 
 namespace App\Models;
 
+use App\Observers\ProcessInstanceObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Spatie\Activitylog\Models\Activity;
 
+#[ObservedBy(ProcessInstanceObserver::class)]
 class ProcessInstance extends Model
 {
     /**
@@ -74,7 +79,7 @@ class ProcessInstance extends Model
 
     /**
      * L'assegnatario polimorfo attuale che ha preso in carico il task
-     * (es: App\Models\Employee o App\Models\Consultant che stanno lavorando la pratica)
+     * (es: App\Models\Employee o App\Models\Client che stanno lavorando la pratica)
      */
     public function currentAssignee(): MorphTo
     {
@@ -139,6 +144,24 @@ class ProcessInstance extends Model
         return $this->hasMany(ChecklistAnswer::class, 'process_instance_id');
     }
 
+    /**
+     * Cronologia degli eventi di audit registrati per questa pratica
+     * (alizharb/filament-activity-log, basato su spatie/laravel-activitylog).
+     */
+    public function logs(): MorphMany
+    {
+        return $this->morphMany(Activity::class, 'subject');
+    }
+
+    /**
+     * Tutte le risposte alle azioni dei task (upload documenti, email automatiche, ecc.)
+     * fornite finora nel corso di questa pratica.
+     */
+    public function taskItemAnswers(): HasMany
+    {
+        return $this->hasMany(ProcessTaskItemAnswer::class);
+    }
+
     // =========================================================================
     // RELAZIONI VERSO LE ESECUZIONI DEI TASK
     // =========================================================================
@@ -164,25 +187,8 @@ class ProcessInstance extends Model
     }
 
     /**
-     * Scope per filtrare solo le pratiche che l'utente può prendere in carico (RACI - Responsible).
-     */
-    public function scopeInCodaPerUtente(Builder $query, Model $user): Builder
-    {
-        return $query->where('status', 'in_progress')
-            ->whereNull('current_assignee_id') // Devono essere libere in coda
-            ->whereHas('currentTask.raciAssignments', function ($q) use ($user) {
-                // Modifica questa logica in base a come associ la RACI (ruoli, reparti, permessi)
-                // Esempio: Il task richiede una specifica funzione aziendale che l'utente possiede
-                $q->where('role_type', 'responsible')
-                    ->whereIn('business_function_id', $user->business_functions->pluck('id'));
-
-                // Oppure se usi Spatie Permission:
-                // ->whereIn('permission_name', $user->getAllPermissions()->pluck('name'));
-            });
-    }
-
-    /**
      * Helper per verificare al volo se un singolo record è prendibile dall'utente
+     * (stessa logica di scopeWhereCanBeClaimedBy applicata a un'istanza già caricata).
      */
     public function canBeClaimedBy(Model $user): bool
     {
@@ -190,10 +196,11 @@ class ProcessInstance extends Model
             return false;
         }
 
-        // Ripete la stessa logica dello scope per il singolo record
+        $userBusinessFunctionIds = $user->businessFunctions()->pluck('business_functions.id');
+
         return $this->currentTask?->raciAssignments()
-            ->where('role_type', 'responsible')
-            ->whereIn('business_function_id', $user->business_functions->pluck('id'))
+            ->where('raci_role', 'R')
+            ->whereIn('business_function_id', $userBusinessFunctionIds)
             ->exists() ?? false;
     }
 }
