@@ -225,8 +225,17 @@ descritto al punto 5 di §8.
 `database/seeders/` fornisce dati demo/di riferimento per il motore BPM (non anagrafiche esterne, che
 restano di competenza di `proforma`/`mysql_unicooam`). Ordine di esecuzione in `DatabaseSeeder` rispetta
 le dipendenze: anagrafiche di base (DocumentType, BusinessFunction, Checklist, Process) → dipendenze di
-primo livello (ProcessTask, ChecklistItem) → RACI → `BpmDesignSeeder` (demo end-to-end completa di un
-intero processo con task/RACI/checklist item collegati).
+primo livello (ProcessTask, ChecklistItem) → RACI → processi completi (task + RACI + azioni):
+`BpmDesignSeeder` (Onboarding Nuovo Agente) e `CreditBrokerProcessesSeeder` (AML, Trasparenza, OAM,
+Istruttoria Pratica di Finanziamento — i processi operativi tipici di un mediatore creditizio).
+
+**Attenzione alle collisioni tra seeder sullo stesso processo**: `ProcessTaskSeeder` +
+`ProcessTaskRaciSeeder` seminano già i primi due task (ordine 10/20) di `PRC-AML` con una matrice RACI a
+4 ruoli; `CreditBrokerProcessesSeeder::seedAmlProcess()` aggiunge solo il terzo step (ordine 30) senza
+toccare quelli — un `updateOrCreate` chiave su `(process_id, ordine)` scritto da due seeder diversi sullo
+stesso `ordine` sovrascrive silenziosamente dati dell'altro (è successo in fase di sviluppo: un RACI
+`C` è stato riscritto a `R` per errore). Prima di aggiungere task a un processo già seminato altrove,
+verificare quali `ordine` sono già occupati.
 
 Tutti i seeder BPM sono scritti per essere **idempotenti** (`updateOrCreate`/`firstOrCreate` con una
 chiave naturale — `code`, o `process_id`+`ordine` dove non esiste un `code`): rieseguire

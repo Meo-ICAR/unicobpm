@@ -74,8 +74,9 @@ class DatabaseSeeder extends Seeder
             // 3. Dipendenze di secondo livello
             ProcessTaskRaciSeeder::class, // Necessita di ProcessTask e BusinessFunction
 
-            // 4. Demo end-to-end (processo + task + RACI + checklist item, tutto in un unico processo)
-            BpmDesignSeeder::class,
+            // 4. Processi completi (task + RACI + azioni) tipici di un mediatore creditizio
+            BpmDesignSeeder::class, // Onboarding Nuovo Agente
+            CreditBrokerProcessesSeeder::class, // AML, Trasparenza, OAM, Istruttoria Finanziamento
         ]);
     }
 }
