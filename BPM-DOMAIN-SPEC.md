@@ -3,7 +3,7 @@
 > Documento di riferimento per chi (persona o agente AI) lavora su questo codebase.
 > Nasce da una rianalisi approfondita del codice esistente: ogni convenzione riportata qui è stata
 > **verificata contro lo schema reale del database**, non dedotta dai soli commenti nel codice (che in
-> più punti si sono rivelati disallineati dallo schema effettivo — vedi §9). Tenerlo aggiornato quando
+> più punti si sono rivelati disallineati dallo schema effettivo — vedi §7). Tenerlo aggiornato quando
 > cambia lo schema o si risolvono i problemi aperti.
 
 ## 1. Cos'è questa applicazione
@@ -77,9 +77,10 @@ prima della rianalisi):
   `cancelled`, `suspended`** (mai `running` — non è nell'enum e genererebbe un errore SQL).
 - Stato esecuzione task (`process_task_executions.execution_status`, string): **`pending`, `in_progress`,
   `completed`, `rejected_and_rewinded`** (colonna `execution_status`, non `status`).
-- Ricorrenza processo (`processes`): flag **`is_periodic`** (mai `is_recurring`, non esiste), frequenza
-  **`recurrence_frequency`** + **`recurrence_day`** (mai `cron_expression`, colonna non presente in tabella
-  nonostante sia nel `$fillable` del model e referenziata in `routes/console.php` — vedi §9).
+- Ricorrenza processo (`processes`): flag **`is_periodic`** (mai `is_recurring`, non esiste); due
+  meccanismi complementari di innesco: **`recurrence_frequency`** + **`recurrence_day`** per la
+  ricorrenza a calendario, **`cron_expression`** per l'innesco basato su condizioni valutate
+  periodicamente (vedi §7).
 - Filtri dinamici sul modello target di un processo: **`trigger_filters`** (mai `target_filters`).
 
 ## 4. Motore di scheduling
@@ -153,27 +154,27 @@ Prima di scrivere codice che coinvolge dati su `proforma` o `mysql_unicooam`:
   su `Client`/`Fornitore`.
 - Ledger delle migration disallineato dal DB reale (tabelle esistenti ma non registrate) e foreign key
   cross-database verso `documents`/`document_types`: sistemati.
-- `Consultant` (model mai esistito) sostituito con `Client` ovunque referenziato.
+- `Consultant` (model mai esistito) sostituito con `Client` ovunque referenziato: **`Client` è la
+  tipologia "consulente esterno" coinvolta nelle attività RACI** (confermato) — non serve un model
+  separato.
 - Audit log migrato da model custom a `alizharb/filament-activity-log`.
 - `BpmSchedulerCommand` usava `is_recurring` invece di `is_periodic`.
-
-### Aperti — da decidere, non ancora corretti
-- **`routes/console.php` referenzia `processes.cron_expression`**, colonna che non esiste nello schema
-  (il campo reale per la ricorrenza è `recurrence_frequency`/`recurrence_day`, già gestito da
-  `BpmSchedulerCommand`). Il blocco è avvolto in try/catch quindi non causa crash, ma è codice morto che
-  genera un warning nei log ad ogni boot di `artisan`. Decidere se: (a) aggiungere davvero la colonna e
-  un flusso cron-per-processo parallelo a quello a frequenza fissa, o (b) rimuovere il blocco perché
-  ridondante con `bpm:run-scheduler`.
-- **`Process.target_filters` non esiste** (`ExecutePeriodicProcessJob` lo legge per filtrare i soggetti;
-  la colonna reale è `trigger_filters`) — il filtro per stato sui soggetti target non è mai applicato.
-- **`ProcessInstance.title`** viene scritto da `ExecutePeriodicProcessJob` e `DataAnomalyWatchdogJob` ma
-  non esiste come colonna — se quei path venissero eseguiti, fallirebbero. Decidere se aggiungere la
-  colonna o rimuovere il campo dai payload.
+- **`processes.cron_expression`**: colonna aggiunta via migration. Il suo scopo (confermato) è valutare
+  periodicamente delle condizioni (es. presenza/valore di un campo, tramite `trigger_field`/
+  `trigger_state`/`trigger_value`/`trigger_filters` già esistenti sul model `Process`) per scatenare
+  l'avvio del processo — un meccanismo complementare a `recurrence_frequency`/`recurrence_day`, non un
+  duplicato. Il blocco in `routes/console.php` che la usa ora funziona (`Schedule::job(...)->cron(...)`
+  per ogni processo con `cron_expression` valorizzato). **Nota**: la valutazione delle condizioni di
+  trigger al momento dell'esecuzione non è ancora implementata in `ExecutePeriodicProcessJob` — il job
+  oggi crea comunque le istanze per tutti i soggetti che passano `trigger_filters`, senza controllare
+  `trigger_field`/`trigger_state`/`trigger_value` per singolo soggetto. Se serve quel controllo puntuale,
+  va aggiunto esplicitamente.
+- **`Process.target_filters` → `trigger_filters`**: corretto in `ExecutePeriodicProcessJob`.
+- **`ProcessInstance.title`**: colonna aggiunta via migration (nullable, per le pratiche senza soggetto
+  polimorfo) e inclusa nel `$fillable` del model.
 - **`ProcessTask.days_to_complete`** letto da `StartProcessAction` per calcolare `due_at`, ma non è né
-  in `$fillable` né in migration — oggi `due_at` è sempre `null`.
-- **`Consultant`** come tipologia di operatore non è mai stata implementata come model separato: è stata
-  sostituita ovunque con `Client` nei form Filament. Se il dominio richiede davvero una terza tipologia
-  di operatore (consulente esterno diverso da dipendente/cliente), va progettata come model a parte.
+  in `$fillable` né in migration — oggi `due_at` è sempre `null`. Non ancora risolto: aggiungere la
+  colonna se il calcolo scadenza per task è una funzionalità voluta.
 - **`bpm:send-reminders`/`bpm:read-emails`**: mancano `App\Mail\ReminderDocumentsMail`, la route pubblica
   firmata `public.process.upload` (con relativo controller/vista), e `config/imap.php`. Funzionalità
   intenzionalmente non completate durante la rianalisi per non indovinare uno schema di upload pubblico
@@ -218,3 +219,24 @@ copertura reale del motore BPM. Prima di qualunque refactoring futuro su `StartP
 una pratica (con e senza soggetto), avanzamento al task successivo, rigetto per KO su checklist,
 raggiungimento del completamento pratica. Al momento l'unica rete di sicurezza è lo smoke test manuale
 descritto al punto 5 di §8.
+
+## 10. Seeders
+
+`database/seeders/` fornisce dati demo/di riferimento per il motore BPM (non anagrafiche esterne, che
+restano di competenza di `proforma`/`mysql_unicooam`). Ordine di esecuzione in `DatabaseSeeder` rispetta
+le dipendenze: anagrafiche di base (DocumentType, BusinessFunction, Checklist, Process) → dipendenze di
+primo livello (ProcessTask, ChecklistItem) → RACI → `BpmDesignSeeder` (demo end-to-end completa di un
+intero processo con task/RACI/checklist item collegati).
+
+Tutti i seeder BPM sono scritti per essere **idempotenti** (`updateOrCreate`/`firstOrCreate` con una
+chiave naturale — `code`, o `process_id`+`ordine` dove non esiste un `code`): rieseguire
+`php artisan db:seed` non deve mai duplicare righe. Verificato eseguendo l'intera catena due volte di
+seguito e confrontando i conteggi. Se si aggiunge un nuovo seeder BPM, mantenere questa proprietà: mai
+`DB::table(...)->insert()` con ID hardcoded, mai `->create()`/`->createMany()` senza un controllo di
+unicità a monte.
+
+`ChecklistAnswerSeeder` e `VendorOnboardingProcessSeeder` sono stati **rimossi**: il primo inseriva dati
+transazionali (risposte a una pratica specifica) come se fossero dati di riferimento statici, con colonne
+che non esistono nello schema attuale; il secondo referenziava model (`Company`, `PrivacyDataType`) e
+colonne (`company_id` su `processes`/`process_tasks`/`checklists`, `sequence_number`, `instruction`, ecc.)
+che non sono mai esistiti in questo codebase — probabilmente residuo di un altro template/esperimento.

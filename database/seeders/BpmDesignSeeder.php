@@ -22,19 +22,23 @@ class BpmDesignSeeder extends Seeder
         // 2. Creazione del Modulo (Checklist) Antiriciclaggio
         $checklist = Checklist::firstOrCreate(['name' => 'Questionario Antiriciclaggio (AML)']);
 
-        $checklist->items()->createMany([
+        $checklist->items()->updateOrCreate(
+            ['checklist_id' => $checklist->id, 'item_code' => 'agent_is_pep'],
             [
                 'label' => 'Il soggetto è una Persona Politicamente Esposta (PEP)?',
                 'type' => 'boolean',
                 'is_knockout' => true, // Se true e si risponde 'Sì/Vero' in modo non conforme (gestito via logica), blocca tutto
-            ],
+            ]
+        );
+
+        $checklist->items()->updateOrCreate(
+            ['checklist_id' => $checklist->id, 'item_code' => 'agent_risk_score'],
             [
                 'label' => 'Punteggio di rischio calcolato',
                 'type' => 'number',
-                'trigger_model' => 'App\Models\Agent',
                 'trigger_field' => 'risk_score',
-            ],
-        ]);
+            ]
+        );
 
         // 3. Creazione del Macro-Processo
         $process = Process::firstOrCreate(
@@ -43,76 +47,103 @@ class BpmDesignSeeder extends Seeder
         );
 
         // --- TASK 1: Raccolta Documenti Iniziali ---
-        $task1 = $process->tasks()->create([
-            'name' => 'Raccolta Documentazione',
-            'ordine' => 10,
-            'has_reminders' => true,
-            'reminder_interval_days' => 2,
-            'max_reminders' => 3,
-        ]);
+        $task1 = $process->tasks()->updateOrCreate(
+            ['process_id' => $process->id, 'ordine' => 10],
+            [
+                'name' => 'Raccolta Documentazione',
+                'has_reminders' => true,
+                'reminder_interval_days' => 2,
+                'max_reminders' => 3,
+            ]
+        );
 
         // RACI per Task 1 (La Compliance supervisiona, non ci lavora attivamente)
-        $task1->raci()->create(['business_function_id' => $complianceDept->id, 'raci_role' => 'A']); // Accountable
+        if ($complianceDept) {
+            $task1->raciAssignments()->updateOrCreate(
+                ['business_function_id' => $complianceDept->id],
+                ['raci_role' => 'A'] // Accountable
+            );
+        }
 
-        $task1->items()->createMany([
+        $task1->processTaskItems()->updateOrCreate(
+            ['process_task_id' => $task1->id, 'ordine' => 1],
             [
                 'name' => 'Caricamento Carta Identità',
-                'ordine' => 1,
                 'action_type' => 'document_upload',
-                'document_type_id' => $ciType->id,
+                'document_type_id' => $ciType?->id,
                 'is_required' => true,
-            ],
+            ]
+        );
+
+        $task1->processTaskItems()->updateOrCreate(
+            ['process_task_id' => $task1->id, 'ordine' => 2],
             [
                 'name' => 'Caricamento Visura Camerale',
-                'ordine' => 2,
                 'action_type' => 'document_upload',
-                'document_type_id' => $visuraType->id,
+                'document_type_id' => $visuraType?->id,
                 'is_required' => true,
-            ],
-        ]);
+            ]
+        );
 
         // --- TASK 2: Controllo Compliance e Antiriciclaggio ---
-        $task2 = $process->tasks()->create([
-            'name' => 'Valutazione Compliance e AML',
-            'ordine' => 20,
-            'has_reminders' => false,
-        ]);
+        $task2 = $process->tasks()->updateOrCreate(
+            ['process_id' => $process->id, 'ordine' => 20],
+            [
+                'name' => 'Valutazione Compliance e AML',
+                'has_reminders' => false,
+            ]
+        );
 
         // RACI per Task 2 (L'Ufficio Compliance DEVE lavorarlo)
-        $task2->raci()->create(['business_function_id' => $complianceDept->id, 'raci_role' => 'R']); // Responsible
+        if ($complianceDept) {
+            $task2->raciAssignments()->updateOrCreate(
+                ['business_function_id' => $complianceDept->id],
+                ['raci_role' => 'R'] // Responsible
+            );
+        }
 
-        $task2->items()->createMany([
+        $task2->processTaskItems()->updateOrCreate(
+            ['process_task_id' => $task2->id, 'ordine' => 1],
             [
                 'name' => 'Compila Modulo AML',
-                'ordine' => 1,
                 'action_type' => 'fill_checklist',
                 // N.B. In un'architettura completa, qui potresti aggiungere una colonna 'checklist_id' a process_task_items
                 // oppure gestirlo tramite logica. Assumiamo che la action fill_checklist usi un campo di configurazione.
                 'is_required' => true,
-            ],
+            ]
+        );
+
+        $task2->processTaskItems()->updateOrCreate(
+            ['process_task_id' => $task2->id, 'ordine' => 2],
             [
                 'name' => 'Note di valutazione (Opzionali)',
-                'ordine' => 2,
                 'action_type' => 'text_input',
                 'is_required' => false,
-            ],
-        ]);
+            ]
+        );
 
         // --- TASK 3: Creazione Utenze (System Task / Automazione) ---
-        $task3 = $process->tasks()->create([
-            'name' => 'Generazione Credenziali IT',
-            'ordine' => 30,
-        ]);
+        $task3 = $process->tasks()->updateOrCreate(
+            ['process_id' => $process->id, 'ordine' => 30],
+            ['name' => 'Generazione Credenziali IT']
+        );
 
         // RACI per Task 3 (Dipartimento IT è responsabile, ma è un'azione automatica)
-        $task3->raci()->create(['business_function_id' => $itDept->id, 'raci_role' => 'R']);
+        if ($itDept) {
+            $task3->raciAssignments()->updateOrCreate(
+                ['business_function_id' => $itDept->id],
+                ['raci_role' => 'R']
+            );
+        }
 
-        $task3->items()->create([
-            'name' => 'Provisioning Account Agente',
-            'ordine' => 1,
-            'action_type' => 'system_task',
-            'handler_job' => 'App\Jobs\ProvisionAgentAccountJob',
-            'is_required' => true,
-        ]);
+        $task3->processTaskItems()->updateOrCreate(
+            ['process_task_id' => $task3->id, 'ordine' => 1],
+            [
+                'name' => 'Provisioning Account Agente',
+                'action_type' => 'system_task',
+                'handler_job' => 'App\Jobs\ProvisionAgentAccountJob',
+                'is_required' => true,
+            ]
+        );
     }
 }

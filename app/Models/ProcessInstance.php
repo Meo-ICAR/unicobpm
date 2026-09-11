@@ -28,6 +28,7 @@ class ProcessInstance extends Model
         'process_id',
         'subject_type',
         'subject_id',
+        'title',
         'current_assignee_type',
         'current_assignee_id',
         'company_id',

@@ -2,39 +2,46 @@
 
 namespace Database\Seeders;
 
-use Carbon\Carbon;
+use App\Models\BusinessFunction;
+use App\Models\Process;
+use App\Models\ProcessTask;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 
 class ProcessTaskSeeder extends Seeder
 {
     public function run(): void
     {
-        $now = Carbon::now();
+        $process = Process::where('code', 'PRC-AML')->first();
+        $ctrlAml = BusinessFunction::where('code', 'CTRL-AML')->first();
+
+        if (! $process || ! $ctrlAml) {
+            $this->command?->warn('ProcessTaskSeeder: prerequisiti mancanti (ProcessSeeder/BusinessFunctionSeeder), skip.');
+
+            return;
+        }
 
         $tasks = [
             [
-                'id' => 1,
                 'code' => 'aml-check-completeness',
                 'name' => 'Verifica Completezza Documentale AML',
                 'description' => 'Controllo preliminare sui documenti di identità, visure e moduli di adeguata verifica.',
-                'process_id' => 1,
-                'business_function_id' => 10, // Collegato a CTRL-AML
-                'created_at' => $now,
-                'updated_at' => $now,
+                'ordine' => 10,
+                'business_function_id' => $ctrlAml->id,
             ],
             [
-                'id' => 2,
                 'code' => 'aml-risk-evaluation',
                 'name' => 'Valutazione Rischio Cliente',
                 'description' => 'Calcolo e attribuzione della fascia di rischio per l\'adeguata verifica (Semplificata, Ordinaria, Rafforzata).',
-                'process_id' => 1,
-                'business_function_id' => 10, // Collegato a CTRL-AML
-                'created_at' => $now,
-                'updated_at' => $now,
+                'ordine' => 20,
+                'business_function_id' => $ctrlAml->id,
             ],
         ];
 
-        DB::table('process_tasks')->insert($tasks);
+        foreach ($tasks as $task) {
+            ProcessTask::updateOrCreate(
+                ['process_id' => $process->id, 'code' => $task['code']],
+                $task + ['process_id' => $process->id]
+            );
+        }
     }
 }

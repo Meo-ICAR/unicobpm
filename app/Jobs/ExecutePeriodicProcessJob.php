@@ -49,8 +49,8 @@ class ExecutePeriodicProcessJob implements ShouldQueue
 
         // 2. Selezione dei soggetti (es. Clienti)
         $query = $targetClass::query();
-        if (! empty($process->target_filters['status'])) {
-            $query->where('status', $process->target_filters['status']);
+        if (! empty($process->trigger_filters['status'])) {
+            $query->where('status', $process->trigger_filters['status']);
         }
         $subjects = $query->get();
 

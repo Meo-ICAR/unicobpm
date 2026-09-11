@@ -61,30 +61,21 @@ class DatabaseSeeder extends Seeder
         }
 
         $this->call([
+            // 1. Anagrafiche di base (nessuna Foreign Key)
             DocumentTypeSeeder::class,
             BusinessFunctionSeeder::class,
-            BpmDesignSeeder::class,
-
-            // Opzionale: aggiungi qui un eventuale UserSeeder
-            // per creare gli amministratori di test
-
-            /*
-            // 1. Anagrafiche di base (nessuna Foreign Key)
-            //  CompanySeeder::class,
             ChecklistSeeder::class,
             ProcessSeeder::class,
-            BusinessFunctionSeeder::class,
 
             // 2. Dipendenze di primo livello
-            ProcessTaskSeeder::class,          // Necessita di Processes e BusinessFunctions
+            ProcessTaskSeeder::class, // Necessita di Process e BusinessFunction
+            ChecklistItemSeeder::class, // Necessita di Checklist
 
             // 3. Dipendenze di secondo livello
-            ProcessTaskRaciSeeder::class,      // Necessita di ProcessTasks e BusinessFunctions
-            ChecklistItemSeeder::class,        // Necessita di Checklists, ProcessTasks e BusinessFunctions
+            ProcessTaskRaciSeeder::class, // Necessita di ProcessTask e BusinessFunction
 
-            // 4. Dipendenze finali (Tabelle pivot o di risposta)
-            // ChecklistAnswerSeeder::class,      // Necessita di ChecklistAnswers e ChecklistItems - DISABILITATO fino a migration completa
-            */
+            // 4. Demo end-to-end (processo + task + RACI + checklist item, tutto in un unico processo)
+            BpmDesignSeeder::class,
         ]);
     }
 }

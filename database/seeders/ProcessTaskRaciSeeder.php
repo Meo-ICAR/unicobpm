@@ -2,57 +2,44 @@
 
 namespace Database\Seeders;
 
-use Carbon\Carbon;
+use App\Models\BusinessFunction;
+use App\Models\ProcessTask;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 
 class ProcessTaskRaciSeeder extends Seeder
 {
     public function run(): void
     {
-        $now = Carbon::now();
+        $task = ProcessTask::where('code', 'aml-check-completeness')->first();
 
-        // Esempio: Per il task "Verifica Completezza Documentale AML" (id 1)
-        // R (Responsible): Esecutore materiale (es. Back Office)
-        // A (Accountable): Chi ne risponde alla fine (es. Responsabile AML)
-        // C (Consulted): Chi viene consultato (es. Compliance)
-        // I (Informed): Chi viene informato (es. Direzione)
+        if (! $task) {
+            $this->command?->warn('ProcessTaskRaciSeeder: task "aml-check-completeness" non trovato (esegui prima ProcessTaskSeeder), skip.');
 
-        $raciAssignments = [
-            [
-                'process_task_id' => 1, // Verifica Completezza Documentale AML
-                'business_function_id' => 5, // BUS-BO (Back Office)
-                'raci_role' => 'R',
-                'notes' => 'Esegue materialmente la raccolta e il controllo documentale di base',
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-            [
-                'process_task_id' => 1,
-                'business_function_id' => 10, // CTRL-AML (Antiriciclaggio)
-                'raci_role' => 'A',
-                'notes' => 'Approva in via definitiva l\'adeguatezza del fascicolo',
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-            [
-                'process_task_id' => 1,
-                'business_function_id' => 4, // BUS-RETE-EXT (Agenti)
-                'raci_role' => 'C',
-                'notes' => 'Fornisce chiarimenti sul cliente in caso di documenti mancanti',
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-            [
-                'process_task_id' => 1,
-                'business_function_id' => 9, // CTRL-COMPL (Compliance)
-                'raci_role' => 'I',
-                'notes' => 'Viene informata tramite report mensile sulle anomalie documentali',
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
+            return;
+        }
+
+        // R (Responsible): esecutore materiale (Back Office)
+        // A (Accountable): chi ne risponde alla fine (Controllo Antiriciclaggio)
+        // C (Consulted): chi viene consultato (Rete Agenti Esterna)
+        // I (Informed): chi viene informato (Controllo Compliance)
+        $assignments = [
+            ['code' => 'BUS-BO', 'raci_role' => 'R', 'notes' => 'Esegue materialmente la raccolta e il controllo documentale di base'],
+            ['code' => 'CTRL-AML', 'raci_role' => 'A', 'notes' => 'Approva in via definitiva l\'adeguatezza del fascicolo'],
+            ['code' => 'BUS-RETE-EXT', 'raci_role' => 'C', 'notes' => 'Fornisce chiarimenti sul cliente in caso di documenti mancanti'],
+            ['code' => 'CTRL-COMPL', 'raci_role' => 'I', 'notes' => 'Viene informata tramite report mensile sulle anomalie documentali'],
         ];
 
-        DB::table('process_task_raci')->insert($raciAssignments);
+        foreach ($assignments as $assignment) {
+            $businessFunction = BusinessFunction::where('code', $assignment['code'])->first();
+
+            if (! $businessFunction) {
+                continue;
+            }
+
+            $task->raciAssignments()->updateOrCreate(
+                ['business_function_id' => $businessFunction->id],
+                ['raci_role' => $assignment['raci_role'], 'notes' => $assignment['notes']]
+            );
+        }
     }
 }
