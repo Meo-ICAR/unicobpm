@@ -155,5 +155,58 @@ class BpmDesignSeeder extends Seeder
                 'is_required' => true,
             ]
         );
+
+        $this->seedAgentOffboarding($complianceDept, $itDept);
+    }
+
+    /**
+     * Processo speculare all'Onboarding: un agente con mandato attivo
+     * (stipulated_at valorizzato, dismissed_at ancora vuoto) può essere
+     * offboardato; al completamento, valorizziamo dismissed_at.
+     */
+    private function seedAgentOffboarding(?BusinessFunction $complianceDept, ?BusinessFunction $itDept): void
+    {
+        $process = Process::firstOrCreate(
+            ['code' => 'AGENT_OFFBOARDING', 'version' => 1],
+            ['name' => 'Offboarding Agente', 'is_active' => true]
+        );
+
+        $process->update([
+            'target_model' => 'fornitore',
+            'trigger_field' => 'stipulated_at',
+            'trigger_state' => 'filled',
+            'exclude_field' => 'dismissed_at',
+            'exclude_state' => 'filled',
+            'completion_write_field' => 'dismissed_at',
+            'completion_write_value' => 'now',
+        ]);
+
+        $task1 = $process->tasks()->updateOrCreate(
+            ['process_id' => $process->id, 'ordine' => 10],
+            ['name' => 'Riconsegna Materiali e Revoca Accessi']
+        );
+
+        if ($complianceDept) {
+            $task1->raciAssignments()->updateOrCreate(
+                ['business_function_id' => $complianceDept->id],
+                ['raci_role' => 'A']
+            );
+        }
+
+        if ($itDept) {
+            $task1->raciAssignments()->updateOrCreate(
+                ['business_function_id' => $itDept->id],
+                ['raci_role' => 'R']
+            );
+        }
+
+        $task1->processTaskItems()->updateOrCreate(
+            ['process_task_id' => $task1->id, 'ordine' => 1],
+            [
+                'name' => 'Conferma Revoca Accessi e Credenziali',
+                'action_type' => 'text_input',
+                'is_required' => true,
+            ]
+        );
     }
 }
