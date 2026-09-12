@@ -14,7 +14,9 @@ return new class extends Migration
 
             // Il soggetto della pratica (es: l\'Agente Rossi). Nullable perché i processi interni/ricorrenti
             // (StartProcessAction con $subject = null) creano pratiche senza un soggetto polimorfo specifico.
-            $table->nullableMorphs('subject');
+            // UUID e non bigint: i modelli soggetto reali (Fornitore, Clienti, Client) usano tutti chiavi
+            // primarie UUID (HasUuids), non ID auto-incrementanti.
+            $table->nullableUuidMorphs('subject');
 
             // Coda di lavoro: Chi ha preso in carico la pratica (Employer o Consultant)
             $table->nullableMorphs('current_assignee', 'assignee_index');
