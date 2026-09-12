@@ -26,6 +26,7 @@ class Process extends Model
         'exclude_value',
         'completion_write_field',
         'completion_write_value',
+        'completion_write_app',
         'last_activated_at',
         'next_run_at',
     ];

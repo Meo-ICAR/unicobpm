@@ -54,6 +54,7 @@ class BpmDesignSeeder extends Seeder
             'exclude_state' => 'filled',
             'completion_write_field' => 'stipulated_at',
             'completion_write_value' => 'now',
+            'completion_write_app' => 'unicoloan',
         ]);
 
         // --- TASK 1: Raccolta Documenti Iniziali ---
@@ -179,6 +180,7 @@ class BpmDesignSeeder extends Seeder
             'exclude_state' => 'filled',
             'completion_write_field' => 'dismissed_at',
             'completion_write_value' => 'now',
+            'completion_write_app' => 'unicoloan',
         ]);
 
         $task1 = $process->tasks()->updateOrCreate(

@@ -49,8 +49,27 @@ return [
         'url' => env('BPM_API_URL', 'https://unicobpm.hassisto.com'), // Il secondo parametro è un fallback
     ],
 
-    'unicoloan' => [
-        'url' => env('UNICOLOAN_API_URL', 'https://unicoloan.hassisto.com'),
+    /*
+    |--------------------------------------------------------------------------
+    | Applicativi esterni interrogabili/scrivibili da UnicoBPM
+    |--------------------------------------------------------------------------
+    |
+    | UnicoLoan e UnicoOAM sono due deploy dello stesso codebase che condividono
+    | gli stessi database (proforma, unicooam): entrambi espongono le stesse API
+    | generiche (/api/pratiche/{id}, /api/models/{model}/fields, /api/models/{model}/{id}).
+    | La configurazione di un Process (completion_write_app) o di un
+    | ProcessTaskItem 'blacklist_check' (config['app']) indica quale dei due
+    | interrogare/scrivere; il default applicato nel codice se non specificato
+    | è 'unicoloan'.
+    |
+    */
+    'apps' => [
+        'unicoloan' => [
+            'url' => env('UNICOLOAN_API_URL', 'https://unicoloan.hassisto.com'),
+        ],
+        'unicooam' => [
+            'url' => env('UNICOOAM_API_URL', 'https://unicooam.hassisto.com'),
+        ],
     ],
 
 ];

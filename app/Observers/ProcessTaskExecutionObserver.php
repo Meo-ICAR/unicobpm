@@ -6,6 +6,7 @@ use App\Models\BusinessFunction;
 use App\Models\Document;
 use App\Models\ProcessTaskExecution;
 use App\Models\ProcessTaskItemAnswer;
+use App\Services\ExternalAppResolver;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -39,12 +40,14 @@ use Illuminate\Support\Facades\Storage;
  * // In futuro puoi aggiungere: "max_length", "regex", "is_numeric", ecc.
  * }
  * * 3. action_type: 'blacklist_check'
- * Chiede a UnicoLoan (che possiede il dominio Pratica/blacklist agenti, mai
- * replicato qui) se l'agente della pratica è in blacklist per la banca
- * collegata. Se sì, sospende la pratica esattamente come 'validation_rule'.
+ * Chiede all'applicativo esterno indicato (che possiede il dominio
+ * Pratica/blacklist agenti, mai replicato qui) se l'agente della pratica è in
+ * blacklist per la banca collegata. Se sì, sospende la pratica esattamente
+ * come 'validation_rule'.
  * JSON config:
  * {
- * "pratica_id_field": "subject_id"  // (Opzionale, default "subject_id") campo di $instance da cui leggere l'ID pratica
+ * "pratica_id_field": "subject_id",  // (Opzionale, default "subject_id") campo di $instance da cui leggere l'ID pratica
+ * "app": "unicoloan"                 // (Opzionale, default "unicoloan") applicativo da interrogare — vedi config('services.apps')
  * }
  * * ========================================================================
  */
@@ -216,6 +219,7 @@ class ProcessTaskExecutionObserver
                 case 'blacklist_check':
                     $praticaIdField = $config['pratica_id_field'] ?? 'subject_id';
                     $praticaId = data_get($instance, $praticaIdField);
+                    $app = $config['app'] ?? ExternalAppResolver::DEFAULT_APP;
 
                     $blacklisted = false;
 
@@ -224,11 +228,11 @@ class ProcessTaskExecutionObserver
                             $response = Http::asJson()
                                 ->timeout(8)
                                 ->connectTimeout(4)
-                                ->get(rtrim((string) config('services.unicoloan.url'), '/')."/api/pratiche/{$praticaId}");
+                                ->get(app(ExternalAppResolver::class)->urlFor($app)."/api/pratiche/{$praticaId}");
 
                             $blacklisted = $response->successful() && $response->json('agente_blacklistato') === true;
                         } catch (\Throwable $e) {
-                            Log::warning("Task ID {$item->id}: verifica blacklist su UnicoLoan fallita per errore di rete.", [
+                            Log::warning("Task ID {$item->id}: verifica blacklist su {$app} fallita per errore di rete.", [
                                 'pratica_id' => $praticaId,
                             ]);
                         }

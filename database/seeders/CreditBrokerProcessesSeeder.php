@@ -131,6 +131,7 @@ class CreditBrokerProcessesSeeder extends Seeder
         $this->upsertItem($task2, 1, 'Conferma Trasmissione Pratica', 'text_input', null, true);
         $this->upsertItem($task2, 2, 'Verifica Blacklist Agente', 'blacklist_check', null, true, [
             'pratica_id_field' => 'subject_id',
+            'app' => 'unicoloan',
         ]);
 
         // Task in attesa dell'istituto finanziatore: dotato di regole di escalation per sollecitare

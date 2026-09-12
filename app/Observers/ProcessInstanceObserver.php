@@ -4,6 +4,10 @@ namespace App\Observers;
 
 use App\Models\ProcessInstance;
 use App\Models\ProcessTaskExecution;
+use App\Services\ExternalAppResolver;
+use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class ProcessInstanceObserver
 {
@@ -66,12 +70,12 @@ class ProcessInstanceObserver
     /**
      * Quando la pratica raggiunge lo stato 'completed': se il processo ha
      * `completion_write_field` configurato (es. 'stipulated_at' per
-     * l'Onboarding Agente, 'dismissed_at' per un futuro Offboarding), scrive
-     * quel campo sul soggetto della pratica. Il soggetto è un modello locale
-     * di UnicoBPM (es. Fornitore, sulla connessione `proforma` condivisa),
-     * non un concetto esterno come Pratica: per questi la scrittura diretta è
-     * coerente con l'accesso in lettura/scrittura che UnicoBPM ha già su
-     * quelle tabelle altrove (es. FornitoreResource).
+     * l'Onboarding Agente, 'dismissed_at' per l'Offboarding), chiede
+     * all'applicativo esterno indicato da `completion_write_app` (default
+     * 'unicoloan' — vedi config('services.apps')) di scrivere quel campo sul
+     * soggetto tramite la sua API generica di scrittura. UnicoBPM non accede
+     * mai direttamente al modello/tabella del soggetto per farlo, coerentemente
+     * con l'API già usata per il controllo blacklist su Pratica.
      */
     public function updated(ProcessInstance $instance): void
     {
@@ -81,20 +85,58 @@ class ProcessInstanceObserver
 
         $field = $instance->process?->completion_write_field;
 
-        if (empty($field) || ! $instance->subject) {
+        if (empty($field) || ! $instance->subject_type || ! $instance->subject_id) {
             return;
         }
 
+        // subject_type è la FQCN grezza (StartProcessAction usa get_class(), non il
+        // morph map), quindi risolviamo l'alias registrato senza toccare il DB.
+        $modelType = array_search($instance->subject_type, Relation::morphMap(), true) ?: null;
+
+        if (! $modelType) {
+            return;
+        }
+
+        $app = $instance->process->completion_write_app ?: ExternalAppResolver::DEFAULT_APP;
+        $appResolver = app(ExternalAppResolver::class);
+
         $value = $instance->process->completion_write_value === 'now'
-            ? now()
+            ? now()->toDateString()
             : $instance->process->completion_write_value;
 
-        $instance->subject->update([$field => $value]);
+        try {
+            $response = Http::asJson()
+                ->timeout(8)
+                ->connectTimeout(4)
+                ->patch("{$appResolver->urlFor($app)}/api/models/{$modelType}/{$instance->subject_id}", [
+                    'field' => $field,
+                    'value' => $value,
+                ]);
+
+            if ($response->failed()) {
+                Log::warning("Scrittura completamento su {$app} fallita.", [
+                    'model_type' => $modelType,
+                    'subject_id' => $instance->subject_id,
+                    'field' => $field,
+                    'status' => $response->status(),
+                ]);
+
+                return;
+            }
+        } catch (\Throwable $e) {
+            Log::warning("Scrittura completamento su {$app} fallita per errore di rete.", [
+                'model_type' => $modelType,
+                'subject_id' => $instance->subject_id,
+                'field' => $field,
+            ]);
+
+            return;
+        }
 
         activity('bpm')
             ->performedOn($instance)
             ->event('completion_field_written')
-            ->withProperties(['field' => $field, 'value' => (string) $value])
-            ->log("Scritto {$field} sul soggetto della pratica al completamento.");
+            ->withProperties(['field' => $field, 'value' => (string) $value, 'app' => $app])
+            ->log("Scritto {$field} sul soggetto della pratica al completamento (via API {$app}).");
     }
 }
