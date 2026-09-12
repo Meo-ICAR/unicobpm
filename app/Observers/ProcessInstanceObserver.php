@@ -62,4 +62,39 @@ class ProcessInstanceObserver
             ]);
         }
     }
+
+    /**
+     * Quando la pratica raggiunge lo stato 'completed': se il processo ha
+     * `completion_write_field` configurato (es. 'stipulated_at' per
+     * l'Onboarding Agente, 'dismissed_at' per un futuro Offboarding), scrive
+     * quel campo sul soggetto della pratica. Il soggetto è un modello locale
+     * di UnicoBPM (es. Fornitore, sulla connessione `proforma` condivisa),
+     * non un concetto esterno come Pratica: per questi la scrittura diretta è
+     * coerente con l'accesso in lettura/scrittura che UnicoBPM ha già su
+     * quelle tabelle altrove (es. FornitoreResource).
+     */
+    public function updated(ProcessInstance $instance): void
+    {
+        if (! $instance->wasChanged('status') || $instance->status !== 'completed') {
+            return;
+        }
+
+        $field = $instance->process?->completion_write_field;
+
+        if (empty($field) || ! $instance->subject) {
+            return;
+        }
+
+        $value = $instance->process->completion_write_value === 'now'
+            ? now()
+            : $instance->process->completion_write_value;
+
+        $instance->subject->update([$field => $value]);
+
+        activity('bpm')
+            ->performedOn($instance)
+            ->event('completion_field_written')
+            ->withProperties(['field' => $field, 'value' => (string) $value])
+            ->log("Scritto {$field} sul soggetto della pratica al completamento.");
+    }
 }

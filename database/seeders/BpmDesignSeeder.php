@@ -46,6 +46,16 @@ class BpmDesignSeeder extends Seeder
             ['name' => 'Onboarding Nuovo Agente', 'is_active' => true]
         );
 
+        // Un agente con 'stipulated_at' già valorizzato ha già un mandato attivo e non
+        // necessita di un nuovo onboarding; al completamento, valorizziamo quel campo.
+        $process->update([
+            'target_model' => 'fornitore',
+            'exclude_field' => 'stipulated_at',
+            'exclude_state' => 'filled',
+            'completion_write_field' => 'stipulated_at',
+            'completion_write_value' => 'now',
+        ]);
+
         // --- TASK 1: Raccolta Documenti Iniziali ---
         $task1 = $process->tasks()->updateOrCreate(
             ['process_id' => $process->id, 'ordine' => 10],
