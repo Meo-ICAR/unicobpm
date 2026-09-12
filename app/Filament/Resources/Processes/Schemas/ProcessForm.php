@@ -2,8 +2,10 @@
 
 namespace App\Filament\Resources\Processes\Schemas;
 
+use App\Models\Process;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\KeyValue;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -87,6 +89,20 @@ class ProcessForm
                         ->nullable()
                         ->placeholder('filled | empty | equals'),
                     TextInput::make('exclude_value')->nullable(),
+                ]),
+
+            Section::make('Record Eleggibili & Reminder')
+                ->columns(2)
+                ->schema([
+                    Placeholder::make('eligible_records_count')
+                        ->label('Record Eleggibili Oggi')
+                        ->content(fn (?Process $record): string => $record?->eligibleRecordsCount() !== null
+                            ? (string) $record->eligibleRecordsCount()
+                            : 'Non applicabile (nessun target_model configurato)'),
+                    Toggle::make('include_eligible_count_in_reminders')
+                        ->label('Includi il conteggio nei reminder')
+                        ->helperText("Se attivo, i solleciti inviati all'utente RACI responsabile riportano anche quanti record soddisfano oggi i criteri di questo processo.")
+                        ->inline(false),
                 ]),
 
             Section::make('Periodicità')

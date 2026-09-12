@@ -6,6 +6,7 @@ use App\Models\Client;
 use App\Models\Employee;
 use App\Models\ProcessTask;
 use App\Models\User;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\MorphToSelect;
@@ -171,6 +172,11 @@ class ProcessInstanceForm
                                 Section::make('Telemetria & Solleciti')
                                     ->compact()
                                     ->schema([
+
+                                        DatePicker::make('hard_deadline_at')
+                                            ->label('Data Tassativa di Termine (Facoltativa)')
+                                            ->helperText('Se impostata e superata mentre la pratica è ancora in lavorazione, genera un sollecito al responsabile RACI dello step corrente.')
+                                            ->native(false),
 
                                         TextInput::make('reminders_sent_count')
                                             ->label('Solleciti Inviati')

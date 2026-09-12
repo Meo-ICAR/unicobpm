@@ -31,6 +31,11 @@ class ProcessTaskExecutionForm
                     ->numeric()
                     ->default(0),
                 DateTimePicker::make('due_at'),
+                TextInput::make('mandatory_days_to_complete')
+                    ->label('Giorni Tassativi per il Completamento')
+                    ->helperText('Facoltativo: se impostato, sovrascrive la scadenza calcolata dal template del task.')
+                    ->numeric()
+                    ->nullable(),
                 TextInput::make('execution_status')
                     ->required()
                     ->default('completed'),

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Carbon;
 
 #[ObservedBy(ProcessTaskExecutionObserver::class)]
 class ProcessTaskExecution extends Model
@@ -23,6 +24,7 @@ class ProcessTaskExecution extends Model
         'completed_at',
         'escalation_level',
         'due_at',
+        'mandatory_days_to_complete',
         'execution_status',
     ];
 
@@ -31,6 +33,7 @@ class ProcessTaskExecution extends Model
         'claimed_at' => 'datetime',
         'completed_at' => 'datetime',
         'due_at' => 'datetime',
+        'mandatory_days_to_complete' => 'integer',
         'escalation_level' => 'integer',
     ];
 
@@ -67,15 +70,31 @@ class ProcessTaskExecution extends Model
     // =========================================================================
 
     /**
+     * La scadenza effettiva di questo step: se è stato impostato un termine
+     * tassativo in giorni per QUESTA esecuzione (facoltativo, indipendente dal
+     * default ereditato dal ProcessTask template), prevale su `due_at`.
+     */
+    public function effectiveDueAt(): ?Carbon
+    {
+        if ($this->mandatory_days_to_complete !== null && $this->started_at) {
+            return $this->started_at->copy()->addDays($this->mandatory_days_to_complete);
+        }
+
+        return $this->due_at;
+    }
+
+    /**
      * Verifica se il task è attualmente scaduto rispetto allo SLA configurato.
      */
     public function isOverdue(): bool
     {
+        $dueAt = $this->effectiveDueAt();
+
         if ($this->completed_at) {
-            return $this->completed_at->gt($this->due_at);
+            return $dueAt && $this->completed_at->gt($dueAt);
         }
 
-        return $this->due_at && now()->gt($this->due_at);
+        return $dueAt && now()->gt($dueAt);
     }
 
     /**

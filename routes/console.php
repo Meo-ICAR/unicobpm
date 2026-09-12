@@ -1,6 +1,7 @@
 <?php
 
 use App\Jobs\ExecutePeriodicProcessJob;
+use App\Jobs\MandatoryDeadlineWatchdogJob;
 use App\Jobs\TaskEscalationWatchdogJob;
 use App\Models\Process;
 use Illuminate\Support\Facades\Log;
@@ -43,3 +44,6 @@ Schedule::command('bpm:run-scheduler')->dailyAt('06:00');
 
 // 4. Controllo orario degli SLA/escalation sui task pendenti
 Schedule::job(new TaskEscalationWatchdogJob)->hourly();
+
+// 5. Controllo orario dei termini tassativi facoltativi (data fine pratica, giorni per singolo step)
+Schedule::job(new MandatoryDeadlineWatchdogJob)->hourly();

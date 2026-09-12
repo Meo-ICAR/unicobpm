@@ -35,6 +35,7 @@ class ProcessInstance extends Model
         'status',
         'current_task_id',
         'completed_at',
+        'hard_deadline_at',
         'last_reminder_sent_at',
         'reminders_sent_count',
     ];
@@ -46,8 +47,20 @@ class ProcessInstance extends Model
         'status' => 'string', // enum ('pending','in_progress','completed','rejected','cancelled')
         'reminders_sent_count' => 'integer',
         'completed_at' => 'datetime',
+        'hard_deadline_at' => 'date',
         'last_reminder_sent_at' => 'datetime',
     ];
+
+    /**
+     * Vero se l'istanza ha una data tassativa di termine configurata ed è già trascorsa
+     * mentre il processo è ancora in corso.
+     */
+    public function isPastHardDeadline(): bool
+    {
+        return $this->hard_deadline_at
+            && $this->status === 'in_progress'
+            && now()->startOfDay()->gt($this->hard_deadline_at);
+    }
 
     // =========================================================================
     // RELAZIONI ELOQUENT

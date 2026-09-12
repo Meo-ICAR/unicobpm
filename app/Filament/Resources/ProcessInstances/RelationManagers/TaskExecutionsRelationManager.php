@@ -4,7 +4,10 @@ namespace App\Filament\Resources\ProcessInstances\RelationManagers;
 
 use App\Filament\Resources\ProcessTaskExecutions\ProcessTaskExecutionResource;
 use Filament\Actions\CreateAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
 class TaskExecutionsRelationManager extends RelationManager
@@ -67,6 +70,12 @@ class TaskExecutionsRelationManager extends RelationManager
                     ->dateTime('d/m/Y H:i')
                     ->color(fn ($record) => $record->isOverdue() ? 'danger' : 'gray')
                     ->description(fn ($record) => $record->isOverdue() ? 'TASK SCADUTO' : null),
+
+                // 5. TERMINE TASSATIVO FACOLTATIVO PER LO STEP
+                TextColumn::make('mandatory_days_to_complete')
+                    ->label('Giorni Tassativi')
+                    ->placeholder('Nessuno')
+                    ->suffix(fn ($state) => $state ? ' gg' : null),
             ])
             ->filters([
                 // Puoi inserire filtri per esito o per operatore se necessario
@@ -77,6 +86,8 @@ class TaskExecutionsRelationManager extends RelationManager
                     ->label('Forza Nuova Esecuzione'),
             ])
             ->actions([
+                EditAction::make()
+                    ->label('Modifica'),
                 // Permette di entrare in sola lettura nel dettaglio del log di esecuzione
                 ViewAction::make()
                     ->label('Vedi Dettagli'),
