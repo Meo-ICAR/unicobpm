@@ -6,6 +6,7 @@ use App\Models\BusinessFunction;
 use App\Models\Document;
 use App\Models\ProcessTaskExecution;
 use App\Models\ProcessTaskItemAnswer;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
@@ -37,6 +38,14 @@ use Illuminate\Support\Facades\Storage;
  * "min_length": 11                         // Regola: lunghezza minima
  * // In futuro puoi aggiungere: "max_length", "regex", "is_numeric", ecc.
  * }
+ * * 3. action_type: 'blacklist_check'
+ * Chiede a UnicoLoan (che possiede il dominio Pratica/blacklist agenti, mai
+ * replicato qui) se l'agente della pratica è in blacklist per la banca
+ * collegata. Se sì, sospende la pratica esattamente come 'validation_rule'.
+ * JSON config:
+ * {
+ * "pratica_id_field": "subject_id"  // (Opzionale, default "subject_id") campo di $instance da cui leggere l'ID pratica
+ * }
  * * ========================================================================
  */
 class ProcessTaskExecutionObserver
@@ -66,7 +75,7 @@ class ProcessTaskExecutionObserver
 
         // Recuperiamo tutte le azioni automatiche previste in questo task
         $automatedItems = $task->processTaskItems()
-            ->whereIn('action_type', ['automated_email', 'validation_rule'])
+            ->whereIn('action_type', ['automated_email', 'validation_rule', 'blacklist_check'])
             ->get();
 
         foreach ($automatedItems as $item) {
@@ -198,6 +207,50 @@ class ProcessTaskExecutionObserver
                             ->withProperties(['error' => $errorMessage])
                             ->log($errorMessage);
                         // Il task rimane appeso e non si genera la answer
+                    }
+                    break;
+
+                    // --------------------------------------------------------
+                    // CASO 3: VERIFICA BLACKLIST AGENTE (chiede a UnicoLoan)
+                    // --------------------------------------------------------
+                case 'blacklist_check':
+                    $praticaIdField = $config['pratica_id_field'] ?? 'subject_id';
+                    $praticaId = data_get($instance, $praticaIdField);
+
+                    $blacklisted = false;
+
+                    if (! empty($praticaId)) {
+                        try {
+                            $response = Http::asJson()
+                                ->timeout(8)
+                                ->connectTimeout(4)
+                                ->get(rtrim((string) config('services.unicoloan.url'), '/')."/api/pratiche/{$praticaId}");
+
+                            $blacklisted = $response->successful() && $response->json('agente_blacklistato') === true;
+                        } catch (\Throwable $e) {
+                            Log::warning("Task ID {$item->id}: verifica blacklist su UnicoLoan fallita per errore di rete.", [
+                                'pratica_id' => $praticaId,
+                            ]);
+                        }
+                    }
+
+                    if ($blacklisted) {
+                        $instance->update(['status' => 'suspended']);
+
+                        activity('bpm')
+                            ->performedOn($instance)
+                            ->event('blacklist_check_failed')
+                            ->withProperties(['pratica_id' => $praticaId])
+                            ->log("Pratica sospesa: l'agente è in blacklist per la banca collegata.");
+                        // Il task rimane appeso e non si genera la answer
+                    } else {
+                        ProcessTaskItemAnswer::create([
+                            'process_instance_id' => $instance->id,
+                            'process_task_item_id' => $item->id,
+                            'user_id' => 0, // Bot
+                            'value_text' => 'Verifica blacklist superata: agente non bloccato per questa banca.',
+                            'completed_at' => now(),
+                        ]);
                     }
                     break;
 

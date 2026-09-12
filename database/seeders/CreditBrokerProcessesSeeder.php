@@ -129,6 +129,9 @@ class CreditBrokerProcessesSeeder extends Seeder
 
         $task2 = $this->upsertTask($process, 20, 'Invio Pratica all\'Istituto Convenzionato', $busBo);
         $this->upsertItem($task2, 1, 'Conferma Trasmissione Pratica', 'text_input', null, true);
+        $this->upsertItem($task2, 2, 'Verifica Blacklist Agente', 'blacklist_check', null, true, [
+            'pratica_id_field' => 'subject_id',
+        ]);
 
         // Task in attesa dell'istituto finanziatore: dotato di regole di escalation per sollecitare
         // se la delibera tarda ad arrivare (usato da TaskEscalationWatchdogJob).
@@ -164,7 +167,10 @@ class CreditBrokerProcessesSeeder extends Seeder
         return $task;
     }
 
-    private function upsertItem(ProcessTask $task, int $ordine, string $name, string $actionType, ?int $documentTypeId, bool $isRequired): void
+    /**
+     * @param  array<string, mixed>|null  $config
+     */
+    private function upsertItem(ProcessTask $task, int $ordine, string $name, string $actionType, ?int $documentTypeId, bool $isRequired, ?array $config = null): void
     {
         $task->processTaskItems()->updateOrCreate(
             ['process_task_id' => $task->id, 'ordine' => $ordine],
@@ -173,6 +179,7 @@ class CreditBrokerProcessesSeeder extends Seeder
                 'action_type' => $actionType,
                 'document_type_id' => $documentTypeId,
                 'is_required' => $isRequired,
+                'config' => $config,
             ]
         );
     }

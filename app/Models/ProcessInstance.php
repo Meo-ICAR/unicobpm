@@ -19,7 +19,7 @@ class ProcessInstance extends Model
     /**
      * La tabella associata al modello.
      */
-    protected $table = 'unicobpm.process_instances';
+    protected $table = 'process_instances';
 
     /**
      * I campi assegnabili in massa (Mass Assignment).

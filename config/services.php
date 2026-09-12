@@ -49,4 +49,8 @@ return [
         'url' => env('BPM_API_URL', 'https://unicobpm.hassisto.com'), // Il secondo parametro è un fallback
     ],
 
+    'unicoloan' => [
+        'url' => env('UNICOLOAN_API_URL', 'https://unicoloan.hassisto.com'),
+    ],
+
 ];

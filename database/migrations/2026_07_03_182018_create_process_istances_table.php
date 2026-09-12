@@ -29,6 +29,7 @@ return new class extends Migration
                 'completed',    // Conclusa con successo
                 'rejected',     // Respinta (KO)
                 'cancelled',     // Annullata manualmente
+                'suspended',    // Bloccata da una validazione automatica fallita (vedi ProcessTaskExecutionObserver)
             ])->default('pending')->comment('Stato globale della pratica');
 
             // Tracciamento avanzamento
