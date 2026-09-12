@@ -2,6 +2,8 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Widgets\AppSwitcherWidget;
+use App\Filament\Widgets\RemindersWidget;
 use DutchCodingCompany\FilamentSocialite\FilamentSocialitePlugin;
 use DutchCodingCompany\FilamentSocialite\Provider;
 use Filament\Http\Middleware\Authenticate;
@@ -52,6 +54,8 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([
+                RemindersWidget::class,
+                AppSwitcherWidget::class,
                 // AccountWidget::class,
                 // FilamentInfoWidget::class,
             ])

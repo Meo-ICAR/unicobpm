@@ -24,4 +24,17 @@ class ExternalAppResolver
 
         return rtrim($url, '/');
     }
+
+    public function labelFor(string $app): string
+    {
+        return (string) (config("services.apps.{$app}.label") ?: $app);
+    }
+
+    /**
+     * @return string[] Le chiavi di tutti gli applicativi esterni configurati.
+     */
+    public function allApps(): array
+    {
+        return array_keys((array) config('services.apps', []));
+    }
 }

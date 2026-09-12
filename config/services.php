@@ -66,9 +66,15 @@ return [
     'apps' => [
         'unicoloan' => [
             'url' => env('UNICOLOAN_API_URL', 'https://unicoloan.hassisto.com'),
+            'label' => 'UnicoLoan',
         ],
         'unicooam' => [
             'url' => env('UNICOOAM_API_URL', 'https://unicooam.hassisto.com'),
+            'label' => 'UnicoOAM',
+        ],
+        'proforma' => [
+            'url' => env('PROFORMA_API_URL', 'https://proforma.hassisto.com'),
+            'label' => 'Proforma',
         ],
     ],
 
