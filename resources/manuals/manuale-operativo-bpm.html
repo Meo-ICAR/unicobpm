@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>Manuale operativo del motore BPM di UnicoBPM</title>
+</head>
+<body>
+
+<h1>Manuale operativo del motore BPM di UnicoBPM</h1>
+
+<p>Questo manuale descrive come funziona e come si usa il motore di Business Process
+Management (BPM) di UnicoBPM, l'applicazione Laravel/Filament usata da un mediatore
+creditizio per gestire pratiche (istanze di processo) che avanzano attraverso una
+sequenza di task, con assegnazione automatica basata su una matrice RACI, checklist di
+raccolta dati con regole di respingimento, promemoria/escalation e integrazione con
+sistemi esterni. È scritto per essere consultato sia da un operatore umano sia
+dall'assistente AI del sistema (AssistenteAI), che risponde alle domande degli utenti
+usando questo testo come fonte.</p>
+
+<h2>1. Concetti di base e vocabolario</h2>
+
+<p><strong>Processo</strong> (tabella <code>processes</code>, modello <code>Process</code>) è il
+template che descrive un flusso di lavoro ripetibile: ad esempio "AML", "Trasparenza",
+"OAM", "Istruttoria Pratica di Finanziamento", "Onboarding Nuovo Agente". Un processo ha
+un nome, un codice, una descrizione, una versione (incrementata quando cambiano i task
+che lo compongono) e un flag <code>is_active</code> che lo abilita o disabilita.</p>
+
+<p><strong>Task</strong> (tabella <code>process_tasks</code>, modello <code>ProcessTask</code>) è
+uno step ordinato di un processo. I task di un processo sono ordinati dal campo
+<code>ordine</code> (mai <code>order</code>) e vengono attraversati in sequenza da una
+pratica, saltando quelli non applicabili al soggetto (vedi §4). Ogni task ha una propria
+matrice RACI (chi deve occuparsene) e uno o più "item" che rappresentano le azioni da
+compiere per considerarlo completato.</p>
+
+<p><strong>Item del task</strong> (tabella <code>process_task_items</code>, modello
+<code>ProcessTaskItem</code>) è la singola azione richiesta dentro un task: può chiedere
+il caricamento di un documento, la compilazione di una checklist, l'inserimento di un
+testo libero, oppure eseguire automaticamente un'azione di sistema (invio email,
+validazione, controllo blacklist, job personalizzato). Vedi §5 per il dettaglio dei tipi
+di azione.</p>
+
+<p><strong>Checklist</strong> (tabelle <code>checklists</code> e <code>checklist_items</code>) è un
+elenco di domande da porre all'operatore quando un item del task è di tipo
+"compila checklist". Ogni domanda può avere una regola di scarto automatico
+(knock-out) e può scrivere il valore risposto su un campo del soggetto della pratica.</p>
+
+<p><strong>Trigger</strong> è il meccanismo che decide quando un processo o un singolo task
+può o deve attivarsi. Non è un concetto unico: esistono tre meccanismi distinti descritti
+in dettaglio al §4.</p>
+
+<p><strong>Istanza di processo / pratica</strong> (tabella <code>process_instances</code>,
+modello <code>ProcessInstance</code>) è l'esecuzione concreta di un processo su un
+soggetto reale (un fornitore, un cliente, ecc.) oppure senza soggetto per i processi
+puramente interni o ricorrenti. È la "pratica" che un operatore vede, prende in carico e
+porta avanti fino alla conclusione.</p>
+
+<h2>2. Come è organizzato un processo: gerarchia delle tabelle</h2>
+
+<p>La gerarchia di configurazione (i "template", modificati solo dagli amministratori)
+è:</p>
+
+<pre>
+Process
+ └─ ProcessTask (ordinati per "ordine")
+     ├─ ProcessTaskItem (le azioni dello step: documento, checklist, email, job, ...)
+     └─ ProcessTaskRaci (chi è Responsabile/Accountable/Consultato/Informato per il task)
+</pre>
+
+<p>La gerarchia di esecuzione (l'avanzamento reale di una pratica) è:</p>
+
+<pre>
+ProcessInstance (la pratica)
+ └─ ProcessTaskExecution (una riga per ogni task attraversato dalla pratica)
+     └─ ProcessTaskItemAnswer (la risposta data a un singolo item del task)
+         └─ ChecklistSubmission (se l'item era una checklist)
+             └─ ChecklistAnswer (le singole risposte alle domande della checklist)
+</pre>
+
+<p>Per compatibilità con query più semplici, sia <code>process_task_item_answers</code>
+sia <code>checklist_answers</code> mantengono anche un riferimento diretto a
+<code>process_instance_id</code>, oltre al percorso completo passando per
+l'esecuzione del task.</p>
+
+<h2>3. La matrice RACI</h2>
+
+<p>Ogni task (<code>process_tasks</code>) ha una o più righe nella tabella
+<code>process_task_raci</code>, che collega il task a una <strong>funzione aziendale</strong>
+(<code>business_functions</code>, es. "Ufficio Compliance", "Back Office") con un
+ruolo RACI: <strong>R</strong> (Responsible, chi esegue materialmente il task),
+<strong>A</strong> (Accountable, chi ne risponde), <strong>C</strong> (Consulted, chi va
+consultato) o <strong>I</strong> (Informed, chi va solo informato). Una stessa funzione
+aziendale può avere un solo ruolo per task.</p>
+
+<p>Le funzioni aziendali sono composte da persone (dipendenti o clienti/consulenti
+esterni) tramite un'associazione di appartenenza; ogni persona può risultare
+"responsabile di login" per la funzione a cui appartiene.</p>
+
+<p><strong>Assegnazione automatica delle pratiche</strong>: quando una pratica entra in un
+task, il sistema cerca la funzione aziendale con ruolo <strong>R</strong> su quel task.
+Se quella funzione ha una sola persona abilitata, la pratica le viene assegnata
+automaticamente e risulta già "presa in carico". Se la funzione ha più persone, la
+pratica resta senza assegnatario e compare nell'elenco "da prendere in carico" per
+chiunque appartenga a quella funzione: un qualsiasi membro può reclamarla (fare
+"claim") per diventarne l'assegnatario. Il ruolo <strong>A</strong> serve oggi solo a
+determinare quali pratiche un utente può vedere come "di cui è responsabile finale",
+mentre <strong>C</strong> e <strong>I</strong> sono principalmente informativi/documentali e
+compaiono nella matrice RACI riepilogativa del processo.</p>
+
+<p>Non esistono permessi di accesso al pannello basati sui ruoli RACI: la RACI regola
+l'instradamento e la visibilità delle pratiche nelle liste operative, non
+l'autorizzazione a usare le risorse Filament.</p>
+
+<h2>4. I trigger: quando un processo o un task si attiva</h2>
+
+<p>Esistono tre livelli di trigger, da non confondere tra loro.</p>
+
+<h3>4.1 Trigger su un modello esterno (tabella <code>process_triggers</code>)</h3>
+
+<p>Un trigger di questo tipo osserva un modello esterno (ad esempio un fornitore) e
+avvia un processo quando si verifica un evento:</p>
+<ul>
+<li><strong>created</strong>: alla creazione di un nuovo record del modello osservato, se
+soddisfa le condizioni configurate (coppie campo/valore), viene avviata
+automaticamente una nuova pratica.</li>
+<li><strong>updated</strong>: alla modifica di un record esistente, se i campi
+configurati corrispondono ai valori attesi, viene avviata una pratica. Attenzione: se
+sono configurate più condizioni, oggi il sistema richiede che tutti i campi indicati
+risultino modificati nello stesso salvataggio, non solo che i valori corrispondano —
+una condizione su un campo non toccato in quel salvataggio blocca l'attivazione anche
+se le altre condizioni sono soddisfatte.</li>
+<li><strong>idle</strong>: un trigger di sollecito, valutato una volta al giorno, che
+individua i record del modello osservato non aggiornati da almeno un certo numero di
+giorni (<code>idle_days</code>) e soddisfacenti le condizioni, avviando una pratica per
+ciascuno (se non ne esiste già una in corso per lo stesso processo).</li>
+</ul>
+
+<h3>4.2 Filtri di ammissibilità del processo (campi su <code>processes</code>)</h3>
+
+<p>Un processo può definire un campo target, uno stato atteso (valorizzato / vuoto /
+uguale a un valore) ed eventuali condizioni di esclusione: questi filtri servono a
+stabilire quali record del modello associato al processo sono "eleggibili" oggi, e sono
+usati sia per i processi periodici (per selezionare i soggetti su cui creare le
+pratiche) sia come indicatore informativo ("record eleggibili oggi") nella schermata di
+configurazione del processo.</p>
+
+<h3>4.3 Trigger/esclusione a livello di singolo task (campi su <code>process_tasks</code>)</h3>
+
+<p>Un task può avere le proprie condizioni di applicabilità (stessi criteri
+valorizzato/vuoto/uguale a un valore, più eventuali esclusioni): se il soggetto della
+pratica non soddisfa le condizioni del task, quel task viene <strong>saltato</strong> e la
+pratica passa automaticamente al task successivo applicabile. Questo permette di avere
+processi con rami condizionali senza dover duplicare l'intero processo.</p>
+
+<h3>4.4 Processi periodici/ricorrenti</h3>
+
+<p>Un processo può essere marcato come periodico (<code>is_periodic</code>) in due modi
+complementari: una ricorrenza a calendario (giornaliera, settimanale, mensile —
+l'opzione annuale è configurabile ma al momento non produce alcuna attivazione, è una
+limitazione nota) valutata una volta al giorno; oppure un'espressione cron vera e
+propria, generata da un'interfaccia semplificata (unità di tempo + valore), che
+programma la creazione automatica di pratiche per tutti i soggetti che soddisfano i
+filtri di ammissibilità del processo, con o senza soggetto specifico a seconda del
+caso d'uso (es. adempimenti interni ricorrenti non legati a un singolo record).</p>
+
+<h2>5. Le azioni dentro un task (item)</h2>
+
+<p>Ogni item di un task ha un tipo di azione che ne determina il comportamento:</p>
+
+<ul>
+<li><strong>Caricamento documento</strong>: richiede all'operatore di allegare un
+documento di un tipo specifico (collegato al sistema documentale esterno).</li>
+<li><strong>Compilazione checklist</strong>: espone all'operatore le domande della
+checklist collegata all'item; le risposte vengono salvate una per una e possono
+determinare uno scarto automatico della pratica (vedi §6) o scrivere un valore sul
+soggetto della pratica.</li>
+<li><strong>Testo libero</strong>: raccoglie una risposta testuale libera
+dall'operatore.</li>
+<li><strong>Email automatica</strong>: appena la pratica entra nel task, il sistema
+invia automaticamente un'email (al destinatario di una funzione aziendale o a un
+indirizzo diretto, con testo basato su un modello con segnaposto sostituiti con i dati
+della pratica, ed eventuali documenti allegati) e registra da solo il completamento
+dell'item, senza intervento dell'operatore.</li>
+<li><strong>Regola di validazione</strong>: controlla automaticamente un campo del
+soggetto della pratica (ad esempio una lunghezza minima); se il controllo fallisce, la
+pratica viene sospesa e richiede intervento manuale; se ha successo, l'item si
+completa da solo.</li>
+<li><strong>Controllo blacklist</strong>: interroga automaticamente un sistema esterno
+per verificare se il soggetto della pratica risulta in una lista nera; in caso
+positivo la pratica viene sospesa.</li>
+<li><strong>Azione di sistema personalizzata</strong>: esegue un job applicativo
+dedicato configurato sull'item; se il job fallisce, la pratica viene sospesa.</li>
+</ul>
+
+<p>Le azioni automatiche (email, validazione, blacklist, azione di sistema) si eseguono
+da sole, senza che un operatore debba far nulla, non appena la pratica entra nel task
+che le contiene. Le azioni manuali (documento, checklist, testo libero) restano in
+attesa finché un operatore non fornisce la risposta richiesta.</p>
+
+<p>Un task si considera completato quando tutte le sue azioni obbligatorie hanno
+ricevuto una risposta: a quel punto la pratica avanza automaticamente al task
+successivo applicabile (saltando quelli esclusi dal soggetto, vedi §4.3) oppure, se non
+ci sono altri task, la pratica risulta conclusa.</p>
+
+<h2>6. Le checklist e le regole di scarto (knock-out)</h2>
+
+<p>Ogni domanda di una checklist può essere di tipo sì/no, testo, numero, data,
+selezione singola o multipla, ed essere obbligatoria o facoltativa. Una domanda può
+essere marcata come "knock-out": se la risposta data dall'operatore coincide con il
+valore configurato come scarto, la pratica viene automaticamente <strong>respinta</strong>
+e il flusso si interrompe, senza proseguire agli step successivi.</p>
+
+<p>Una domanda può anche essere collegata a un campo del soggetto della pratica: quando
+viene risposta, il suo valore (o semplicemente la data/ora della risposta, per le
+domande di tipo "aggiornamento data") viene scritto automaticamente su quel campo del
+soggetto, tenendo traccia così nel sistema anagrafico esterno di ciò che è stato
+verificato durante la pratica.</p>
+
+<p>Le domande di una checklist possono anche dipendere l'una dall'altra (una domanda
+compare solo se una domanda precedente ha ricevuto una determinata risposta), per
+evitare di porre domande non pertinenti.</p>
+
+<h2>7. Ciclo di vita di una pratica</h2>
+
+<p>Una pratica (<code>ProcessInstance</code>) attraversa questi stati:
+<strong>in attesa</strong>, <strong>in corso</strong>, e infine uno stato finale tra
+<strong>completata</strong>, <strong>respinta</strong>, <strong>annullata</strong> o
+<strong>sospesa</strong>. Lo stato "sospesa" si verifica solo quando un'azione
+automatica (validazione, blacklist o azione di sistema) fallisce: in quel caso la
+pratica resta "appesa" sul task corrente e richiede l'intervento di un amministratore
+per essere sbloccata o corretta manualmente.</p>
+
+<p><strong>Avvio</strong>: una pratica viene creata quando si verifica un trigger (vedi
+§4), oppure manualmente da un operatore dalla schermata delle pratiche. Alla creazione
+il sistema individua il primo task applicabile al soggetto, verifica se può assegnarlo
+automaticamente in base alla RACI (vedi §3) e apre la prima esecuzione di task.</p>
+
+<p><strong>Avanzamento</strong>: una pratica avanza al task successivo in due modi
+equivalenti: automaticamente, quando tutte le azioni obbligatorie del task corrente
+sono state completate; oppure manualmente, quando un operatore usa esplicitamente
+l'azione "avanza" sulla pratica (utile anche per registrare un rigetto esplicito).</p>
+
+<p><strong>Conclusione</strong>: quando non ci sono più task successivi applicabili, la
+pratica passa allo stato "completata". Se il processo è configurato per scrivere un
+esito sul sistema esterno del soggetto (ad esempio la data di stipula di un
+finanziamento), il sistema esegue automaticamente questa scrittura al momento della
+conclusione.</p>
+
+<h2>8. Promemoria e scadenze (SLA)</h2>
+
+<p>Un task può avere promemoria periodici abilitati, con un intervallo di giorni tra un
+sollecito e l'altro e un numero massimo di solleciti. Se i promemoria restano
+insoddisfatti oltre certe soglie, un task può definire regole di escalation su più
+livelli (ad esempio: dopo tot ore avvisa l'assegnatario, poi il responsabile, poi
+riassegna il task a un'altra funzione aziendale). Una pratica può inoltre avere una
+scadenza tassativa complessiva, indipendente dal singolo task, oltre la quale viene
+segnalata come fuori termine.</p>
+
+<p><em>Nota operativa</em>: questi controlli periodici (promemoria, escalation,
+scadenze, processi periodici via job) richiedono un processo di coda ("worker")
+sempre attivo sul server per essere eseguiti effettivamente; se il worker non è
+attivo, questi controlli restano schedulati ma non vengono davvero eseguiti — è una
+condizione da verificare con l'amministratore di sistema se un promemoria atteso non
+sembra essere mai stato inviato.</p>
+
+<h2>9. Dove si configura e si gestisce tutto: il pannello</h2>
+
+<p>Tutta l'applicazione è gestita da un pannello Filament, organizzato in queste
+sezioni principali:</p>
+
+<ul>
+<li><strong>Processi</strong>: creazione e configurazione dei template di processo
+(nome, modello target, filtri di ammissibilità, periodicità/cron), con i task del
+processo (inclusa la relativa matrice RACI) gestibili direttamente all'interno della
+scheda del processo.</li>
+<li><strong>Task del processo</strong>: dettaglio di ogni singolo task, con la propria
+matrice RACI, le condizioni di applicabilità/esclusione, le impostazioni di
+promemoria/escalation, e gli item (azioni) che lo compongono.</li>
+<li><strong>Item del task</strong>: configurazione delle singole azioni (tipo di
+azione, documento richiesto, checklist collegata, job da eseguire, parametri
+dell'azione automatica).</li>
+<li><strong>Trigger dei processi</strong>: configurazione dei trigger su modelli
+esterni (evento, condizioni, giorni di inattività per i trigger di sollecito).</li>
+<li><strong>Pratiche (istanze di processo)</strong>: la schermata operativa dove un
+utente vede le pratiche, il soggetto collegato, l'assegnatario corrente, lo stato, e
+può consultare le risposte alle checklist già fornite per quella pratica.</li>
+<li><strong>Esecuzioni dei task</strong>: lo storico/coda delle esecuzioni di ogni task
+per ogni pratica, con le informazioni di scadenza ed escalation.</li>
+<li><strong>Checklist e domande delle checklist</strong>: definizione delle checklist
+riutilizzabili e delle loro domande, incluse le regole di scarto e di scrittura sul
+soggetto.</li>
+<li><strong>Risposte alle checklist</strong>: consultazione delle risposte già date per
+ogni pratica.</li>
+</ul>
+
+<p>Esiste inoltre una vista riepilogativa di sola lettura della matrice RACI di un
+intero processo, utile per avere una visione d'insieme di chi fa cosa in ogni suo
+task.</p>
+
+<h2>10. Limitazioni note (da non presentare come funzionanti all'utente)</h2>
+
+<p>Alcune funzionalità sono presenti nel codice ma non ancora pienamente operative:
+l'invio automatico di email di sollecito ha un difetto per cui il primissimo sollecito
+di ogni pratica non parte mai; la lettura automatica di allegati arrivati via email non
+distingue quale documento specifico sia stato ricevuto se un task ne richiede più di
+uno; la ricorrenza annuale dei processi periodici non produce mai un'attivazione; e, come
+già indicato al §8, i controlli periodici basati su coda richiedono un worker sempre
+attivo per funzionare davvero. Se un utente segnala uno di questi comportamenti,
+va trattato come limitazione nota del sistema, non come errore di utilizzo.</p>
+
+</body>
+</html>

@@ -15,9 +15,10 @@ use RuntimeException;
 
 /**
  * Assistente AI che risponde a domande sull'uso del motore BPM al posto di un
- * manuale operativo statico: le linee guida di progetto (CLAUDE.md) e le
- * specifiche di dominio (BPM-DOMAIN-SPEC.md) sono indicizzate nel vector
- * store da `php artisan manual:sync` e recuperate per similarità a ogni
+ * manuale operativo statico: le linee guida di progetto (CLAUDE.md), le
+ * specifiche di dominio (BPM-DOMAIN-SPEC.md) e il manuale operativo del BPM
+ * (resources/manuals/manuale-operativo-bpm.html) sono indicizzati nel vector
+ * store da `php artisan manual:sync` e recuperati per similarità a ogni
  * domanda.
  */
 class ManualAssistantAgent extends RAG
@@ -27,6 +28,7 @@ class ManualAssistantAgent extends RAG
         return [
             base_path('CLAUDE.md'),
             base_path('BPM-DOMAIN-SPEC.md'),
+            resource_path('manuals/manuale-operativo-bpm.html'),
         ];
     }
 

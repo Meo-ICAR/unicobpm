@@ -10,6 +10,7 @@ use Filament\Pages\Page;
 use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\Form;
 use Filament\Schemas\Schema;
+use NeuronAI\Chat\Messages\Usage;
 use NeuronAI\Chat\Messages\UserMessage;
 use Throwable;
 
@@ -39,6 +40,12 @@ class AssistenteAi extends Page
     public ?string $answer = null;
 
     public ?string $error = null;
+
+    public ?int $inputTokens = null;
+
+    public ?int $outputTokens = null;
+
+    public ?int $cachedInputTokens = null;
 
     public function mount(): void
     {
@@ -75,6 +82,9 @@ class AssistenteAi extends Page
     {
         $this->error = null;
         $this->answer = null;
+        $this->inputTokens = null;
+        $this->outputTokens = null;
+        $this->cachedInputTokens = null;
 
         $prompt = $this->form->getState()['prompt'] ?? null;
 
@@ -85,6 +95,14 @@ class AssistenteAi extends Page
         try {
             $reply = ManualAssistantAgent::make()->chat(new UserMessage($prompt))->getMessage();
             $this->answer = (string) $reply->getContent();
+
+            $usage = $reply->getUsage();
+
+            if ($usage instanceof Usage) {
+                $this->inputTokens = $usage->inputTokens;
+                $this->outputTokens = $usage->outputTokens;
+                $this->cachedInputTokens = $usage->cachedInputTokens;
+            }
         } catch (Throwable $e) {
             $this->error = "Non riesco a rispondere in questo momento: {$e->getMessage()}";
         }

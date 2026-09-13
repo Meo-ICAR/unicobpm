@@ -25,6 +25,16 @@
                 <div class="mt-4 rounded-lg bg-gray-50 dark:bg-gray-800 p-4 prose dark:prose-invert max-w-none">
                     {!! Str::markdown($answer, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
                 </div>
+
+                @if ($inputTokens !== null)
+                    <div class="mt-2 text-xs text-gray-400 dark:text-gray-500">
+                        Token Anthropic — input: {{ $inputTokens }}, output: {{ $outputTokens }}
+                        @if ($cachedInputTokens)
+                            , da cache: {{ $cachedInputTokens }}
+                        @endif
+                        (totale: {{ $inputTokens + $outputTokens }})
+                    </div>
+                @endif
             @endif
         </x-filament::section>
     </div>

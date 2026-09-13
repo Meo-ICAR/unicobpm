@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Neuron\ManualAssistantAgent;
 use Illuminate\Console\Command;
 use NeuronAI\RAG\DataLoader\FileDataLoader;
+use NeuronAI\RAG\DataLoader\HtmlReader;
 
 /**
  * Indicizza la documentazione di progetto nel vector store usato da
@@ -34,7 +35,7 @@ class SyncManualAssistant extends Command
                 continue;
             }
 
-            $documents = FileDataLoader::for($path)->getDocuments();
+            $documents = FileDataLoader::for($path, ['html' => HtmlReader::class])->getDocuments();
             $agent->addDocuments($documents);
             $totalChunks += count($documents);
 
