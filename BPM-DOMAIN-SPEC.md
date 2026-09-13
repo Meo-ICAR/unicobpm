@@ -183,6 +183,69 @@ Prima di scrivere codice che coinvolge dati su `proforma` o `mysql_unicooam`:
   Se l'app è multi-tenant (più mediatori sullo stesso DB), verificare se serve isolamento dati per
   `company_id` a livello di query dei Resource, non solo di default in creazione.
 
+### Aperti — TODO
+- **Nessun queue worker attivo**: `ExecutePeriodicProcessJob`, `TaskEscalationWatchdogJob` e
+  `MandatoryDeadlineWatchdogJob` implementano tutti `ShouldQueue`, e `.env` ha
+  `QUEUE_CONNECTION=database`. Verificato che nessun processo `queue:work` gira su questa macchina e la
+  tabella `jobs` è vuota nonostante questi job siano schedulati (`Schedule::job(...)`) da diverse
+  sessioni: `Schedule::job()` su una classe `ShouldQueue` la accoda soltanto, non la esegue — senza un
+  worker persistente (`php artisan queue:work` sotto Supervisor/systemd o equivalente in produzione)
+  **questi tre job non vengono mai eseguiti davvero**. Da fare: attivare un worker persistente in
+  produzione, oppure — data la leggerezza di questi job — valutare di togliere `ShouldQueue` per farli
+  girare in-process nello scheduler come già avviene per il Command `bpm:run-scheduler`.
+- **`BpmSchedulerCommand`: `recurrence_frequency = 'yearly'` non fa mai partire nulla** — il
+  `case 'yearly':` nello switch è vuoto (`$devePartire` resta `false`), a differenza di
+  `daily`/`weekly`/`monthly` già implementati.
+- **`ProcessIncomingEmails::processEmailAttachments()` prende sempre il primo `ProcessTaskItem` con
+  `action_type='document_upload'`** del task corrente, ignorando quale documento è stato effettivamente
+  richiesto. Se un task ne chiede più di uno (es. "Carta d'Identità" e "Visura Camerale" come item
+  distinti), un allegato per il secondo verrebbe registrato come risposta al primo.
+- **`SendProcessReminders`: il primissimo sollecito di ogni pratica non viene mai inviato.**
+  `now()->diffInDays($pratica->last_reminder_sent_at)` con `last_reminder_sent_at` nullo (mai sollecitata
+  prima) non lancia errore ma restituisce ~0 (verificato: `now()->diffInDays(null)` ≈ `4.17e-10`), quindi
+  `$giorniPassati >= $task->reminder_interval_days` è quasi sempre falso al primo giro — serve
+  `is_null($pratica->last_reminder_sent_at) || $giorniPassati >= $task->reminder_interval_days`.
+  Inoltre la query non esclude le pratiche senza soggetto (es. quelle ricorrenti avviate da
+  `BpmSchedulerCommand`): se una di queste ha un task con `has_reminders=true`, `$pratica->subject->email`
+  fallisce su soggetto nullo.
+- **`ExternalAppResolver`/`config('services.apps')`: nessuna variabile d'ambiente configurata** per i 3
+  applicativi esterni (`UNICOLOAN_API_URL`/`UNICOOAM_API_URL`/`PROFORMA_API_URL`), né in `.env` né in
+  `.env.example`. I default sono i **domini di produzione reali** — senza configurarle esplicitamente,
+  ambienti locali/staging chiamano davvero i servizi di produzione per blacklist check, scrittura di
+  completamento pratica e switch app.
+  **Azione**: aggiungere le 3 righe (vuote o su un dominio di test) a `.env.example`, con un commento che
+  spiega cosa succede se lasciate vuote/puntate a produzione; valutare se in ambiente non-`production`
+  convenga far fallire esplicitamente `ExternalAppResolver::urlFor()` invece di usare il default reale.
+- **`AppSwitcherWidget::switchTo($app)` non cattura l'eccezione di `ExternalAppResolver::urlFor()`**: con
+  una chiave app non valida (chiamata diretta al metodo Livewire, bypassando i pulsanti già filtrati)
+  produce un errore 500 non gestito, a differenza degli altri due punti di utilizzo del resolver che
+  avvolgono la chiamata in un `catch (\Throwable $e)`.
+  **Azione**: validare `$app` contro `ExternalAppResolver::allApps()` (o avvolgere in try/catch) a inizio
+  metodo, mostrando una `Notification` Filament d'errore invece di lasciar propagare l'eccezione.
+- **Messaggio di log fuorviante** in `ProcessInstanceObserver`/`ProcessTaskExecutionObserver`: un errore
+  di configurazione (app sconosciuta in `completion_write_app` o `config['app']` del blacklist_check,
+  che fa lanciare `InvalidArgumentException` da `urlFor()`) viene loggato con lo stesso testo previsto
+  per un errore di rete ("... fallita per errore di rete"), rendendo più difficile diagnosticare la causa
+  reale in produzione.
+  **Azione**: distinguere i due `catch` (uno su `InvalidArgumentException` per "app sconosciuta", uno su
+  `\Throwable` generico per errori di rete/timeout) con messaggi di log separati e più precisi.
+- **`HasBpmTriggers::evaluateBpmConditions()` (trait, oggi usato solo da `Fornitore`): il confronto
+  `equals` (`$value != $model->$field`) è un confronto debole tra stringa e valore grezzo dell'attributo.**
+  Su un campo con cast `date`/`datetime` (es. `oam_dismissed_at`) **non può mai risultare vero**: un
+  `Carbon` confrontato con `!=` contro una stringa usa `__toString()`, che include l'orario
+  (`"2024-01-01 00:00:00"`), quindi non coincide mai con una condizione tipo `"2024-01-01"` — verificato:
+  `Carbon::parse('2024-01-01') != '2024-01-01'` → `true` (cioè "diversi").
+  **Azione**: per i campi con cast data/datetime, confrontare con `Carbon::parse($value)->equalTo(...)`
+  o normalizzare entrambi i lati a stringa nello stesso formato prima del confronto.
+- **`HasBpmTriggers::evaluateBpmConditions()`: con più condizioni su un evento `updated`, basta che UNA
+  sola non sia stata modificata in questo salvataggio per bloccare il trigger**, anche se tutte le altre
+  (incluso il campo che dovrebbe scatenare l'evento) sono cambiate e corrispondono. Il ciclo esce al
+  primo `! $model->isDirty($field)`, applicando "deve essere dirty" a *ogni* condizione invece che
+  richiedere che *almeno una* delle condizioni configurate sia stata effettivamente modificata.
+  **Azione**: separare la verifica "almeno un campo tra quelli in conditions è dirty" (una volta sola,
+  con `$model->isDirty(array_column($conditions, 'field'))`) dalla verifica "tutti i valori configurati
+  corrispondono" (il confronto attuale, senza l'uscita anticipata per-condizione).
+
 ## 8. Linee guida operative per sessioni di coding assistito da AI
 
 Queste regole nascono direttamente dai bug trovati in questa rianalisi — quasi tutti condividevano lo
@@ -219,6 +282,16 @@ copertura reale del motore BPM. Prima di qualunque refactoring futuro su `StartP
 una pratica (con e senza soggetto), avanzamento al task successivo, rigetto per KO su checklist,
 raggiungimento del completamento pratica. Al momento l'unica rete di sicurezza è lo smoke test manuale
 descritto al punto 5 di §8.
+
+Da tenere presente scrivendo nuovi test PHPUnit: `BusinessFunction`, `Client`, `Clienti`, `Fornitore`,
+`Employee`, `Document`, `DocumentType`, `EmailTemplate` dichiarano `protected $connection = '...'`
+esplicito (`mysql`, `proforma`, `mysql_unicooam`) **indipendentemente** dalla connessione di default
+configurata per l'ambiente di test (`DB_CONNECTION=sqlite` in `phpunit.xml`). Un test che tocca uno di
+questi model — anche indirettamente, es. tramite `BusinessFunction::where(...)` dentro un componente che
+si sta testando — si connette quindi al database MySQL reale configurato in `.env`, bypassando
+`RefreshDatabase` e lo storage in-memory. Se possibile evitare di seedare/asserire dati su questi model
+nei test automatici; se non è evitabile, isolare esplicitamente il dataset di test (es. codici/prefissi
+dedicati) e ripulirlo a fine test, così da non lasciare residui nel DB reale.
 
 ## 10. Seeders
 

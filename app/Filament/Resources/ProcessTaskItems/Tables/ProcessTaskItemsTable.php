@@ -15,8 +15,9 @@ class ProcessTaskItemsTable
     {
         return $table
             ->columns([
-                TextColumn::make('process_task_id')
-                    ->numeric()
+                TextColumn::make('task.name')
+                    ->label('Task')
+                    ->searchable()
                     ->sortable(),
                 TextColumn::make('name')
                     ->searchable(),
@@ -24,10 +25,17 @@ class ProcessTaskItemsTable
                     ->numeric()
                     ->sortable(),
                 TextColumn::make('action_type')
+                    ->badge()
                     ->searchable(),
                 IconColumn::make('is_required')
                     ->boolean(),
                 TextColumn::make('documentType.name')
+                    ->label('Tipo Documento')
+                    ->placeholder('—')
+                    ->searchable(),
+                TextColumn::make('checklist.name')
+                    ->label('Checklist')
+                    ->placeholder('—')
                     ->searchable(),
                 TextColumn::make('handler_job')
                     ->searchable(),

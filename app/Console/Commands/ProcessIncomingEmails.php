@@ -83,6 +83,7 @@ class ProcessIncomingEmails extends Command
                 // 2. Salvo la risposta nel workflow a nome dell'Utente Bot (ID 0)
                 ProcessTaskItemAnswer::create([
                     'process_instance_id' => $pratica->id,
+                    'process_task_execution_id' => $pratica->currentTaskExecution?->id,
                     'process_task_item_id' => $taskItem->id,
                     'document_id' => $document->id,
                     'value_text' => 'Documento ricevuto via Email da: '.$message->getFrom()[0]->mail,

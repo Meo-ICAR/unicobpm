@@ -2,6 +2,7 @@
 
 namespace App\Observers;
 
+use App\Models\ProcessTask;
 use App\Models\ProcessTaskExecution;
 use App\Models\ProcessTaskItemAnswer;
 
@@ -81,11 +82,8 @@ class ProcessTaskItemAnswerObserver
             ]);
         }
 
-        // 2. Troviamo il prossimo task
-        $nextTask = $instance->process->tasks()
-            ->where('ordine', '>', $currentTask->ordine)
-            ->orderBy('ordine')
-            ->first();
+        // 2. Troviamo il prossimo task, saltando quelli non applicabili al soggetto della pratica
+        $nextTask = ProcessTask::nextApplicableTask($instance->process_id, $currentTask->ordine, $instance->subject);
 
         if ($nextTask) {
             // Avanziamo al prossimo Task

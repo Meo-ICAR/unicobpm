@@ -5,6 +5,7 @@ namespace App\Filament\Actions;
 use App\Models\BusinessFunction;
 use App\Models\Process;
 use App\Models\ProcessInstance;
+use App\Models\ProcessTask;
 use App\Models\ProcessTaskExecution;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -15,11 +16,11 @@ class StartProcessAction
     {
         return DB::transaction(function () use ($subject, $processId) {
 
-            $process = Process::with(['tasks' => function ($q) {
-                $q->orderBy('ordine');
-            }])->findOrFail($processId);
+            $process = Process::findOrFail($processId);
 
-            $firstTask = $process->tasks->first();
+            // Salta i task iniziali le cui condizioni trigger/esclusione non si applicano al
+            // soggetto (es. "Verifica Visura Camerale" non serve se il soggetto è una persona fisica).
+            $firstTask = ProcessTask::firstApplicableTask($process->id, $subject);
 
             // Inizializziamo le variabili di assegnazione automatica
             $autoAssigneeId = null;

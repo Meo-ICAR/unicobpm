@@ -26,21 +26,14 @@ class AdvanceProcessAction
                 ]);
             }
 
-            // 2. Calcolo del prossimo task (rimane invariata)
+            // 2. Calcolo del prossimo task, saltando quelli non applicabili al soggetto della pratica
+            //    (trigger_field/exclude_field del task, valutati contro il record subject).
             $currentTask = $instance->currentTask;
-            $nextTask = null;
+            $subject = $instance->subject;
 
-            if ($actionType === 'complete') {
-                $nextTask = ProcessTask::where('process_id', $instance->process_id)
-                    ->where('ordine', '>', $currentTask->ordine)
-                    ->orderBy('ordine', 'asc')
-                    ->first();
-            } else {
-                $nextTask = ProcessTask::where('process_id', $instance->process_id)
-                    ->where('ordine', '<', $currentTask->ordine)
-                    ->orderBy('ordine', 'desc')
-                    ->first();
-            }
+            $nextTask = $actionType === 'complete'
+                ? ProcessTask::nextApplicableTask($instance->process_id, $currentTask->ordine, $subject)
+                : ProcessTask::previousApplicableTask($instance->process_id, $currentTask->ordine, $subject);
 
             // 3. Gestione del prossimo step con controllo di auto-assegnazione
             if ($nextTask) {

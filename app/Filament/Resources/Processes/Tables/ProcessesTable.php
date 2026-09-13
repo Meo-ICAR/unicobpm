@@ -2,10 +2,12 @@
 
 namespace App\Filament\Resources\Processes\Tables;
 
+use App\Models\Process;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Support\Enums\Width;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TernaryFilter;
@@ -25,9 +27,13 @@ class ProcessesTable
                 TextColumn::make('name')
                     ->searchable()
                     ->sortable(),
-                TextColumn::make('version')
-                    ->numeric()
-                    ->sortable(),
+
+                TextColumn::make('tasks_count')
+                    ->counts('tasks')
+                    ->label('Task')
+                    ->badge()
+                    ->color('gray')
+                    ->alignCenter(),
                 IconColumn::make('is_active')
                     ->boolean()
                     ->label('Attivo'),
@@ -39,10 +45,7 @@ class ProcessesTable
                     ->sortable()
                     ->label('Prossima Esecuzione')
                     ->placeholder('—'),
-                TextColumn::make('updated_at')
-                    ->dateTime('d/m/Y H:i')
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+
             ])
             ->filters([
                 TernaryFilter::make('is_active')
@@ -55,8 +58,17 @@ class ProcessesTable
             ])
             ->defaultSort('code')
             ->actions([
+                Action::make('raciMatrix')
+                    ->label('RACI')
+                    ->icon('heroicon-o-table-cells')
+                    ->color('gray')
+                    ->modalHeading(fn (Process $record) => "Task e Matrice RACI — {$record->name}")
+                    ->modalContent(fn (Process $record) => view('filament.processes.raci-matrix', ['process' => $record]))
+                    ->modalWidth(Width::FourExtraLarge)
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Chiudi'),
                 EditAction::make(),
-                DeleteAction::make(),
+
             ])
             ->bulkActions([
                 BulkActionGroup::make([

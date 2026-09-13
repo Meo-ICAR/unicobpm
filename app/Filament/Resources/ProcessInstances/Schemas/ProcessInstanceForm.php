@@ -84,8 +84,7 @@ class ProcessInstanceForm
                                             ->default('pending')
                                             ->required(),
                                         MorphToSelect::make('currentAssignee')
-                                            ->label('In Carico A')
-                                            ->placeholder('Disponibile in coda')
+                                            ->label('In Carico A (vuoto = disponibile in coda)')
                                             ->types([
                                                 // 1. GESTIONE DIPENDENTI OPERATORI
                                                 MorphToSelect\Type::make(Employee::class)

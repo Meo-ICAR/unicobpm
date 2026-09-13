@@ -7,6 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Employee extends Model
@@ -87,12 +90,6 @@ class Employee extends Model
     {
         // Cerca automaticamente i campi profile_type e profile_id nella tabella users
         return $this->morphTo();
-    }
-
-    public function business_functions(): BelongsToMany
-    {
-        return $this->belongsToMany(BusinessFunction::class, 'business_function_operables');
-        // adatta il nome della tabella pivot alle tue esigenze
     }
 
     /**

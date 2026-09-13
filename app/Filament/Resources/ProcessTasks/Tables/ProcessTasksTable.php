@@ -17,6 +17,7 @@ class ProcessTasksTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn ($query) => $query->with(['process', 'businessFunction', 'raciAssignments.businessFunction']))
             ->columns([
                 TextColumn::make('process.name')
                     ->label('Processo')
@@ -60,7 +61,7 @@ class ProcessTasksTable
                 TextColumn::make('raci_c')
                     ->label('C')
                     ->badge()
-                    ->color('success')
+                    ->color('warning')
                     ->state(fn (Model $record) => $record->raciAssignments
                         ->where('raci_role', 'C')
                         ->map(fn ($a) => $a->businessFunction?->name)
@@ -70,13 +71,19 @@ class ProcessTasksTable
                 TextColumn::make('raci_i')
                     ->label('I')
                     ->badge()
-                    ->color('warning')
+                    ->color('gray')
                     ->state(fn (Model $record) => $record->raciAssignments
                         ->where('raci_role', 'I')
                         ->map(fn ($a) => $a->businessFunction?->name)
                         ->filter()->values()->toArray()
                     )
                     ->placeholder('—'),
+                TextColumn::make('process_task_items_count')
+                    ->counts('processTaskItems')
+                    ->label('Azioni')
+                    ->badge()
+                    ->color('gray')
+                    ->alignCenter(),
                 IconColumn::make('has_reminders')
                     ->label('Solleciti')
                     ->boolean(),

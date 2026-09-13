@@ -14,12 +14,22 @@ class ChecklistsTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn ($query) => $query->withCount('items'))
             ->columns([
                 TextColumn::make('name')
+                    ->label('Nome')
                     ->searchable(),
                 TextColumn::make('code')
-                    ->searchable(),
+                    ->label('Codice')
+                    ->searchable()
+                    ->placeholder('—'),
+                TextColumn::make('items_count')
+                    ->label('Voci')
+                    ->badge()
+                    ->color('gray')
+                    ->alignCenter(),
                 IconColumn::make('is_active')
+                    ->label('Attiva')
                     ->boolean(),
                 TextColumn::make('created_at')
                     ->dateTime()

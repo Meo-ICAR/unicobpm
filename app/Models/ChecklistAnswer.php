@@ -14,6 +14,7 @@ class ChecklistAnswer extends Model
 
     protected $fillable = [
         'process_instance_id',
+        'checklist_submission_id',
         'checklist_item_id',
         'value_boolean',
         'value_text',
@@ -41,5 +42,14 @@ class ChecklistAnswer extends Model
     public function checklistItem(): BelongsTo
     {
         return $this->belongsTo(ChecklistItem::class, 'checklist_item_id');
+    }
+
+    /**
+     * La compilazione della checklist a cui appartiene questa risposta
+     * (ProcessTaskItemAnswer -> ChecklistSubmission -> qui).
+     */
+    public function checklistSubmission(): BelongsTo
+    {
+        return $this->belongsTo(ChecklistSubmission::class);
     }
 }

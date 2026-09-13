@@ -118,8 +118,7 @@ class BpmDesignSeeder extends Seeder
             [
                 'name' => 'Compila Modulo AML',
                 'action_type' => 'fill_checklist',
-                // N.B. In un'architettura completa, qui potresti aggiungere una colonna 'checklist_id' a process_task_items
-                // oppure gestirlo tramite logica. Assumiamo che la action fill_checklist usi un campo di configurazione.
+                'checklist_id' => $checklist->id,
                 'is_required' => true,
             ]
         );

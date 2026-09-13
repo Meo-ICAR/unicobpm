@@ -6,6 +6,7 @@ use App\Observers\ProcessTaskExecutionObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
 
@@ -63,6 +64,15 @@ class ProcessTaskExecution extends Model
     public function assignee(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    /**
+     * Le risposte alle azioni del task (upload, testo, checklist...) date durante questa
+     * specifica esecuzione (ProcessInstance -> qui -> ProcessTaskItemAnswer).
+     */
+    public function itemAnswers(): HasMany
+    {
+        return $this->hasMany(ProcessTaskItemAnswer::class);
     }
 
     // =========================================================================

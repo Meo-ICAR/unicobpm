@@ -7,6 +7,7 @@ use App\Models\Document;
 use App\Models\ProcessTaskExecution;
 use App\Models\ProcessTaskItemAnswer;
 use App\Services\ExternalAppResolver;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -49,6 +50,13 @@ use Illuminate\Support\Facades\Storage;
  * "pratica_id_field": "subject_id",  // (Opzionale, default "subject_id") campo di $instance da cui leggere l'ID pratica
  * "app": "unicoloan"                 // (Opzionale, default "unicoloan") applicativo da interrogare — vedi config('services.apps')
  * }
+ * * 4. action_type: 'system_task'
+ * Esegue in automatico il Job Laravel indicato in handler_job (FQCN, es. 'App\Jobs\MioJob'
+ * o la classe di un job fornito da un pacchetto/applicativo esterno installato via composer).
+ * Il job deve accettare nel costruttore (int $processInstanceId, array $config = []): viene
+ * eseguito sincronamente (Bus::dispatchSync) così l'esito è noto subito. Se lancia un'eccezione,
+ * la pratica viene sospesa esattamente come per 'validation_rule'.
+ * JSON config: libero, passato per intero al job.
  * * ========================================================================
  */
 class ProcessTaskExecutionObserver
@@ -78,7 +86,7 @@ class ProcessTaskExecutionObserver
 
         // Recuperiamo tutte le azioni automatiche previste in questo task
         $automatedItems = $task->processTaskItems()
-            ->whereIn('action_type', ['automated_email', 'validation_rule', 'blacklist_check'])
+            ->whereIn('action_type', ['automated_email', 'validation_rule', 'blacklist_check', 'system_task'])
             ->get();
 
         foreach ($automatedItems as $item) {
@@ -169,6 +177,7 @@ class ProcessTaskExecutionObserver
                     // Registra il completamento (Scatena l'avanzamento se è l'ultima azione)
                     ProcessTaskItemAnswer::create([
                         'process_instance_id' => $instance->id,
+                        'process_task_execution_id' => $execution->id,
                         'process_task_item_id' => $item->id,
                         'user_id' => 0, // Bot
                         'value_text' => "Email automatica inviata a: {$toEmail}\nOggetto: {$subject}",
@@ -196,6 +205,7 @@ class ProcessTaskExecutionObserver
                     if ($isValid) {
                         ProcessTaskItemAnswer::create([
                             'process_instance_id' => $instance->id,
+                            'process_task_execution_id' => $execution->id,
                             'process_task_item_id' => $item->id,
                             'user_id' => 0, // Bot
                             'value_text' => "Validazione superata per {$fieldPath}.",
@@ -250,11 +260,46 @@ class ProcessTaskExecutionObserver
                     } else {
                         ProcessTaskItemAnswer::create([
                             'process_instance_id' => $instance->id,
+                            'process_task_execution_id' => $execution->id,
                             'process_task_item_id' => $item->id,
                             'user_id' => 0, // Bot
                             'value_text' => 'Verifica blacklist superata: agente non bloccato per questa banca.',
                             'completed_at' => now(),
                         ]);
+                    }
+                    break;
+
+                    // --------------------------------------------------------
+                    // CASO 4: JOB DI SISTEMA (locale o da pacchetto/applicativo esterno)
+                    // --------------------------------------------------------
+                case 'system_task':
+                    $jobClass = $item->handler_job;
+
+                    if (blank($jobClass) || ! class_exists($jobClass)) {
+                        Log::warning("Task ID {$item->id}: handler_job \"{$jobClass}\" non trovato o non configurato.");
+                        break;
+                    }
+
+                    try {
+                        Bus::dispatchSync(new $jobClass($instance->id, $config));
+
+                        ProcessTaskItemAnswer::create([
+                            'process_instance_id' => $instance->id,
+                            'process_task_execution_id' => $execution->id,
+                            'process_task_item_id' => $item->id,
+                            'user_id' => 0, // Bot
+                            'value_text' => "Job eseguito con successo: {$jobClass}",
+                            'completed_at' => now(),
+                        ]);
+                    } catch (\Throwable $e) {
+                        $instance->update(['status' => 'suspended']);
+
+                        activity('bpm')
+                            ->performedOn($instance)
+                            ->event('system_task_failed')
+                            ->withProperties(['job' => $jobClass, 'error' => $e->getMessage()])
+                            ->log("Job di sistema fallito ({$jobClass}): {$e->getMessage()}");
+                        // Il task rimane appeso e non si genera la answer
                     }
                     break;
 

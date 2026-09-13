@@ -6,6 +6,8 @@ use Cron\CronExpression;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class Process extends Model
 {
@@ -93,6 +95,121 @@ class Process extends Model
         }
 
         return $query->count();
+    }
+
+    /**
+     * Elenca le colonne reali della tabella del modello referenziato da `target_model`
+     * (alias del morphMap), con l'eventuale commento MySQL della colonna come descrizione
+     * leggibile. Usato per popolare le select di trigger_field/exclude_field nel form,
+     * cosà un utente non tecnico sceglie un campo esistente invece di scriverne il nome a mano.
+     *
+     * @return array<string, string>
+     */
+    public static function targetModelColumnOptions(?string $targetModelAlias): array
+    {
+        if (! $targetModelAlias) {
+            return [];
+        }
+
+        $modelClass = Relation::getMorphedModel($targetModelAlias);
+
+        if (! $modelClass || ! class_exists($modelClass)) {
+            return [];
+        }
+
+        $model = new $modelClass;
+        $connectionName = $model->getConnectionName() ?? config('database.default');
+        $connection = DB::connection($connectionName);
+        $table = Str::afterLast($model->getTable(), '.');
+
+        $columns = $connection->select(
+            'select COLUMN_NAME as name, COLUMN_COMMENT as comment
+             from information_schema.COLUMNS
+             where TABLE_SCHEMA = ? and TABLE_NAME = ?
+             order by ORDINAL_POSITION',
+            [$connection->getDatabaseName(), $table]
+        );
+
+        return collect($columns)
+            ->mapWithKeys(fn ($column) => [
+                $column->name => filled($column->comment)
+                    ? "{$column->name} — {$column->comment}"
+                    : $column->name,
+            ])
+            ->toArray();
+    }
+
+    /**
+     * Valori distinti realmente presenti nella colonna `status` della tabella del
+     * `target_model` indicato, per popolare la select del filtro `trigger_filters.status`
+     * (l'unica chiave di trigger_filters letta oggi da ExecutePeriodicProcessJob).
+     * Ritorna un array vuoto se il modello non ha una colonna `status`.
+     *
+     * @return array<string, string>
+     */
+    public static function targetModelStatusValues(?string $targetModelAlias): array
+    {
+        if (! $targetModelAlias || ! array_key_exists('status', static::targetModelColumnOptions($targetModelAlias))) {
+            return [];
+        }
+
+        $modelClass = Relation::getMorphedModel($targetModelAlias);
+
+        if (! $modelClass || ! class_exists($modelClass)) {
+            return [];
+        }
+
+        // withoutGlobalScopes: alcuni model applicano un orderBy come global scope (es. Clienti ordina
+        // per "name"), incompatibile con una SELECT DISTINCT sulla sola colonna "status".
+        return $modelClass::query()
+            ->withoutGlobalScopes()
+            ->whereNotNull('status')
+            ->distinct()
+            ->pluck('status')
+            ->map(fn ($value) => (string) $value)
+            ->sort()
+            ->mapWithKeys(fn ($value) => [$value => $value])
+            ->toArray();
+    }
+
+    /**
+     * Traduce una coppia (unità, valore) scelta da un utente non tecnico in una vera
+     * espressione cron. "settimana" usa il valore come giorno della settimana (0=Domenica).
+     */
+    public static function buildSimpleCronExpression(string $unit, int $value): ?string
+    {
+        return match ($unit) {
+            'minuti' => "*/{$value} * * * *",
+            'ore' => "0 */{$value} * * *",
+            'giorni' => "0 0 */{$value} * *",
+            'settimana' => "0 0 * * {$value}",
+            default => null,
+        };
+    }
+
+    /**
+     * Operazione inversa: prova a riconoscere in una cron_expression uno dei pattern
+     * "semplici" generati da buildSimpleCronExpression(), per precompilare la select
+     * unità/valore quando si riapre un processo già configurato.
+     *
+     * @return array{unit: ?string, value: ?int}
+     */
+    public static function parseSimpleCronExpression(?string $expression): array
+    {
+        $patterns = [
+            'minuti' => '/^\*\/(\d+) \* \* \* \*$/',
+            'ore' => '/^0 \*\/(\d+) \* \* \*$/',
+            'giorni' => '/^0 0 \*\/(\d+) \* \*$/',
+            'settimana' => '/^0 0 \* \* (\d+)$/',
+        ];
+
+        foreach ($patterns as $unit => $pattern) {
+            if (preg_match($pattern, trim((string) $expression), $matches)) {
+                return ['unit' => $unit, 'value' => (int) $matches[1]];
+            }
+        }
+
+        return ['unit' => null, 'value' => null];
     }
 
     /**

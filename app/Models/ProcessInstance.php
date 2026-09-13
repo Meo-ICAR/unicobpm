@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Collection;
 use Spatie\Activitylog\Models\Activity;
 
 #[ObservedBy(ProcessInstanceObserver::class)]
@@ -156,6 +157,27 @@ class ProcessInstance extends Model
     public function checklistAnswers()
     {
         return $this->hasMany(ChecklistAnswer::class, 'process_instance_id');
+    }
+
+    /**
+     * Le domande (ChecklistItem) da porre all'operatore per il task attualmente attivo,
+     * risalendo alle azioni di tipo 'fill_checklist' del task e alle checklist collegate.
+     * Ritorna una collection vuota se il task corrente non richiede nessuna checklist.
+     */
+    public function currentChecklistItems(): Collection
+    {
+        if (! $this->currentTask) {
+            return collect();
+        }
+
+        return $this->currentTask->processTaskItems()
+            ->where('action_type', 'fill_checklist')
+            ->whereNotNull('checklist_id')
+            ->with('checklist.items')
+            ->get()
+            ->flatMap(fn (ProcessTaskItem $item) => $item->checklist->items)
+            ->unique('id')
+            ->values();
     }
 
     /**

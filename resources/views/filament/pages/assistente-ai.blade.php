@@ -9,20 +9,7 @@
                 Risponde usando il manuale operativo dell'applicazione. Se non trova la risposta nel manuale, te lo dirà invece di inventarla.
             </p>
 
-            <form wire:submit="send" class="space-y-4">
-                <x-filament::input.wrapper>
-                    <textarea
-                        wire:model="prompt"
-                        rows="3"
-                        placeholder="Es: come emetto un proforma?"
-                        class="block w-full border-none bg-transparent p-1.5 text-base text-gray-950 focus:ring-0 dark:text-white sm:text-sm sm:leading-6"
-                    ></textarea>
-                </x-filament::input.wrapper>
-
-                <x-filament::button type="submit" icon="heroicon-o-paper-airplane">
-                    Chiedi
-                </x-filament::button>
-            </form>
+            {{ $this->form }}
 
             <div wire:loading wire:target="send" class="mt-4 text-sm text-gray-500 dark:text-gray-400">
                 Sto cercando nel manuale...
@@ -36,7 +23,7 @@
 
             @if ($answer)
                 <div class="mt-4 rounded-lg bg-gray-50 dark:bg-gray-800 p-4 prose dark:prose-invert max-w-none">
-                    {!! Str::markdown($answer) !!}
+                    {!! Str::markdown($answer, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
                 </div>
             @endif
         </x-filament::section>

@@ -4,13 +4,20 @@ namespace App\Filament\Pages;
 
 use App\Neuron\ManualAssistantAgent;
 use BackedEnum;
+use Filament\Actions\Action;
+use Filament\Forms\Components\Textarea;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Actions;
+use Filament\Schemas\Components\Form;
+use Filament\Schemas\Schema;
 use NeuronAI\Chat\Messages\UserMessage;
 use Throwable;
 
 /**
  * Assistente AI che risponde a domande sull'uso dell'applicazione, indicizzato
  * da `php artisan manual:sync` (vedi ManualAssistantAgent).
+ *
+ * @property-read Schema $form
  */
 class AssistenteAi extends Page
 {
@@ -24,23 +31,59 @@ class AssistenteAi extends Page
 
     protected static ?string $slug = 'assistente-ai';
 
-    public string $prompt = '';
+    /**
+     * @var array<string, mixed>|null
+     */
+    public ?array $data = [];
 
     public ?string $answer = null;
 
     public ?string $error = null;
+
+    public function mount(): void
+    {
+        $this->form->fill();
+    }
+
+    public function form(Schema $schema): Schema
+    {
+        return $schema
+            ->components([
+                Form::make([
+                    Textarea::make('prompt')
+                        ->label('Chiedi all\'Assistente AI')
+                        ->placeholder('Es: come emetto un proforma?')
+                        ->rows(3)
+                        ->autosize()
+                        ->required(),
+                ])
+                    ->id('assistente-ai-form')
+                    ->livewireSubmitHandler('send')
+                    ->footer([
+                        Actions::make([
+                            Action::make('send')
+                                ->label('Chiedi')
+                                ->icon('heroicon-o-paper-airplane')
+                                ->submit('assistente-ai-form'),
+                        ]),
+                    ]),
+            ])
+            ->statePath('data');
+    }
 
     public function send(): void
     {
         $this->error = null;
         $this->answer = null;
 
-        if (blank($this->prompt)) {
+        $prompt = $this->form->getState()['prompt'] ?? null;
+
+        if (blank($prompt)) {
             return;
         }
 
         try {
-            $reply = ManualAssistantAgent::make()->chat(new UserMessage($this->prompt))->getMessage();
+            $reply = ManualAssistantAgent::make()->chat(new UserMessage($prompt))->getMessage();
             $this->answer = (string) $reply->getContent();
         } catch (Throwable $e) {
             $this->error = "Non riesco a rispondere in questo momento: {$e->getMessage()}";

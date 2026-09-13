@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
@@ -55,8 +56,9 @@ class DatabaseSeeder extends Seeder
 
         foreach ($users as $userData) {
             if (! User::where('email', $userData['email'])->exists()) {
-                $user = User::factory()->create($userData);
-                $user->save();
+                User::factory()->create(array_merge($userData, [
+                    'password' => Hash::make('password'),
+                ]));
             }
         }
 

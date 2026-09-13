@@ -16,6 +16,7 @@ class ProcessTaskItem extends Model
         'action_type',
         'is_required',
         'document_type_id',
+        'checklist_id',
         'handler_job',
         'config', // Abilitato nel mass assignment
     ];
@@ -43,6 +44,14 @@ class ProcessTaskItem extends Model
     public function documentType(): BelongsTo
     {
         return $this->belongsTo(DocumentType::class);
+    }
+
+    /**
+     * La checklist da compilare, se action_type è 'fill_checklist'.
+     */
+    public function checklist(): BelongsTo
+    {
+        return $this->belongsTo(Checklist::class);
     }
 
     /**

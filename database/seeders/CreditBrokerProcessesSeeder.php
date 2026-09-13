@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\BusinessFunction;
+use App\Models\Checklist;
 use App\Models\DocumentType;
 use App\Models\Process;
 use App\Models\ProcessTask;
@@ -69,8 +70,10 @@ class CreditBrokerProcessesSeeder extends Seeder
         $task1 = $this->upsertTask($process, 10, 'Consegna Documentazione Precontrattuale', $reteEsterna);
         $this->upsertItem($task1, 1, 'Consegna Foglio Informativo al Cliente', 'text_input', null, true);
 
+        $checklist = Checklist::where('code', 'chk_trasparenza_01')->first();
+
         $task2 = $this->upsertTask($process, 20, 'Verifica Comprensione Cliente', $ctrlCompl);
-        $this->upsertItem($task2, 1, 'Questionario di Comprensione del Prodotto', 'fill_checklist', null, true);
+        $this->upsertItem($task2, 1, 'Questionario di Comprensione del Prodotto', 'fill_checklist', null, true, null, $checklist?->id);
 
         $task3 = $this->upsertTask($process, 30, 'Archiviazione Fascicolo', $busBo);
         $this->upsertItem($task3, 1, 'Caricamento Contratto Firmato', 'document_upload', $contratto?->id, true);
@@ -91,8 +94,10 @@ class CreditBrokerProcessesSeeder extends Seeder
         $polizza = DocumentType::where('code', 'POLIZZA_RC_PROFESSIONALE')->first();
         $attestato = DocumentType::where('code', 'ATTESTATO_FORMAZIONE')->first();
 
+        $checklist = Checklist::where('code', 'chk_oam_01')->first();
+
         $task1 = $this->upsertTask($process, 10, 'Verifica Requisiti Onorabilità e Professionalità', $ctrlCompl);
-        $this->upsertItem($task1, 1, 'Questionario Requisiti OAM', 'fill_checklist', null, true);
+        $this->upsertItem($task1, 1, 'Questionario Requisiti OAM', 'fill_checklist', null, true, null, $checklist?->id);
 
         $task2 = $this->upsertTask($process, 20, 'Rinnovo Assicurazione RC Professionale', $busBo);
         $this->upsertItem($task2, 1, 'Caricamento Polizza RC Professionale', 'document_upload', $polizza?->id, true);
@@ -171,7 +176,7 @@ class CreditBrokerProcessesSeeder extends Seeder
     /**
      * @param  array<string, mixed>|null  $config
      */
-    private function upsertItem(ProcessTask $task, int $ordine, string $name, string $actionType, ?int $documentTypeId, bool $isRequired, ?array $config = null): void
+    private function upsertItem(ProcessTask $task, int $ordine, string $name, string $actionType, ?int $documentTypeId, bool $isRequired, ?array $config = null, ?int $checklistId = null): void
     {
         $task->processTaskItems()->updateOrCreate(
             ['process_task_id' => $task->id, 'ordine' => $ordine],
@@ -179,6 +184,7 @@ class CreditBrokerProcessesSeeder extends Seeder
                 'name' => $name,
                 'action_type' => $actionType,
                 'document_type_id' => $documentTypeId,
+                'checklist_id' => $checklistId,
                 'is_required' => $isRequired,
                 'config' => $config,
             ]

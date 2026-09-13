@@ -12,6 +12,8 @@ use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Str;
 
 class ProcessTriggerForm
 {
@@ -45,23 +47,24 @@ class ProcessTriggerForm
 
                                         $process = Process::find($state);
 
-                                        // Se il processo ha un target_model definito, lo impostiamo come default in model_class
+                                        // target_model su Process è un alias del morphMap (es. 'fornitore'), ma
+                                        // model_class qui deve essere il nome di classe completo: HasBpmTriggers
+                                        // e BpmSchedulerCommand confrontano questo campo con get_class($model)/class_exists().
                                         if ($process && $process->target_model) {
-                                            $set('model_class', $process->target_model);
+                                            $set('model_class', Relation::getMorphedModel($process->target_model) ?? $process->target_model);
                                         }
                                     }),
 
                                 Select::make('model_class')
                                     ->label('Modello Monitorato')
                                     ->options(function () {
-                                        // Recupera l'array del morphMap dal ServiceProvider
+                                        // Recupera l'array del morphMap dal ServiceProvider. Il valore salvato è il
+                                        // nome di classe completo (non l'alias), per essere confrontabile con
+                                        // get_class($model) in HasBpmTriggers e class_exists() in BpmSchedulerCommand.
                                         $morphMap = Relation::morphMap();
 
-                                        // Trasforma le classi in nomi leggibili capitalizzati (es: 'cliente' => 'Cliente')
-                                        return collect($morphMap)->mapWithKeys(function ($className, $alias) {
-                                            $readableName = Str::afterLast($className, '\\');
-
-                                            return [$alias => $readableName];
+                                        return collect($morphMap)->mapWithKeys(function ($className) {
+                                            return [$className => Str::afterLast($className, '\\')];
                                         })->toArray();
                                     })
                                     ->searchable()
