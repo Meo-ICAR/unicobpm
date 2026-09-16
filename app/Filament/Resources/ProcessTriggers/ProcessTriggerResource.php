@@ -7,6 +7,7 @@ use App\Filament\Resources\ProcessTriggers\Pages\EditProcessTrigger;
 use App\Filament\Resources\ProcessTriggers\Pages\ListProcessTriggers;
 use App\Filament\Resources\ProcessTriggers\Schemas\ProcessTriggerForm;
 use App\Filament\Resources\ProcessTriggers\Tables\ProcessTriggersTable;
+use App\Filament\Traits\HasPlanAccess;
 use App\Models\ProcessTrigger;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -16,6 +17,8 @@ use Filament\Tables\Table;
 
 class ProcessTriggerResource extends Resource
 {
+    use HasPlanAccess;
+
     protected static ?string $model = ProcessTrigger::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;

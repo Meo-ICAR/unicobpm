@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\ProcessInstances\RelationManagers;
 
 use App\Filament\Resources\ProcessTaskExecutions\ProcessTaskExecutionResource;
+use App\Filament\Traits\HasRelationPlanAccess;
 use Filament\Actions\CreateAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
@@ -12,6 +13,8 @@ use Filament\Tables\Table;
 
 class TaskExecutionsRelationManager extends RelationManager
 {
+    use HasRelationPlanAccess;
+
     protected static string $relationship = 'taskExecutions';
 
     protected static ?string $relatedResource = ProcessTaskExecutionResource::class;

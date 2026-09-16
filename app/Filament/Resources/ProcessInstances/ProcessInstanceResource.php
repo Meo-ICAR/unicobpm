@@ -7,6 +7,7 @@ use App\Filament\Resources\ProcessInstances\Pages\EditProcessInstance;
 use App\Filament\Resources\ProcessInstances\Pages\ListProcessInstances;
 use App\Filament\Resources\ProcessInstances\Schemas\ProcessInstanceForm;
 use App\Filament\Resources\ProcessInstances\Tables\ProcessInstancesTable;
+use App\Filament\Traits\HasPlanAccess;
 use App\Models\ProcessInstance;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -16,6 +17,8 @@ use Filament\Tables\Table;
 
 class ProcessInstanceResource extends Resource
 {
+    use HasPlanAccess;
+
     protected static ?string $model = ProcessInstance::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;

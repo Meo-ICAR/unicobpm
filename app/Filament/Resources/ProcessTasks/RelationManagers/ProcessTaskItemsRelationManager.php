@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\ProcessTasks\RelationManagers;
 
 use App\Filament\Resources\ProcessTaskItems\Schemas\ProcessTaskItemForm;
+use App\Filament\Traits\HasRelationPlanAccess;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -21,6 +22,8 @@ use Filament\Tables\Table;
 
 class ProcessTaskItemsRelationManager extends RelationManager
 {
+    use HasRelationPlanAccess;
+
     protected static string $relationship = 'processTaskItems';
 
     protected static ?string $title = 'Item del Task';

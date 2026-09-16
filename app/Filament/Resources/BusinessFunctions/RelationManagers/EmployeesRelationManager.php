@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\BusinessFunctions\RelationManagers;
 
+use App\Filament\Traits\HasRelationPlanAccess;
 use App\Models\Employee;
 use App\Models\EmployeeType;
 use Filament\Actions\AttachAction;
@@ -20,6 +21,8 @@ use Illuminate\Support\Arr;
 
 class EmployeesRelationManager extends RelationManager
 {
+    use HasRelationPlanAccess;
+
     protected static string $relationship = 'employees';
 
     protected static ?string $title = 'Dipendenti';

@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\PlanType;
+use App\Enums\UserRole;
 use App\Models\Employee;
 use App\Models\EmployeeType;
 use App\Models\EmployeeTypePermission;
@@ -37,6 +38,20 @@ if (! function_exists('checkPiano')) {
 if (! function_exists('resolvePianoAccess')) {
     function resolvePianoAccess(string $feature, ?string $callerClass): bool
     {
+        // STEP 0: Bypass totale per Admin/SuperAdmin (App\Enums\UserRole),
+        // che vedono sempre tutto indipendentemente da piano e ruolo EmployeeType.
+        $authUser = auth()->user();
+
+        if ($authUser && ! empty($authUser->role)) {
+            $userRole = $authUser->role instanceof UserRole
+                ? $authUser->role
+                : UserRole::tryFrom($authUser->role);
+
+            if ($userRole === UserRole::ADMIN || $userRole === UserRole::SUPER_ADMIN) {
+                return true;
+            }
+        }
+
         // STEP 1: Piano / licenza.
         $planValue = config('plan.type', PlanType::Full->value);
         $plan = PlanType::tryFrom((string) $planValue) ?? PlanType::Full;

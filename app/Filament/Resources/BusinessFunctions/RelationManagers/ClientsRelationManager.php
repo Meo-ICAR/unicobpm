@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\BusinessFunctions\RelationManagers;
 
+use App\Filament\Traits\HasRelationPlanAccess;
 use App\Models\EmployeeType;
 use Filament\Actions\AttachAction;
 use Filament\Actions\BulkActionGroup;
@@ -16,6 +17,8 @@ use Filament\Tables\Table;
 
 class ClientsRelationManager extends RelationManager
 {
+    use HasRelationPlanAccess;
+
     protected static string $relationship = 'clients';
 
     protected static ?string $title = 'Consulenti esterni';

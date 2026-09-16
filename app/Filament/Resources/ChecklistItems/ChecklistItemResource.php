@@ -7,6 +7,7 @@ use App\Filament\Resources\ChecklistItems\Pages\EditChecklistItem;
 use App\Filament\Resources\ChecklistItems\Pages\ListChecklistItems;
 use App\Filament\Resources\ChecklistItems\Schemas\ChecklistItemForm;
 use App\Filament\Resources\ChecklistItems\Tables\ChecklistItemsTable;
+use App\Filament\Traits\HasPlanAccess;
 use App\Models\ChecklistItem;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -14,6 +15,8 @@ use Filament\Tables\Table;
 
 class ChecklistItemResource extends Resource
 {
+    use HasPlanAccess;
+
     protected static ?string $model = ChecklistItem::class;
 
     protected static bool $shouldRegisterNavigation = false;

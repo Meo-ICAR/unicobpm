@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Processes\RelationManagers;
 
+use App\Filament\Traits\HasRelationPlanAccess;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -24,6 +25,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class ProcessTasksRelationManager extends RelationManager
 {
+    use HasRelationPlanAccess;
+
     protected static string $relationship = 'tasks';
 
     protected static ?string $title = 'Task del Processo';

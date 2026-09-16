@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Checklists\RelationManagers;
 
 use App\Filament\Resources\ChecklistItems\Schemas\ChecklistItemForm;
+use App\Filament\Traits\HasRelationPlanAccess;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -17,6 +18,8 @@ use Filament\Tables\Table;
 
 class ChecklistItemRelationManager extends RelationManager
 {
+    use HasRelationPlanAccess;
+
     protected static string $relationship = 'items';
 
     protected static ?string $title = 'Voci della Checklist';

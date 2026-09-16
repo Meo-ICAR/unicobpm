@@ -7,6 +7,7 @@ use App\Filament\Resources\ChecklistAnswers\Pages\EditChecklistAnswer;
 use App\Filament\Resources\ChecklistAnswers\Pages\ListChecklistAnswers;
 use App\Filament\Resources\ChecklistAnswers\Schemas\ChecklistAnswerForm;
 use App\Filament\Resources\ChecklistAnswers\Tables\ChecklistAnswersTable;
+use App\Filament\Traits\HasPlanAccess;
 use App\Models\ChecklistAnswer;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -16,6 +17,8 @@ use Filament\Tables\Table;
 
 class ChecklistAnswerResource extends Resource
 {
+    use HasPlanAccess;
+
     protected static ?string $model = ChecklistAnswer::class;
 
     protected static bool $shouldRegisterNavigation = false;

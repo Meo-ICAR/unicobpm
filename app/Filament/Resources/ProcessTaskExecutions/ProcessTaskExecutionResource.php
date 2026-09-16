@@ -7,6 +7,7 @@ use App\Filament\Resources\ProcessTaskExecutions\Pages\EditProcessTaskExecution;
 use App\Filament\Resources\ProcessTaskExecutions\Pages\ListProcessTaskExecutions;
 use App\Filament\Resources\ProcessTaskExecutions\Schemas\ProcessTaskExecutionForm;
 use App\Filament\Resources\ProcessTaskExecutions\Tables\ProcessTaskExecutionsTable;
+use App\Filament\Traits\HasPlanAccess;
 use App\Models\ProcessTaskExecution;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -16,6 +17,8 @@ use Filament\Tables\Table;
 
 class ProcessTaskExecutionResource extends Resource
 {
+    use HasPlanAccess;
+
     protected static ?string $model = ProcessTaskExecution::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;

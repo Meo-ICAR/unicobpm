@@ -8,6 +8,7 @@ use App\Filament\Resources\ProcessTasks\Pages\ListProcessTasks;
 use App\Filament\Resources\ProcessTasks\RelationManagers\ProcessTaskItemsRelationManager;
 use App\Filament\Resources\ProcessTasks\Schemas\ProcessTaskForm;
 use App\Filament\Resources\ProcessTasks\Tables\ProcessTasksTable;
+use App\Filament\Traits\HasPlanAccess;
 use App\Models\ProcessTask;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -15,6 +16,8 @@ use Filament\Tables\Table;
 
 class ProcessTaskResource extends Resource
 {
+    use HasPlanAccess;
+
     protected static ?string $model = ProcessTask::class;
 
     // protected static bool $shouldRegisterNavigation = false;
