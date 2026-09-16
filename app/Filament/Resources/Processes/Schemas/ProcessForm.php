@@ -26,20 +26,25 @@ class ProcessForm
                 ->columns(3)
                 ->schema([
                     TextInput::make('code')
+                        ->label('Codice')
                      //   ->required()
                         ->unique(ignoreRecord: true)
                         ->maxLength(50),
                     TextInput::make('name')
+                        ->label('Nome')
                         ->required()
                         ->columnSpan(2),
                     TextInput::make('version')
+                        ->label('Versione')
                         ->numeric()
                         ->required()
                         ->default(1),
                     Toggle::make('is_active')
+                        ->label('Attivo')
                         ->default(true)
                         ->inline(false),
                     Textarea::make('description')
+                        ->label('Descrizione')
                         ->nullable()
                         ->columnSpanFull(),
                 ]),
@@ -152,6 +157,7 @@ class ProcessForm
                 ->columns(3)
                 ->schema([
                     Toggle::make('is_periodic')
+                        ->label('Ricorrente')
                         ->live()
                         ->inline(false)
                         ->columnSpanFull(),
@@ -208,8 +214,8 @@ class ProcessForm
             Section::make('Schedulazione')
                 ->columns(2)
                 ->schema([
-                    DateTimePicker::make('last_activated_at')->disabled()->nullable(),
-                    DateTimePicker::make('next_run_at')->disabled()->nullable(),
+                    DateTimePicker::make('last_activated_at')->label('Ultima Esecuzione')->disabled()->nullable(),
+                    DateTimePicker::make('next_run_at')->label('Prossima Esecuzione')->disabled()->nullable(),
                 ]),
 
         ]);

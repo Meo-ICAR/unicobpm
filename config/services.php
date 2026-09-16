@@ -76,6 +76,10 @@ return [
             'url' => env('PROFORMA_API_URL', 'https://proforma.hassisto.com'),
             'label' => 'Proforma',
         ],
+        'daishboard' => [
+            'url' => env('DAISHBOARD_API_URL', 'https://daishboard.hassisto.com'),
+            'label' => 'Dashboard',
+        ],
     ],
 
 ];

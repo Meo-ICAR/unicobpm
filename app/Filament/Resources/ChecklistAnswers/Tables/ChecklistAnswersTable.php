@@ -16,16 +16,25 @@ class ChecklistAnswersTable
         return $table
             ->columns([
                 TextColumn::make('processInstance.id')
+                    ->label('Istanza di Processo')
                     ->searchable(),
-                TextColumn::make('checklistItem.name')
-                    ->searchable(),
+                TextColumn::make('checklistItem.display_label')
+                    ->label('Voce Checklist')
+                    ->searchable(query: function ($query, string $search) {
+                        $query->whereHas('checklistItem', fn ($q) => $q
+                            ->where('label', 'like', "%{$search}%")
+                            ->orWhere('name', 'like', "%{$search}%"));
+                    }),
                 IconColumn::make('value_boolean')
+                    ->label('Valore (Sì/No)')
                     ->boolean(),
                 TextColumn::make('created_at')
+                    ->label('Creato il')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('updated_at')
+                    ->label('Aggiornato il')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),

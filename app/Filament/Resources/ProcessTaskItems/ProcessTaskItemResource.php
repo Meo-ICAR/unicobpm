@@ -24,6 +24,10 @@ class ProcessTaskItemResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
+    protected static ?string $modelLabel = 'Voce Task di Processo';
+
+    protected static ?string $pluralModelLabel = 'Voci Task di Processo';
+
     public static function form(Schema $schema): Schema
     {
         return ProcessTaskItemForm::configure($schema);

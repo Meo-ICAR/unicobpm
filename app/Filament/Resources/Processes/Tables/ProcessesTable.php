@@ -20,11 +20,13 @@ class ProcessesTable
         return $table
             ->columns([
                 TextColumn::make('code')
+                    ->label('Codice')
                     ->searchable()
                     ->sortable()
                     ->badge()
                     ->color('gray'),
                 TextColumn::make('name')
+                    ->label('Nome')
                     ->searchable()
                     ->sortable(),
 

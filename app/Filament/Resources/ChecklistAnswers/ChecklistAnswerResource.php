@@ -24,6 +24,10 @@ class ChecklistAnswerResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
+    protected static ?string $modelLabel = 'Risposta Checklist';
+
+    protected static ?string $pluralModelLabel = 'Risposte Checklist';
+
     public static function form(Schema $schema): Schema
     {
         return ChecklistAnswerForm::configure($schema);

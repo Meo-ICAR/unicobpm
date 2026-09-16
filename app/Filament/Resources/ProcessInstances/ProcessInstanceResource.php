@@ -22,6 +22,10 @@ class ProcessInstanceResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
+    protected static ?string $modelLabel = 'Istanza di Processo';
+
+    protected static ?string $pluralModelLabel = 'Istanze di Processo';
+
     public static function form(Schema $schema): Schema
     {
         return ProcessInstanceForm::configure($schema);

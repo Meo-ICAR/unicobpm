@@ -8,10 +8,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
-class DocumentType extends Model
+class DocumentType extends Model implements HasMedia
 {
-    use HasFactory,  SoftDeletes;
+    use HasFactory, InteractsWithMedia, SoftDeletes;
 
     protected $connection = 'mysql_unicooam';
 
@@ -36,12 +38,17 @@ class DocumentType extends Model
         'is_principal',
         'is_client',
         'is_practice',
+        'trigger_field',
         'is_signed',
         'is_monitored',
         'doctype',
         'cellposition',
         'renewed_by_id',
+        'training_hours',
+        'training_organization',
         'duration',
+        'duration_unit',
+        'nature',
         'emitted_by',
         'is_sensible',
         'is_template',
@@ -59,6 +66,13 @@ class DocumentType extends Model
         'created_by',
         'updated_by',
         'deleted_by',
+        'is_versioned',
+        'trigger_state',
+        'trigger_value',
+        'exclude_field',
+        'exclude_state',
+        'exclude_value',
+        'expire_days_before',
     ];
 
     protected $casts = [
@@ -78,11 +92,14 @@ class DocumentType extends Model
         'is_AiAbstract' => 'boolean',
         'is_AiCheck' => 'boolean',
         'allow_auto_verification' => 'boolean',
+        'is_versioned' => 'boolean',
         'notify_days_before' => 'array',
         'priority' => 'integer',
+        'training_hours' => 'integer',
         'duration' => 'integer',
         'min_confidence' => 'integer',
         'retention_years' => 'integer',
+        'expire_days_before' => 'integer',
     ];
 
     public function durationCalculate(Carbon $emittedAt): ?Carbon

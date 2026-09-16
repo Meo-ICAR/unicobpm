@@ -22,6 +22,10 @@ class ProcessTriggerResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
+    protected static ?string $modelLabel = 'Trigger di Processo';
+
+    protected static ?string $pluralModelLabel = 'Trigger di Processo';
+
     public static function form(Schema $schema): Schema
     {
         return ProcessTriggerForm::configure($schema);

@@ -14,13 +14,19 @@ class ChecklistAnswerForm
         return $schema
             ->components([
                 Select::make('process_instance_id')
+                    ->label('Istanza di Processo')
                     ->relationship('processInstance', 'id')
                     ->required(),
                 Select::make('checklist_item_id')
-                    ->relationship('checklistItem', 'name')
+                    ->label('Voce Checklist')
+                    ->relationship('checklistItem')
+                    ->getOptionLabelFromRecordUsing(fn ($record) => $record->display_label)
+                    ->searchable(['label', 'name'])
                     ->required(),
-                Toggle::make('value_boolean'),
+                Toggle::make('value_boolean')
+                    ->label('Valore (Sì/No)'),
                 Textarea::make('value_text')
+                    ->label('Valore (Testo)')
                     ->columnSpanFull(),
             ]);
     }

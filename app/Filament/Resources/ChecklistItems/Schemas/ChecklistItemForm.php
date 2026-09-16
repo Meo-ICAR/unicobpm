@@ -24,6 +24,7 @@ class ChecklistItemForm
                 ->columns(2)
                 ->schema([
                     Select::make('checklist_id')
+                        ->label('Checklist')
                         ->relationship('checklist', 'name')
                         ->required()
                         ->searchable()
@@ -48,11 +49,16 @@ class ChecklistItemForm
                 ->collapsible()
                 ->collapsed()
                 ->schema([
-                    TextInput::make('exclude_field')->nullable(),
+                    TextInput::make('exclude_field')
+                        ->label('Campo da Escludere')
+                        ->nullable(),
                     TextInput::make('exclude_state')
+                        ->label('Condizione di Esclusione')
                         ->nullable()
                         ->placeholder('filled | empty | equals'),
-                    TextInput::make('exclude_value')->nullable(),
+                    TextInput::make('exclude_value')
+                        ->label('Valore Atteso')
+                        ->nullable(),
                 ]),
 
             Section::make('Regole di Knockout')
@@ -81,18 +87,23 @@ class ChecklistItemForm
     {
         return [
             TextInput::make('item_code')
+                ->label('Codice Voce')
                 ->nullable()
                 ->unique(ignoreRecord: true)
                 ->placeholder('ES-001'),
             TextInput::make('ordine')
+                ->label('Ordine')
                 ->numeric()
                 ->default(0)
                 ->required(),
             TextInput::make('name')
+                ->label('Nome')
                 ->nullable(),
             TextInput::make('label')
+                ->label('Etichetta')
                 ->nullable(),
             Textarea::make('question')
+                ->label('Domanda')
                 ->nullable()
                 ->columnSpanFull(),
         ];
@@ -105,6 +116,7 @@ class ChecklistItemForm
     {
         return [
             Select::make('type')
+                ->label('Tipo di Risposta')
                 ->options([
                     'boolean' => 'Sì / No',
                     'text' => 'Testo libero',
@@ -121,6 +133,7 @@ class ChecklistItemForm
                 ->default(true)
                 ->inline(false),
             KeyValue::make('options')
+                ->label('Opzioni')
                 ->nullable()
                 ->keyLabel('Chiave')
                 ->valueLabel('Etichetta')
@@ -173,6 +186,7 @@ class ChecklistItemForm
                 ->inline(false)
                 ->live(),
             TextInput::make('knockout_value')
+                ->label('Valore di Knockout')
                 ->nullable()
                 ->hidden(fn (Get $get) => ! $get('is_knockout')),
         ];
@@ -185,9 +199,11 @@ class ChecklistItemForm
     {
         return [
             TextInput::make('depends_on_code')
+                ->label('Codice Domanda Padre')
                 ->nullable()
                 ->placeholder('item_code della domanda padre'),
             TextInput::make('depends_on_value')
+                ->label('Valore Richiesto')
                 ->nullable()
                 ->placeholder('Valore atteso'),
         ];

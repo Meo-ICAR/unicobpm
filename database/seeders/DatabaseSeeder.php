@@ -65,6 +65,8 @@ class DatabaseSeeder extends Seeder
         $this->call([
             // 1. Anagrafiche di base (nessuna Foreign Key)
             DocumentTypeSeeder::class,
+            TaskSeeder::class,
+            TaskDocumentTypeSeeder::class, // Dipende da DocumentTypeSeeder e TaskSeeder
             BusinessFunctionSeeder::class,
             ChecklistSeeder::class,
             ProcessSeeder::class,

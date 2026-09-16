@@ -22,6 +22,10 @@ class ProcessTaskExecutionResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
+    protected static ?string $modelLabel = 'Esecuzione Task';
+
+    protected static ?string $pluralModelLabel = 'Esecuzioni Task';
+
     public static function form(Schema $schema): Schema
     {
         return ProcessTaskExecutionForm::configure($schema);

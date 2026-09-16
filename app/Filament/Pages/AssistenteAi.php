@@ -28,6 +28,8 @@ class AssistenteAi extends Page
 
     protected static ?string $navigationLabel = 'Assistente AI';
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Documentazione';
+
     protected static ?string $title = 'Assistente AI';
 
     protected static ?string $slug = 'assistente-ai';

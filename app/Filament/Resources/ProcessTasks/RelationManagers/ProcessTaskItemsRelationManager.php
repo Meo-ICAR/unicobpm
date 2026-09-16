@@ -32,8 +32,10 @@ class ProcessTaskItemsRelationManager extends RelationManager
         // model, devono salvare valori compatibili con quelli letti a runtime dal motore BPM.
         return $schema->components([
             TextInput::make('name')
+                ->label('Nome')
                 ->required(),
             TextInput::make('ordine')
+                ->label('Ordine')
                 ->numeric()
                 ->required()
                 ->default(0),

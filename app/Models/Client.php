@@ -116,10 +116,15 @@ class Client extends Model
         return $this->morphMany(Address::class, 'addressable');
     }
 
+    /**
+     * Funzioni aziendali per cui questo cliente opera come consulente esterno,
+     * ossia ricopre un ruolo (EmployeeType) normalmente svolto da un dipendente.
+     */
     public function businessFunctions(): MorphToMany
     {
         return $this->morphToMany(BusinessFunction::class, 'member', 'unicobpm.business_function_members')
-            ->withPivot('is_manager')
+            ->using(BusinessFunctionMember::class)
+            ->withPivot('employee_type_id', 'is_manager')
             ->withTimestamps();
     }
 

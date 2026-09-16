@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\Model;
 class ProcessTasksRelationManager extends RelationManager
 {
     protected static string $relationship = 'tasks';
+
     protected static ?string $title = 'Task del Processo';
 
     public function form(Schema $schema): Schema
@@ -34,19 +35,22 @@ class ProcessTasksRelationManager extends RelationManager
             Section::make('Identificazione Task')
                 ->columns(2)
                 ->schema([
-                    TextInput::make('name')->required(),
-                    TextInput::make('code')->nullable(),
+                    TextInput::make('name')->label('Nome')->required(),
+                    TextInput::make('code')->label('Codice')->nullable(),
                     TextInput::make('ordine')
+                        ->label('Ordine')
                         ->numeric()
                         ->required()
                         ->default(0),
                     Select::make('business_function_id')
+                        ->label('Funzione Aziendale')
                         ->relationship('businessFunction', 'name')
                         ->nullable()
                         ->searchable()
                         ->preload()
                         ->columnSpanFull(),
                     Textarea::make('description')
+                        ->label('Descrizione')
                         ->nullable()
                         ->columnSpanFull(),
                 ]),
@@ -57,6 +61,7 @@ class ProcessTasksRelationManager extends RelationManager
                 ->schema([
                     Repeater::make('raciAssignments')
                         ->relationship('raciAssignments')
+                        ->label('Assegnazioni RACI')
                         ->addActionLabel('Aggiungi riga RACI')
                         ->columns(2)
                         ->schema([
@@ -83,9 +88,9 @@ class ProcessTasksRelationManager extends RelationManager
                 ->collapsible()
                 ->collapsed()
                 ->schema([
-                    TextInput::make('trigger_field')->nullable(),
-                    TextInput::make('trigger_state')->nullable()->placeholder('filled | empty | equals'),
-                    TextInput::make('trigger_value')->nullable(),
+                    TextInput::make('trigger_field')->label('Campo di Attivazione')->nullable(),
+                    TextInput::make('trigger_state')->label('Condizione')->nullable()->placeholder('filled | empty | equals'),
+                    TextInput::make('trigger_value')->label('Valore di Confronto')->nullable(),
                 ]),
 
             Section::make('Esclusione Condizionale')
@@ -93,9 +98,9 @@ class ProcessTasksRelationManager extends RelationManager
                 ->collapsible()
                 ->collapsed()
                 ->schema([
-                    TextInput::make('exclude_field')->nullable(),
-                    TextInput::make('exclude_state')->nullable()->placeholder('filled | empty | equals'),
-                    TextInput::make('exclude_value')->nullable(),
+                    TextInput::make('exclude_field')->label('Campo di Esclusione')->nullable(),
+                    TextInput::make('exclude_state')->label('Condizione')->nullable()->placeholder('filled | empty | equals'),
+                    TextInput::make('exclude_value')->label('Valore di Confronto')->nullable(),
                 ]),
 
             Section::make('Solleciti')
@@ -103,11 +108,13 @@ class ProcessTasksRelationManager extends RelationManager
                 ->collapsible()
                 ->collapsed()
                 ->schema([
-                    Toggle::make('has_reminders')->live()->inline(false),
+                    Toggle::make('has_reminders')->label('Abilita Solleciti')->live()->inline(false),
                     TextInput::make('reminder_interval_days')
+                        ->label('Intervallo (giorni)')
                         ->numeric()->default(3)
                         ->hidden(fn (Get $get) => ! $get('has_reminders')),
                     TextInput::make('max_reminders')
+                        ->label('Max Solleciti')
                         ->numeric()->default(5)
                         ->hidden(fn (Get $get) => ! $get('has_reminders')),
                 ]),
@@ -117,6 +124,7 @@ class ProcessTasksRelationManager extends RelationManager
                 ->collapsed()
                 ->schema([
                     KeyValue::make('escalation_rules')
+                        ->label('Regole di Escalation')
                         ->nullable()
                         ->keyLabel('Livello')
                         ->valueLabel('Ore massime attesa')

@@ -3,8 +3,10 @@
 namespace App\Filament\Resources\BusinessFunctions\Schemas;
 
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 
 class BusinessFunctionForm
@@ -13,41 +15,73 @@ class BusinessFunctionForm
     {
         return $schema
             ->components([
-                TextInput::make('code')
-                    ->required(),
-                Select::make('macro_area')
-                    ->options([
-            'Governance' => 'Governance',
-            'Business / Commerciale' => 'Business/ commerciale',
-            'Supporto' => 'Supporto',
-            'Controlli (II Livello)' => 'Controlli( i i livello)',
-            'Controlli (III Livello)' => 'Controlli( i i i livello)',
-            'Controlli / Privacy' => 'Controlli/ privacy',
-        ])
-                    ->required(),
-                TextInput::make('name'),
-                Select::make('type')
-                    ->options([
-            'Strategica' => 'Strategica',
-            'Operativa' => 'Operativa',
-            'Supporto' => 'Supporto',
-            'Controllo' => 'Controllo',
-        ])
-                    ->required(),
-                Textarea::make('description')
-                    ->columnSpanFull(),
-                Select::make('outsourcable_status')
-                    ->options(['yes' => 'Yes', 'no' => 'No', 'partial' => 'Partial'])
-                    ->default('no')
-                    ->required(),
-                TextInput::make('managed_by_code'),
-                Textarea::make('mission')
-                    ->columnSpanFull(),
-                Textarea::make('responsibility')
-                    ->columnSpanFull(),
-                TextInput::make('email')
-                    ->label('Email address')
-                    ->email(),
+                Section::make('Identificazione')
+                    ->description('Codice, nome e classificazione della funzione aziendale')
+                    ->schema([
+                        Grid::make(2)
+                            ->schema([
+                                TextInput::make('code')
+                                    ->label('Codice')
+                                    ->required(),
+                                TextInput::make('name')
+                                    ->label('Nome'),
+                                Select::make('macro_area')
+                                    ->label('Macro area')
+                                    ->options([
+                                        'Governance' => 'Governance',
+                                        'Business / Commerciale' => 'Business / Commerciale',
+                                        'Supporto' => 'Supporto',
+                                        'Controlli (II Livello)' => 'Controlli (II Livello)',
+                                        'Controlli (III Livello)' => 'Controlli (III Livello)',
+                                        'Controlli / Privacy' => 'Controlli / Privacy',
+                                    ])
+                                    ->required(),
+                                Select::make('type')
+                                    ->label('Tipologia')
+                                    ->options([
+                                        'Strategica' => 'Strategica',
+                                        'Operativa' => 'Operativa',
+                                        'Supporto' => 'Supporto',
+                                        'Controllo' => 'Controllo',
+                                    ])
+                                    ->required(),
+                            ]),
+                    ]),
+                Section::make('Esternalizzazione e gestione')
+                    ->description('Chi gestisce la funzione e se può essere affidata a un consulente esterno')
+                    ->schema([
+                        Grid::make(3)
+                            ->schema([
+                                Select::make('outsourcable_status')
+                                    ->label('Esternalizzabile')
+                                    ->options([
+                                        'yes' => 'Sì',
+                                        'no' => 'No',
+                                        'partial' => 'Parziale',
+                                    ])
+                                    ->default('no')
+                                    ->required(),
+                                TextInput::make('managed_by_code')
+                                    ->label('Gestita dal codice'),
+                                TextInput::make('email')
+                                    ->label('Email di contatto')
+                                    ->email(),
+                            ]),
+                    ]),
+                Section::make('Descrizione e responsabilità')
+                    ->schema([
+                        Textarea::make('description')
+                            ->label('Descrizione')
+                            ->columnSpanFull(),
+                        Textarea::make('mission')
+                            ->label('Mission')
+                            ->helperText('Cosa fa la funzione')
+                            ->columnSpanFull(),
+                        Textarea::make('responsibility')
+                            ->label('Responsabilità')
+                            ->helperText('Elenco di attività e responsabilità')
+                            ->columnSpanFull(),
+                    ]),
             ]);
     }
 }

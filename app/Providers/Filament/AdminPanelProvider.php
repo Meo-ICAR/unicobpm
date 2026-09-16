@@ -64,6 +64,7 @@ class AdminPanelProvider extends PanelProvider
                 NavigationItem::make('Manuale operativo BPM')
                     ->url(fn () => route('manuale-operativo-bpm'), shouldOpenInNewTab: true)
                     ->icon('heroicon-o-book-open')
+                    ->group('Documentazione')
                     ->sort(100),
             ])
             ->middleware([

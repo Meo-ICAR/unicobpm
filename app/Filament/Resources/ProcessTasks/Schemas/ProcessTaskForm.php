@@ -23,6 +23,7 @@ class ProcessTaskForm
                 ->columns(2)
                 ->schema([
                     Select::make('process_id')
+                        ->label('Processo')
                         ->relationship('process', 'name')
                         ->required()
                         ->searchable()
@@ -30,19 +31,24 @@ class ProcessTaskForm
                         ->live()
                         ->columnSpanFull(),
                     TextInput::make('name')
+                        ->label('Nome')
                         ->required(),
                     TextInput::make('code')
+                        ->label('Codice')
                         ->nullable(),
                     TextInput::make('ordine')
+                        ->label('Ordine')
                         ->numeric()
                         ->required()
                         ->default(0),
                     Select::make('business_function_id')
+                        ->label('Funzione Aziendale')
                         ->relationship('businessFunction', 'name')
                         ->nullable()
                         ->searchable()
                         ->preload(),
                     Textarea::make('description')
+                        ->label('Descrizione')
                         ->nullable()
                         ->columnSpanFull(),
                 ]),
@@ -131,6 +137,7 @@ class ProcessTaskForm
                 ->collapsible()
                 ->schema([
                     Toggle::make('has_reminders')
+                        ->label('Abilita Solleciti')
                         ->live()
                         ->inline(false)
                         ->columnSpanFull(),

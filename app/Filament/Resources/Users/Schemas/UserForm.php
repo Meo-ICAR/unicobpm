@@ -5,8 +5,9 @@ namespace App\Filament\Resources\Users\Schemas;
 use App\Models\Client;
 use App\Models\Employee;
 use Filament\Forms\Components\MorphToSelect;
-use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 
 class UserForm
@@ -39,26 +40,22 @@ class UserForm
                         // IL COMPONENTE POLIMORFO NATIVO
                         MorphToSelect::make('profile')
                             ->label('Tipo di Profilo')
-                            ->placeholder('Seleziona la tipologia di operatore')
+                            ->modifyTypeSelectUsing(fn (Select $select) => $select->placeholder('Seleziona la tipologia di operatore'))
                             ->types([
 
                                 // Configurazione per i Dipendenti
                                 MorphToSelect\Type::make(Employee::class)
                                     ->label('Dipendente')
                                     ->titleAttribute('name') // Il campo da mostrare nella select
-                                    ->searchable()
-                                    ->preload(),
+                                    ->searchColumns(['name']),
 
                                 // Configurazione per i Clienti/Mediatori
                                 MorphToSelect\Type::make(Client::class)
                                     ->label('Cliente/Mediatore')
                                     ->titleAttribute('name')
-                                    ->searchable()
-                                    ->preload(),
+                                    ->searchColumns(['name']),
                             ])
-                            ->required() // Rendo il profilo obbligatorio per l'architettura BPM
-                            ->searchable()
-                            ->preload(),
+                            ->required(), // Rendo il profilo obbligatorio per l'architettura BPM
 
                     ]),
             ]);

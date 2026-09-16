@@ -20,14 +20,18 @@ class ProcessTaskItemsTable
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('name')
+                    ->label('Nome')
                     ->searchable(),
                 TextColumn::make('ordine')
+                    ->label('Ordine')
                     ->numeric()
                     ->sortable(),
                 TextColumn::make('action_type')
+                    ->label('Tipo Azione')
                     ->badge()
                     ->searchable(),
                 IconColumn::make('is_required')
+                    ->label('Obbligatorio')
                     ->boolean(),
                 TextColumn::make('documentType.name')
                     ->label('Tipo Documento')
@@ -38,12 +42,15 @@ class ProcessTaskItemsTable
                     ->placeholder('—')
                     ->searchable(),
                 TextColumn::make('handler_job')
+                    ->label('Job Handler')
                     ->searchable(),
                 TextColumn::make('created_at')
+                    ->label('Creato il')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('updated_at')
+                    ->label('Aggiornato il')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),

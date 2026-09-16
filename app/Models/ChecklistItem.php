@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -48,5 +49,17 @@ class ChecklistItem extends Model
     public function checklist(): BelongsTo
     {
         return $this->belongsTo(Checklist::class);
+    }
+
+    /**
+     * 'label' e 'name' sono popolati in modo incoerente a seconda di come è stata
+     * creata la voce: questo accessor dà sempre un titolo non nullo da usare
+     * ovunque serva mostrare/selezionare la voce (es. Select::relationship()).
+     */
+    protected function displayLabel(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->label ?: $this->name ?: "Voce #{$this->id}",
+        );
     }
 }

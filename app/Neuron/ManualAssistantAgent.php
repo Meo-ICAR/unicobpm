@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Neuron;
 
+use Illuminate\Support\Facades\DB;
 use NeuronAI\Agent\SystemPrompt;
 use NeuronAI\Providers\AIProviderInterface;
 use NeuronAI\Providers\Anthropic\Anthropic;
@@ -11,18 +12,36 @@ use NeuronAI\RAG\Embeddings\EmbeddingsProviderInterface;
 use NeuronAI\RAG\RAG;
 use NeuronAI\RAG\VectorStore\FileVectorStore;
 use NeuronAI\RAG\VectorStore\VectorStoreInterface;
+use NeuronAI\Tools\Toolkits\Calculator\CalculatorToolkit;
 use RuntimeException;
 
 /**
- * Assistente AI che risponde a domande sull'uso del motore BPM al posto di un
- * manuale operativo statico: le linee guida di progetto (CLAUDE.md), le
- * specifiche di dominio (BPM-DOMAIN-SPEC.md) e il manuale operativo del BPM
- * (resources/manuals/manuale-operativo-bpm.html) sono indicizzati nel vector
- * store da `php artisan manual:sync` e recuperati per similarità a ogni
- * domanda.
+ * Assistente AI che risponde a domande sull'uso del motore BPM (dalla
+ * documentazione di progetto: CLAUDE.md, BPM-DOMAIN-SPEC.md, manuale operativo
+ * BPM, indicizzati da `php artisan manual:sync`) e a domande sui dati
+ * operativi (es. task in scadenza, stato di un processo) tramite sola lettura
+ * del database, limitata alle tabelle di dominio in QUERYABLE_TABLES.
  */
 class ManualAssistantAgent extends RAG
 {
+    /**
+     * Tabelle interrogabili dall'assistente via SQL: solo dati di dominio
+     * (processi, task, checklist, RACI, aziende). Escluse deliberatamente le
+     * tabelle di autenticazione/infrastruttura (users, password_reset_tokens,
+     * sessions, socialite_users, activity_log, cache, jobs, migrations) per
+     * evitare che l'assistente possa leggere credenziali, token o log non
+     * pertinenti.
+     *
+     * @var array<int, string>
+     */
+    protected const QUERYABLE_TABLES = [
+        'business_function_members', 'business_functions',
+        'checklist_answers', 'checklist_items', 'checklist_submissions', 'checklists',
+        'companies',
+        'process_instances', 'process_task_executions', 'process_task_item_answers',
+        'process_task_items', 'process_task_raci', 'process_tasks', 'process_triggers', 'processes',
+    ];
+
     public static function manualSources(): array
     {
         return [
@@ -52,10 +71,13 @@ class ManualAssistantAgent extends RAG
         return (string) new SystemPrompt(
             background: [
                 'Sei l\'assistente utente di UnicoBPM, motore di Business Process Management per mediatori creditizi (pratiche/processi, task, RACI, escalation, checklist).',
-                'Rispondi SOLO usando le informazioni recuperate dalla documentazione di progetto (documenti allegati al contesto).',
+                'Rispondi alle domande procedurali ("come si fa...") SOLO usando le informazioni recuperate dalla documentazione di progetto (documenti allegati al contesto).',
+                'Rispondi alle domande sui dati operativi (es. task in scadenza, stato di un processo, conteggi) interrogando il database con gli strumenti SQL disponibili, in sola lettura.',
             ],
             steps: [
-                'Se la documentazione non contiene la risposta, dillo esplicitamente invece di inventare procedure.',
+                'Per domande procedurali: se la documentazione non contiene la risposta, dillo esplicitamente invece di inventare procedure.',
+                'Per domande sui dati: usa prima lo strumento di analisi schema per capire tabelle e colonne disponibili, poi esegui una query SELECT mirata. Se lo strumento SQL rifiuta la query (tabella non consentita o query di scrittura), dillo esplicitamente all\'utente invece di riprovare all\'infinito.',
+                'Non rivelare mai contenuti di colonne che sembrano credenziali, password, token o segreti, anche se una query li restituisse per errore.',
             ],
             output: [
                 'Rispondi in italiano, in modo diretto e operativo.',
@@ -84,5 +106,16 @@ class ManualAssistantAgent extends RAG
             directory: storage_path('app/neuron/manual'),
             name: 'manual',
         );
+    }
+
+    protected function tools(): array
+    {
+        $pdo = DB::connection()->getPdo();
+
+        return [
+            CalculatorToolkit::make(),
+            ScopedMySQLSchemaTool::make($pdo, self::QUERYABLE_TABLES),
+            ScopedMySQLSelectTool::make($pdo, self::QUERYABLE_TABLES),
+        ];
     }
 }

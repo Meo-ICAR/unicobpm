@@ -15,15 +15,16 @@ class UsersTable
         return $table
             ->columns([
                 TextColumn::make('name')
+                    ->label('Nome')
                     ->searchable(),
                 TextColumn::make('email')
-                    ->label('Email address')
+                    ->label('Email')
                     ->searchable(),
                 TextColumn::make('profile_type')
-                    ->label('Profile Type')
+                    ->label('Tipo Profilo')
                     ->searchable(),
                 TextColumn::make('profile_id')
-                    ->label('Profile ID')
+                    ->label('ID Profilo')
                     ->searchable(),
             ])
             ->filters([
