@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Filament\Pages\AssistenteAi;
+use App\Filament\Pages\SegretariaAi;
 use App\Models\AiActionDraft;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -11,14 +11,14 @@ use Livewire\Livewire;
 use Tests\TestCase;
 
 /**
- * L'assistente AI non invia mai un'email da solo: PrepareReminderEmailTool crea solo una
+ * La Segretaria AI non invia mai un'email da sola: PrepareReminderEmailTool crea solo una
  * bozza (AiActionDraft) pending, e solo un click esplicito dell'operatore su questa pagina
  * la trasforma in un invio reale. Qui si testa il click di conferma/annullamento; la
  * creazione della bozza da parte del tool (che risolve un Fornitore sul DB esterno condiviso)
  * non è coperta da test automatici, per lo stesso motivo per cui Fornitore/Document non
  * vengono mai toccati dalla suite (vedi ProcessEligibleRecordsCountTest).
  */
-class AssistenteAiDraftConfirmationTest extends TestCase
+class SegretariaAiDraftConfirmationTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -31,7 +31,7 @@ class AssistenteAiDraftConfirmationTest extends TestCase
 
         $draft = $this->makeDraft($user->id);
 
-        Livewire::test(AssistenteAi::class)
+        Livewire::test(SegretariaAi::class)
             ->call('confirmDraft', $draft->id);
 
         $draft->refresh();
@@ -48,7 +48,7 @@ class AssistenteAiDraftConfirmationTest extends TestCase
 
         $draft = $this->makeDraft($user->id);
 
-        Livewire::test(AssistenteAi::class)
+        Livewire::test(SegretariaAi::class)
             ->call('cancelDraft', $draft->id);
 
         $draft->refresh();
@@ -67,7 +67,7 @@ class AssistenteAiDraftConfirmationTest extends TestCase
 
         $this->actingAs($intruder);
 
-        Livewire::test(AssistenteAi::class)
+        Livewire::test(SegretariaAi::class)
             ->call('confirmDraft', $draft->id);
 
         $draft->refresh();
