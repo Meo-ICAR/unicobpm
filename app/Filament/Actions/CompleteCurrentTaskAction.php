@@ -59,22 +59,13 @@ class CompleteCurrentTaskAction
      */
     protected static function pendingItems(ProcessInstance $record): Collection
     {
-        $task = $record->currentTask;
         $execution = $record->currentTaskExecution;
 
-        if (! $task) {
+        if (! $record->currentTask || ! $execution) {
             return collect();
         }
 
-        $answeredItemIds = $execution
-            ? $execution->itemAnswers()->pluck('process_task_item_id')
-            : collect();
-
-        return $task->processTaskItems()
-            ->whereIn('action_type', ['document_upload', 'text_input', 'fill_checklist'])
-            ->orderBy('ordine')
-            ->get()
-            ->reject(fn (ProcessTaskItem $item) => $answeredItemIds->contains($item->id));
+        return $execution->pendingItemsOfType(['document_upload', 'text_input', 'fill_checklist']);
     }
 
     /**
@@ -215,6 +206,7 @@ class CompleteCurrentTaskAction
             'process_task_item_id' => $item->id,
             'document_id' => $document->id,
             'user_id' => auth()->id() ?? 0,
+            'operator_type' => auth()->id() ? 'human' : 'procedural',
             'completed_at' => now(),
         ]);
     }
@@ -231,6 +223,7 @@ class CompleteCurrentTaskAction
             'process_task_item_id' => $item->id,
             'value_text' => $value,
             'user_id' => auth()->id() ?? 0,
+            'operator_type' => auth()->id() ? 'human' : 'procedural',
             'completed_at' => now(),
         ]);
     }
@@ -288,6 +281,7 @@ class CompleteCurrentTaskAction
             'process_task_item_id' => $item->id,
             'value_text' => 'Checklist compilata: '.$item->checklist->name,
             'user_id' => auth()->id() ?? 0,
+            'operator_type' => auth()->id() ? 'human' : 'procedural',
             'completed_at' => now(),
         ]);
 

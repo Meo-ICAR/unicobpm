@@ -6,7 +6,9 @@ use App\Models\Document;
 use App\Models\ProcessInstance;
 use App\Models\ProcessTaskItem;
 use App\Models\ProcessTaskItemAnswer;
+use App\Services\DocumentClassifier;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Storage;
 use Webklex\IMAP\Facades\Client;
 
 class ProcessIncomingEmails extends Command
@@ -14,6 +16,11 @@ class ProcessIncomingEmails extends Command
     protected $signature = 'bpm:read-emails';
 
     protected $description = 'Legge la casella email dedicata ed estrae i documenti per il BPM';
+
+    public function __construct(protected DocumentClassifier $documentClassifier)
+    {
+        parent::__construct();
+    }
 
     public function handle()
     {
@@ -54,48 +61,74 @@ class ProcessIncomingEmails extends Command
 
     private function processEmailAttachments($message, ProcessInstance $pratica)
     {
-        // Troviamo qual è l'azione di upload richiesta nel task attuale
-        $taskItem = ProcessTaskItem::where('process_task_id', $pratica->current_task_id)
-            ->where('action_type', 'document_upload')
-            ->first();
+        $execution = $pratica->currentTaskExecution;
 
-        if (! $taskItem) {
+        if (! $execution || ! $message->hasAttachments()) {
             return;
         }
 
-        // Se l'email ha degli allegati
-        if ($message->hasAttachments()) {
-            foreach ($message->getAttachments() as $attachment) {
+        // Item di upload ancora senza risposta sul task corrente: possono essere più di uno
+        // (es. "Carica Visura" + "Carica Documento Identità"), quindi ogni allegato va capito
+        // singolarmente invece di assumere che sia sempre il primo item della lista.
+        $pendingItems = $execution->pendingItemsOfType(['document_upload']);
 
-                // Salvo il file fisicamente nel mio storage locale o S3
-                $path = 'documents/'.uniqid().'_'.$attachment->getName();
-                \Storage::disk('public')->put($path, $attachment->getContent());
+        if ($pendingItems->isEmpty()) {
+            return;
+        }
 
-                // 1. Creo il record nella tabella centrale dei Documenti (DMS)
-                $document = Document::create([
-                    'document_type_id' => $taskItem->document_type_id,
-                    'documentable_type' => $pratica->subject_type,
-                    'documentable_id' => $pratica->subject_id,
-                    'document_url' => $path,
-                    'name' => $attachment->getName(),
-                ]);
+        foreach ($message->getAttachments() as $attachment) {
+            // Salvo il file fisicamente nel mio storage locale o S3
+            $path = 'documents/'.uniqid().'_'.$attachment->getName();
+            Storage::disk('public')->put($path, $attachment->getContent());
 
-                // 2. Salvo la risposta nel workflow a nome dell'Utente Bot (ID 0)
-                ProcessTaskItemAnswer::create([
-                    'process_instance_id' => $pratica->id,
-                    'process_task_execution_id' => $pratica->currentTaskExecution?->id,
-                    'process_task_item_id' => $taskItem->id,
-                    'document_id' => $document->id,
-                    'value_text' => 'Documento ricevuto via Email da: '.$message->getFrom()[0]->mail,
-                    'user_id' => 0,
-                    'completed_at' => now(),
-                ]);
+            // Capisco a quale item l'allegato corrisponde: prima con regex, poi con AI.
+            $classification = $this->documentClassifier->classify($pendingItems, $path, $attachment->getName());
+            $item = $classification['item'];
 
-                // NOTA: Avendo fatto la ::create() qui sopra, scatta in automatico il tuo
-                // ProcessTaskItemAnswerObserver che verificherà se il task è completo
-                // e farà avanzare la pratica al prossimo step!
+            // Creo comunque il record nella tabella centrale dei Documenti (DMS), anche se
+            // non è stato possibile classificarlo: resta visibile per un controllo manuale
+            // invece di sparire o essere assegnato a caso.
+            $document = Document::create([
+                'document_type_id' => $item?->document_type_id,
+                'documentable_type' => $pratica->subject_type,
+                'documentable_id' => $pratica->subject_id,
+                'document_url' => $path,
+                'name' => $attachment->getName(),
+                'ai_abstract' => $classification['abstract'],
+                'ai_confidence_score' => $classification['confidence'],
+            ]);
 
-                break; // Usciamo se accettiamo un solo allegato per volta, o gestiamo gli altri
+            if (! $item) {
+                continue;
+            }
+
+            // Salvo la risposta nel workflow a nome dell'operatore virtuale (bot procedurale
+            // o AI) che ha capito l'allegato.
+            ProcessTaskItemAnswer::create([
+                'process_instance_id' => $pratica->id,
+                'process_task_execution_id' => $execution->id,
+                'process_task_item_id' => $item->id,
+                'document_id' => $document->id,
+                'value_text' => 'Documento ricevuto via Email da: '.$message->getFrom()[0]->mail,
+                'user_id' => 0,
+                'operator_type' => $classification['operator_type'],
+                'operator_label' => $classification['operator_type'] === 'ai' ? 'email_ingestion.ai' : 'email_ingestion.regex',
+                'confidence' => $classification['confidence'],
+                'completed_at' => now(),
+            ]);
+
+            // NOTA: Avendo fatto la ::create() qui sopra, scatta in automatico il tuo
+            // ProcessTaskItemAnswerObserver che verificherà se il task è completo
+            // e farà avanzare la pratica al prossimo step!
+
+            // L'item appena soddisfatto non è più un candidato per gli allegati successivi
+            // della stessa email.
+            $pendingItems = $pendingItems->reject(
+                fn (ProcessTaskItem $candidate) => $candidate->id === $item->id
+            )->values();
+
+            if ($pendingItems->isEmpty()) {
+                break;
             }
         }
     }

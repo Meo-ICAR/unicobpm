@@ -6,11 +6,11 @@ use App\Models\BusinessFunction;
 use App\Models\Document;
 use App\Models\ProcessTaskExecution;
 use App\Models\ProcessTaskItemAnswer;
+use App\Services\EmailSendingService;
 use App\Services\ExternalAppResolver;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -61,6 +61,8 @@ use Illuminate\Support\Facades\Storage;
  */
 class ProcessTaskExecutionObserver
 {
+    public function __construct(protected EmailSendingService $emailSendingService) {}
+
     /**
      * Quando un Task viene avviato (creato il record di esecuzione)
      */
@@ -134,44 +136,38 @@ class ProcessTaskExecutionObserver
 
                     // Spedizione
                     if ($toEmail && $subject && $body) {
-                        Mail::raw($body, function ($message) use ($toEmail, $subject, $instance, $config, $template) {
-                            $message->to($toEmail)->subject($subject);
-
-                            // A) Allegati Statici (Modulistica)
-                            if (! empty($template->attachments)) {
-                                foreach ($template->attachments as $staticFilePath) {
-                                    $absoluteStaticPath = Storage::disk('public')->path($staticFilePath);
-                                    if (file_exists($absoluteStaticPath)) {
-                                        $message->attach($absoluteStaticPath);
-                                    }
-                                }
+                        // A) Allegati Statici (Modulistica)
+                        $attachments = [];
+                        if (! empty($template->attachments)) {
+                            foreach ($template->attachments as $staticFilePath) {
+                                $attachments[] = Storage::disk('public')->path($staticFilePath);
                             }
+                        }
 
-                            // B) Allegati Dinamici (Documenti Pratica)
-                            $targetDocCodes = $config['attach_document_types'] ?? [];
-                            if (! empty($targetDocCodes)) {
-                                // Document vive su una connessione DB separata (mysql_unicooam): recuperiamo prima
-                                // gli ID sulla connessione locale, per poi filtrare i Document senza subquery cross-DB.
-                                $documentIds = ProcessTaskItemAnswer::where('process_instance_id', $instance->id)
-                                    ->whereNotNull('document_id')
-                                    ->pluck('document_id');
+                        // B) Allegati Dinamici (Documenti Pratica)
+                        $targetDocCodes = $config['attach_document_types'] ?? [];
+                        if (! empty($targetDocCodes)) {
+                            // Document vive su una connessione DB separata (mysql_unicooam): recuperiamo prima
+                            // gli ID sulla connessione locale, per poi filtrare i Document senza subquery cross-DB.
+                            $documentIds = ProcessTaskItemAnswer::where('process_instance_id', $instance->id)
+                                ->whereNotNull('document_id')
+                                ->pluck('document_id');
 
-                                $documents = Document::whereHas('documentType', function ($query) use ($targetDocCodes) {
-                                    $query->whereIn('code', $targetDocCodes);
-                                })
-                                    ->whereIn('id', $documentIds)
-                                    ->get();
+                            $documents = Document::whereHas('documentType', function ($query) use ($targetDocCodes) {
+                                $query->whereIn('code', $targetDocCodes);
+                            })
+                                ->whereIn('id', $documentIds)
+                                ->get();
 
-                                foreach ($documents as $doc) {
-                                    $absoluteDynamicPath = Storage::disk('public')->path($doc->document_url);
-                                    if (file_exists($absoluteDynamicPath)) {
-                                        $message->attach($absoluteDynamicPath, [
-                                            'as' => $doc->name ?: 'documento_'.$doc->id,
-                                        ]);
-                                    }
-                                }
+                            foreach ($documents as $doc) {
+                                $attachments[] = [
+                                    'path' => Storage::disk('public')->path($doc->document_url),
+                                    'as' => $doc->name ?: 'documento_'.$doc->id,
+                                ];
                             }
-                        });
+                        }
+
+                        $this->emailSendingService->send($toEmail, $subject, $body, $attachments);
                     }
 
                     // Registra il completamento (Scatena l'avanzamento se è l'ultima azione)
@@ -180,6 +176,8 @@ class ProcessTaskExecutionObserver
                         'process_task_execution_id' => $execution->id,
                         'process_task_item_id' => $item->id,
                         'user_id' => 0, // Bot
+                        'operator_type' => 'procedural',
+                        'operator_label' => $item->action_type,
                         'value_text' => "Email automatica inviata a: {$toEmail}\nOggetto: {$subject}",
                         'completed_at' => now(),
                     ]);
@@ -208,6 +206,8 @@ class ProcessTaskExecutionObserver
                             'process_task_execution_id' => $execution->id,
                             'process_task_item_id' => $item->id,
                             'user_id' => 0, // Bot
+                            'operator_type' => 'procedural',
+                            'operator_label' => $item->action_type,
                             'value_text' => "Validazione superata per {$fieldPath}.",
                             'completed_at' => now(),
                         ]);
@@ -263,6 +263,8 @@ class ProcessTaskExecutionObserver
                             'process_task_execution_id' => $execution->id,
                             'process_task_item_id' => $item->id,
                             'user_id' => 0, // Bot
+                            'operator_type' => 'procedural',
+                            'operator_label' => $item->action_type,
                             'value_text' => 'Verifica blacklist superata: agente non bloccato per questa banca.',
                             'completed_at' => now(),
                         ]);
@@ -288,6 +290,8 @@ class ProcessTaskExecutionObserver
                             'process_task_execution_id' => $execution->id,
                             'process_task_item_id' => $item->id,
                             'user_id' => 0, // Bot
+                            'operator_type' => 'procedural',
+                            'operator_label' => $item->action_type,
                             'value_text' => "Job eseguito con successo: {$jobClass}",
                             'completed_at' => now(),
                         ]);

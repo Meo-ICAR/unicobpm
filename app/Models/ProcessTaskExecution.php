@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 
 #[ObservedBy(ProcessTaskExecutionObserver::class)]
 class ProcessTaskExecution extends Model
@@ -73,6 +74,25 @@ class ProcessTaskExecution extends Model
     public function itemAnswers(): HasMany
     {
         return $this->hasMany(ProcessTaskItemAnswer::class);
+    }
+
+    /**
+     * Gli item del task (filtrati per action_type) di questa esecuzione che non hanno ancora
+     * una ProcessTaskItemAnswer: condiviso tra l'interfaccia operatore (CompleteCurrentTaskAction)
+     * e l'ingestione email (ProcessIncomingEmails), così entrambi concordano su cosa sia "in attesa".
+     *
+     * @param  array<int, string>  $actionTypes
+     */
+    public function pendingItemsOfType(array $actionTypes): Collection
+    {
+        $answeredItemIds = $this->itemAnswers()->pluck('process_task_item_id');
+
+        return $this->processTask->processTaskItems()
+            ->whereIn('action_type', $actionTypes)
+            ->orderBy('ordine')
+            ->get()
+            ->reject(fn (ProcessTaskItem $item) => $answeredItemIds->contains($item->id))
+            ->values();
     }
 
     // =========================================================================

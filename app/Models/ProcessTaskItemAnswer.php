@@ -19,6 +19,9 @@ class ProcessTaskItemAnswer extends Model
         'value_boolean',
         'value_text',
         'user_id',
+        'operator_type',
+        'operator_label',
+        'confidence',
         'completed_at',
     ];
 
@@ -27,6 +30,7 @@ class ProcessTaskItemAnswer extends Model
         return [
             'value_boolean' => 'boolean',
             'user_id' => 'integer',
+            'confidence' => 'integer',
             'completed_at' => 'datetime',
         ];
     }

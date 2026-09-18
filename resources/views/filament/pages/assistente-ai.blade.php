@@ -37,5 +37,36 @@
                 @endif
             @endif
         </x-filament::section>
+
+        @if ($pendingDrafts->isNotEmpty())
+            <x-filament::section icon="heroicon-o-envelope" icon-color="warning">
+                <x-slot name="heading">
+                    Bozze email in attesa di conferma
+                </x-slot>
+
+                <div class="grid grid-cols-1 gap-4">
+                    @foreach ($pendingDrafts as $draft)
+                        <div wire:key="draft-{{ $draft->id }}" class="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                            <div class="text-sm">
+                                <span class="font-medium">A:</span> {{ $draft->payload['to_name'] ?? '' }} &lt;{{ $draft->payload['to'] }}&gt;
+                            </div>
+                            <div class="text-sm mt-1">
+                                <span class="font-medium">Oggetto:</span> {{ $draft->payload['subject'] }}
+                            </div>
+                            <div class="text-sm mt-2 whitespace-pre-line text-gray-600 dark:text-gray-400">{{ $draft->payload['body'] }}</div>
+
+                            <div class="mt-3 flex gap-2">
+                                <x-filament::button size="sm" color="success" wire:click="confirmDraft({{ $draft->id }})" wire:loading.attr="disabled">
+                                    Invia
+                                </x-filament::button>
+                                <x-filament::button size="sm" color="gray" wire:click="cancelDraft({{ $draft->id }})" wire:loading.attr="disabled">
+                                    Annulla
+                                </x-filament::button>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </x-filament::section>
+        @endif
     </div>
 </x-filament-panels::page>

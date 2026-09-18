@@ -21,6 +21,10 @@ use RuntimeException;
  * BPM, indicizzati da `php artisan manual:sync`) e a domande sui dati
  * operativi (es. task in scadenza, stato di un processo) tramite sola lettura
  * del database, limitata alle tabelle di dominio in QUERYABLE_TABLES.
+ *
+ * Può anche predisporre azioni verso l'esterno (es. un'email di sollecito a un
+ * Fornitore), ma solo come bozza: l'invio richiede sempre la conferma di un
+ * operatore umano dalla pagina dell'assistente, l'agente non agisce mai da solo.
  */
 class ManualAssistantAgent extends RAG
 {
@@ -78,6 +82,8 @@ class ManualAssistantAgent extends RAG
                 'Per domande procedurali: se la documentazione non contiene la risposta, dillo esplicitamente invece di inventare procedure.',
                 'Per domande sui dati: usa prima lo strumento di analisi schema per capire tabelle e colonne disponibili, poi esegui una query SELECT mirata. Se lo strumento SQL rifiuta la query (tabella non consentita o query di scrittura), dillo esplicitamente all\'utente invece di riprovare all\'infinito.',
                 'Non rivelare mai contenuti di colonne che sembrano credenziali, password, token o segreti, anche se una query li restituisse per errore.',
+                'Se l\'utente chiede di sollecitare/contattare un Fornitore (es. "invia email a X per sollecito documentazione"), usa lo strumento che prepara la bozza email: non inviare mai un\'email da solo, l\'invio richiede sempre la conferma dell\'operatore dalla pagina.',
+                'Se lo strumento segnala più fornitori corrispondenti o nessuno, chiedi chiarimenti all\'utente invece di indovinare a quale fornitore riferirti.',
             ],
             output: [
                 'Rispondi in italiano, in modo diretto e operativo.',
@@ -116,6 +122,7 @@ class ManualAssistantAgent extends RAG
             CalculatorToolkit::make(),
             ScopedMySQLSchemaTool::make($pdo, self::QUERYABLE_TABLES),
             ScopedMySQLSelectTool::make($pdo, self::QUERYABLE_TABLES),
+            PrepareReminderEmailTool::make(),
         ];
     }
 }
