@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Listeners\ResolveCompanyPlanTypeOnLogin;
+use App\Listeners\ResolveUserRoleOnLogin;
 use App\Models\Audit;
 use App\Models\Branch;
 use App\Models\Company;
@@ -11,6 +13,7 @@ use App\Models\Employee;
 use App\Models\Fornitore;
 use App\Models\PROFORMA\Clienti;
 use App\Models\Website;
+use Illuminate\Auth\Events\Login;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
@@ -53,5 +56,8 @@ class AppServiceProvider extends ServiceProvider
             SocialiteWasCalled::class,
             [GoogleExtendSocialite::class, 'handle']
         );
+
+        Event::listen(Login::class, ResolveUserRoleOnLogin::class);
+        Event::listen(Login::class, ResolveCompanyPlanTypeOnLogin::class);
     }
 }

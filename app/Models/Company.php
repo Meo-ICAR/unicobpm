@@ -68,6 +68,11 @@ class Company extends Model
         return $this->hasMany(CompanyRole::class);
     }
 
+    public function companyModules(): HasMany
+    {
+        return $this->hasMany(CompanyModule::class);
+    }
+
     public function mailAccount(): MorphOne
     {
         return $this->morphOne(MailAccount::class, 'mailable');

@@ -2,11 +2,41 @@
 
 use App\Enums\PlanType;
 use App\Enums\UserRole;
+use App\Models\Client;
 use App\Models\Employee;
 use App\Models\EmployeeType;
 use App\Models\EmployeeTypePermission;
+use App\Models\EmployeeTypeResourcePreset;
+use App\Models\Fornitore;
 use App\Models\Resource;
 use Illuminate\Support\Arr;
+
+if (! function_exists('effectivePlanType')) {
+    /**
+     * Risolve il piano effettivo dell'installazione.
+     *
+     * Se PLAN_TYPE è valorizzata nel .env (config('plan.type')), ha sempre
+     * la precedenza. Altrimenti si usa il piano risolto al login per
+     * l'azienda dell'utente (vedi ResolveCompanyPlanTypeOnLogin), salvato in
+     * sessione. In assenza di entrambi, il default resta FULL.
+     */
+    function effectivePlanType(): PlanType
+    {
+        $envType = config('plan.type');
+
+        if (! empty($envType)) {
+            return PlanType::tryFrom(strtoupper((string) $envType)) ?? PlanType::Full;
+        }
+
+        $sessionType = session('plan_type');
+
+        if (! empty($sessionType)) {
+            return PlanType::tryFrom(strtoupper((string) $sessionType)) ?? PlanType::Full;
+        }
+
+        return PlanType::Full;
+    }
+}
 
 if (! function_exists('checkPiano')) {
     /**
@@ -25,7 +55,7 @@ if (! function_exists('checkPiano')) {
         $userId = auth()->id() ?? 'guest';
         // Il valore del piano entra nella chiave cosi' i test che lo cambiano
         // a runtime non leggono un risultato memoizzato sotto un piano diverso.
-        $key = $feature.'|'.$userId.'|'.config('plan.type', PlanType::Full->value);
+        $key = $feature.'|'.$userId.'|'.effectivePlanType()->value;
 
         if (array_key_exists($key, $cache)) {
             return $cache[$key];
@@ -53,8 +83,7 @@ if (! function_exists('resolvePianoAccess')) {
         }
 
         // STEP 1: Piano / licenza.
-        $planValue = config('plan.type', PlanType::Full->value);
-        $plan = PlanType::tryFrom((string) $planValue) ?? PlanType::Full;
+        $plan = effectivePlanType();
 
         if (! $plan->hasFeature($feature, $callerClass)) {
             return false;
@@ -74,10 +103,25 @@ if (! function_exists('resolvePianoAccess')) {
                 ->where('key', $feature)
                 ->value('id');
 
-            if ($resourceId && ! EmployeeTypePermission::query()
+            if (! $resourceId) {
+                return true;
+            }
+
+            // L'accesso è concesso se il ruolo ha un permesso granulare specifico
+            // (EmployeeTypePermission) OPPURE se ha un preset di accesso totale
+            // sulla risorsa (EmployeeTypeResourcePreset, gestito da admin/super_admin
+            // in EmployeeTypeResource → tab "Preset Procedure").
+            $hasGranularPermission = EmployeeTypePermission::query()
                 ->whereIn('employee_type_id', $employeeTypeIds)
                 ->where('resource_id', $resourceId)
-                ->exists()) {
+                ->exists();
+
+            $hasPreset = EmployeeTypeResourcePreset::query()
+                ->whereIn('employee_type_id', $employeeTypeIds)
+                ->where('resource_id', $resourceId)
+                ->exists();
+
+            if (! $hasGranularPermission && ! $hasPreset) {
                 return false;
             }
         }
@@ -89,9 +133,12 @@ if (! function_exists('resolvePianoAccess')) {
 if (! function_exists('resolveUserEmployeeTypeIds')) {
     /**
      * Risolve gli EmployeeType (ruoli) dell'utente loggato, a partire dal suo
-     * profilo Employee (User::profile, morphTo) e da Employee::employee_roles
-     * (JSON, un dipendente può avere più ruoli). Ritorna un array vuoto per
-     * utenti senza profilo Employee o senza ruoli assegnati.
+     * profilo Employee, Fornitore o Client (User::profile, morphTo) e dal
+     * relativo campo employee_roles (JSON, un profilo può avere più ruoli,
+     * stessa struttura per tutti e tre i modelli). Client rappresenta sia
+     * consulenti esterni che clienti finali, entrambi possono ricoprire un
+     * ruolo EmployeeType. Ritorna un array vuoto per utenti senza profilo
+     * Employee/Fornitore/Client o senza ruoli assegnati.
      */
     function resolveUserEmployeeTypeIds(mixed $user): array
     {
@@ -99,13 +146,13 @@ if (! function_exists('resolveUserEmployeeTypeIds')) {
             return [];
         }
 
-        $employee = $user->profile ?? null;
+        $profile = $user->profile ?? null;
 
-        if (! $employee instanceof Employee) {
+        if (! $profile instanceof Employee && ! $profile instanceof Fornitore && ! $profile instanceof Client) {
             return [];
         }
 
-        $roles = $employee->employee_roles;
+        $roles = $profile->employee_roles;
 
         if (is_string($roles)) {
             $roles = json_decode($roles, true);

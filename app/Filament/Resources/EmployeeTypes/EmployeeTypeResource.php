@@ -7,6 +7,7 @@ use App\Filament\Resources\EmployeeTypes\Pages\EditEmployeeType;
 use App\Filament\Resources\EmployeeTypes\Pages\ListEmployeeTypes;
 use App\Filament\Resources\EmployeeTypes\Pages\ViewEmployeeType;
 use App\Filament\Resources\EmployeeTypes\RelationManagers\PermissionsRelationManager;
+use App\Filament\Resources\EmployeeTypes\RelationManagers\ResourcePresetsRelationManager;
 use App\Filament\Resources\EmployeeTypes\Schemas\EmployeeTypeForm;
 use App\Filament\Resources\EmployeeTypes\Schemas\EmployeeTypeInfolist;
 use App\Filament\Resources\EmployeeTypes\Tables\EmployeeTypesTable;
@@ -59,6 +60,7 @@ class EmployeeTypeResource extends Resource
         return [
             //
             PermissionsRelationManager::class,
+            ResourcePresetsRelationManager::class,
         ];
     }
 

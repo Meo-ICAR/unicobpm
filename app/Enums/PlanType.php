@@ -9,6 +9,7 @@ enum PlanType: string
     case Base = 'BASE';
     case Medium = 'MEDIUM';
     case Full = 'FULL';
+    case Trial = 'TRIAL';
 
     /**
      * Verifica se questo piano copre la feature (chiave/slug della risorsa Filament),

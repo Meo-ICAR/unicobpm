@@ -17,10 +17,14 @@ class Resource extends Model
 
     public const PLAN_FULL = 'FULL';
 
+    public const PLAN_TRIAL = 'TRIAL';
+
     public const PLAN_LEVELS = [
         self::PLAN_BASE => 1,
         self::PLAN_MEDIUM => 2,
         self::PLAN_FULL => 3,
+        // Il periodo di prova sblocca tutte le funzionalità (stesso livello di FULL).
+        self::PLAN_TRIAL => 3,
     ];
 
     protected $fillable = [

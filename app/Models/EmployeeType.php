@@ -87,6 +87,15 @@ class EmployeeType extends Model
     }
 
     /**
+     * Preset di accesso totale (tutte le azioni CRUD) sulle risorse,
+     * affiancati alla matrice granulare di permissions().
+     */
+    public function resourcePresets(): HasMany
+    {
+        return $this->hasMany(EmployeeTypeResourcePreset::class, 'employee_type_id');
+    }
+
+    /**
      * Funzioni aziendali (BusinessFunction) a cui è assegnato questo ruolo,
      * tramite i member (Employee o Client, quando esternalizzato) di business_function_members.
      */

@@ -61,6 +61,8 @@ class Client extends Model
         'salary',
         'salary_quote',
         'is_art108',
+        'employee_roles',
+        'user_id',
     ];
 
     protected $casts = [
@@ -86,6 +88,8 @@ class Client extends Model
         'blacklist_at' => 'datetime',
         'salary' => 'decimal:2',
         'salary_quote' => 'decimal:2',
+        'employee_roles' => 'array',
+        'user_id' => 'integer',
     ];
 
     public function company(): BelongsTo

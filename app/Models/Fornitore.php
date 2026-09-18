@@ -92,6 +92,7 @@ class Fornitore extends Model
         'contributoperiodicita',
         'contributodalmese',
         'branch_id',
+        'employee_roles',
     ];
 
     /**
@@ -131,6 +132,7 @@ class Fornitore extends Model
             'user_id' => 'integer',
             'branch_id' => 'integer',
             'contributoperiodicita' => 'integer',
+            'employee_roles' => 'array',
         ];
     }
 
