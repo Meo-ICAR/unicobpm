@@ -18,7 +18,11 @@
                         icon="heroicon-o-arrow-top-right-on-square"
                         wire:click="switchTo('{{ $app['key'] }}')"
                     >
-                        {{ $app['label'] }}
+                        @if ($app['logo'])
+                            <img src="{{ $app['logo'] }}" alt="{{ $app['label'] }}" class="h-5 w-auto" />
+                        @else
+                            {{ $app['label'] }}
+                        @endif
                     </x-filament::button>
                 @endforeach
             </div>

@@ -22,7 +22,7 @@ class AppSwitcherWidget extends Widget
     protected int|string|array $columnSpan = 'full';
 
     /**
-     * @return array<int, array{key: string, label: string, url: string}>
+     * @return array<int, array{key: string, label: string, url: string, logo: ?string}>
      */
     public function getAvailableApps(): array
     {
@@ -40,7 +40,7 @@ class AppSwitcherWidget extends Widget
     }
 
     /**
-     * @return array<int, array{key: string, label: string, url: string}>
+     * @return array<int, array{key: string, label: string, url: string, logo: ?string}>
      */
     private function lookupAvailableApps(string $email): array
     {
@@ -57,6 +57,7 @@ class AppSwitcherWidget extends Widget
                         'key' => $app,
                         'label' => $resolver->labelFor($app),
                         'url' => $resolver->urlFor($app),
+                        'logo' => $this->logoFor($app),
                     ];
                 }
             } catch (\Throwable $e) {
@@ -65,6 +66,17 @@ class AppSwitcherWidget extends Widget
         }
 
         return $apps;
+    }
+
+    /**
+     * Se esiste un logo public/images/{app}.png con lo stesso nome della app,
+     * ritorna il suo URL per mostrarlo al posto dell'etichetta testuale.
+     */
+    private function logoFor(string $app): ?string
+    {
+        $path = public_path("images/{$app}.png");
+
+        return is_file($path) ? asset("images/{$app}.png") : null;
     }
 
     public function switchTo(string $app)

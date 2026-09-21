@@ -36,11 +36,9 @@ class AdminPanelProvider extends PanelProvider
                 //  NavigationGroup::make()->label('Anagrafiche'),  // ->collapsed(),
                 // NavigationGroup::make()->label('System')->collapsed(),
             ])
-         //   ->brandLogo(asset('images/unicoOAM_banner.png'))
-            // Opzionale: imposta un'altezza fissa se ti sembra troppo grande o piccolo
-            //   ->brandLogoHeight('3rem')
-            // Imposta l'icona del browser (favicon)
-         //   ->favicon(asset('images/unicoOAM.png'))
+            ->brandLogo(asset('images/unicobpm.png'))
+            ->brandLogoHeight('3rem')
+            ->favicon(asset('images/unicobpm.png'))
             ->default()
             ->id('admin')
             ->path('admin')
