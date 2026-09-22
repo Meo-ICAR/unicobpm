@@ -73,12 +73,24 @@ return [
             'label' => 'UnicoOAM',
         ],
         'proforma' => [
-            'url' => env('PROFORMA_API_URL', 'https://proforma.hassisto.com'),
+            'url' => env('PROFORMA_API_URL', 'https://proforma.hassisto.com'),  
             'label' => 'Proforma',
+        ],
+           'unicogdpr' => [
+            'url' => env('UNICOGDPR_API_URL', 'https://unicogdpr.hassisto.com'),
+            'label' => 'UnicoGDPR',
         ],
         'daishboard' => [
             'url' => env('DAISHBOARD_API_URL', 'https://daishboard.hassisto.com'),
             'label' => 'Dashboard',
+        ],
+           'whistle' => [
+            'url' => env('WHISTLE_API_URL', 'https://whistle.unicocompilance.it'),
+            'label' => 'WhistleBlowing',
+        ],
+                 'unicoaiact' => [
+            'url' => env('UNICOAIACT_API_URL', 'https://unicoaiact.unicocompilance.it'),
+            'label' => 'AI ACT',
         ],
     ],
 
