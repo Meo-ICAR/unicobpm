@@ -47,3 +47,13 @@ Schedule::job(new TaskEscalationWatchdogJob)->hourly();
 
 // 5. Controllo orario dei termini tassativi facoltativi (data fine pratica, giorni per singolo step)
 Schedule::job(new MandatoryDeadlineWatchdogJob)->hourly();
+
+// 6. Reminder giornaliero se l'ultimo record creato di un modello esterno è troppo vecchio
+Schedule::command('bpm:check-stale-records')->dailyAt('08:00');
+
+// 7. Ricalcolo mensile delle provvigioni finanziarie (azione "Ricalcola" di admin/vcoges su Proforma) + invio in contabilità della primanota del mese precedente
+Schedule::command('bpm:dispatch-external-command proforma vcoge:calculate --option=invia')->monthlyOn(5, '06:00');
+
+// 8. Ricalcolo contributi ENASARCO trimestrali (azione "Ricalcola contributi" di admin/venasarco-trimestres su Proforma):
+// il 5 del mese successivo a fine trimestre (gennaio, aprile, luglio, ottobre)
+Schedule::command('bpm:dispatch-external-command proforma venasarco-trimestre:calculate')->cron('0 6 5 1,4,7,10 *');

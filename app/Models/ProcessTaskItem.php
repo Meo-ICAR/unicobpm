@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\Severity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -63,6 +64,30 @@ class ProcessTaskItem extends Model
         $templateId = $this->config['email_template_id'] ?? null;
 
         return $templateId ? EmailTemplate::find($templateId) : null;
+    }
+
+    /**
+     * Per le azioni 'external_check': sceglie, tra i template con $this->config['email_template_code'],
+     * quello della severity indicata. Se la severity è assente prende il template con la severity più alta.
+     */
+    public function resolveCheckEmailTemplate(?Severity $severity): ?EmailTemplate
+    {
+        $code = $this->config['email_template_code'] ?? null;
+
+        if (blank($code)) {
+            return null;
+        }
+
+        $templates = EmailTemplate::where('code', $code)
+            ->where('is_active', true)
+            ->whereNotNull('severity')
+            ->get();
+
+        if ($severity) {
+            return $templates->firstWhere('severity', $severity);
+        }
+
+        return $templates->sortByDesc(fn (EmailTemplate $template) => $template->severity->level())->first();
     }
 
     /**

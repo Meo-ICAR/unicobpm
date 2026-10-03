@@ -18,6 +18,8 @@ class Process extends Model
         'version',
         'is_active',
         'is_periodic',
+        'recurrence_frequency',
+        'recurrence_day',
         'cron_expression',
         'target_model',
         'trigger_filters',

@@ -6,6 +6,7 @@ use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
@@ -29,6 +30,36 @@ class ProcessTaskItemForm
             'automated_email' => 'Email Automatica',
             'validation_rule' => 'Regola di Validazione',
             'system_task' => 'Task di Sistema (Job)',
+            'external_check' => 'Check Esterno (severity + RACI)',
+        ];
+    }
+
+    /**
+     * Campi di config per 'external_check', condivisi con il RelationManager nel ProcessTaskResource.
+     *
+     * @return array<int, Component>
+     */
+    public static function externalCheckFields(): array
+    {
+        $isExternalCheck = fn (Get $get) => $get('action_type') === 'external_check';
+
+        return [
+            Select::make('config.app')
+                ->label('Applicativo da interrogare')
+                ->options(fn () => collect((array) config('services.apps'))->map(fn ($app) => $app['label'] ?? null)->filter()->all())
+                ->visible($isExternalCheck)
+                ->required($isExternalCheck),
+            TextInput::make('config.command')
+                ->label('Check (comando)')
+                ->placeholder('clienti:check-missing-piva')
+                ->helperText('L\'applicativo risponde a GET /api/checks/{comando} con valore e severity (ok, regular, warning, alert).')
+                ->visible($isExternalCheck)
+                ->required($isExternalCheck),
+            TextInput::make('config.email_template_code')
+                ->label('Codice template email')
+                ->helperText('Si usa il template con questo codice e la severity restituita dal check; se la severity manca, quello con severity maggiore. Destinatari: RACI del task (regular: R; warning: R+A; alert: R+A+C).')
+                ->visible($isExternalCheck)
+                ->required($isExternalCheck),
         ];
     }
 
@@ -95,6 +126,7 @@ class ProcessTaskItemForm
                             ->columnSpanFull()
                             ->visible(fn (Get $get) => $get('action_type') === 'system_task')
                             ->helperText('Classe PHP eseguita in automatico quando la pratica raggiunge questo task (anche di un pacchetto/applicativo esterno installato via composer). Deve avere un costruttore (int $processInstanceId, array $config = []).'),
+                        ...self::externalCheckFields(),
                         KeyValue::make('config')
                             ->label('Configurazione')
                             ->keyLabel('Chiave')

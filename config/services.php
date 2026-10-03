@@ -47,6 +47,28 @@ return [
     ],
     'bpm' => [
         'url' => env('BPM_API_URL', 'https://unicobpm.hassisto.com'), // Il secondo parametro è un fallback
+        // Chiave condivisa inviata (header X-Api-Key) alle API protette degli applicativi esterni.
+        'bridge_api_key' => env('BPM_BRIDGE_API_KEY'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Reminder su dati non aggiornati
+    |--------------------------------------------------------------------------
+    |
+    | Per ogni voce, bpm:check-stale-records chiede all'applicativo esterno
+    | (GET /api/models/{model}/latest) l'ultimo record creato e, se il suo
+    | created_at risale a più di 'max_age_days' giorni fa, invia un'email a 'recipient'.
+    |
+    */
+    'stale_record_reminders' => [
+        [
+            'app' => 'proforma',
+            'model' => 'sales_invoice',
+            'label' => 'Fatture di vendita',
+            'max_age_days' => 30,
+            'recipient' => env('STALE_RECORDS_REMINDER_TO', 'rino.muscetti@races.it'),
+        ],
     ],
 
     /*
@@ -73,10 +95,10 @@ return [
             'label' => 'UnicoOAM',
         ],
         'proforma' => [
-            'url' => env('PROFORMA_API_URL', 'https://proforma.hassisto.com'),  
+            'url' => env('PROFORMA_API_URL', 'https://proforma.hassisto.com'),
             'label' => 'Proforma',
         ],
-           'unicogdpr' => [
+        'unicogdpr' => [
             'url' => env('UNICOGDPR_API_URL', 'https://unicogdpr.hassisto.com'),
             'label' => 'UnicoGDPR',
         ],
@@ -84,11 +106,11 @@ return [
             'url' => env('DAISHBOARD_API_URL', 'https://daishboard.hassisto.com'),
             'label' => 'Dashboard',
         ],
-           'whistle' => [
+        'whistle' => [
             'url' => env('WHISTLE_API_URL', 'https://whistle.unicocompilance.it'),
             'label' => 'WhistleBlowing',
         ],
-                 'unicoaiact' => [
+        'unicoaiact' => [
             'url' => env('UNICOAIACT_API_URL', 'https://unicoaiact.unicocompilance.it'),
             'label' => 'AI ACT',
         ],

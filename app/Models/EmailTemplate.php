@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\Severity;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -30,6 +31,8 @@ class EmailTemplate extends Model
         'body',
         'placeholders',
         'is_active',
+        'app_identifier',
+        'severity',
     ];
 
     /**
@@ -40,5 +43,6 @@ class EmailTemplate extends Model
     protected $casts = [
         'placeholders' => 'array',
         'is_active' => 'boolean',
+        'severity' => Severity::class,
     ];
 }

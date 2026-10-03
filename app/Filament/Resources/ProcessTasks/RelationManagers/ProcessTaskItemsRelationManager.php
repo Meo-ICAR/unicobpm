@@ -70,6 +70,7 @@ class ProcessTaskItemsRelationManager extends RelationManager
                 ->placeholder('App\\Jobs\\MioJob')
                 ->visible(fn (Get $get) => $get('action_type') === 'system_task')
                 ->helperText('Classe PHP eseguita in automatico quando la pratica raggiunge questo task (anche di un pacchetto/applicativo esterno installato via composer). Deve avere un costruttore (int $processInstanceId, array $config = []).'),
+            ...ProcessTaskItemForm::externalCheckFields(),
             KeyValue::make('config')
                 ->label('Configurazione')
                 ->nullable()

@@ -81,6 +81,8 @@ class DatabaseSeeder extends Seeder
             // 4. Processi completi (task + RACI + azioni) tipici di un mediatore creditizio
             BpmDesignSeeder::class, // Onboarding Nuovo Agente
             CreditBrokerProcessesSeeder::class, // AML, Trasparenza, OAM, Istruttoria Finanziamento
+            ScadenziarioCogeProcessSeeder::class, // Scadenziario COGE (check Proforma con severity + RACI)
+            ComplianceDocumentazioneProcessSeeder::class, // Compliance (documenti scaduti da UnicoOAM)
 
             // 5. Preset di accesso per ruolo (richiede employee_types e resources già censiti)
             EmployeeTypeResourcePresetSeeder::class,

@@ -8,6 +8,7 @@ use App\Models\ProcessTaskExecution;
 use App\Models\ProcessTaskItemAnswer;
 use App\Services\EmailSendingService;
 use App\Services\ExternalAppResolver;
+use App\Services\ExternalCheckRunner;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -57,6 +58,17 @@ use Illuminate\Support\Facades\Storage;
  * eseguito sincronamente (Bus::dispatchSync) così l'esito è noto subito. Se lancia un'eccezione,
  * la pratica viene sospesa esattamente come per 'validation_rule'.
  * JSON config: libero, passato per intero al job.
+ * * 5. action_type: 'external_check'
+ * Interroga GET {app}/api/checks/{command}, che risponde solo con {"value", "severity"}
+ * (ok|regular|warning|alert). Con la severity si sceglie l'EmailTemplate (code + severity;
+ * se la severity manca, quello con severity maggiore) e si scrive ai ruoli RACI del task
+ * (regular: R; warning: R,A; alert: R,A,C; ok: nessuno). Vedi ExternalCheckRunner.
+ * JSON config:
+ * {
+ * "app": "proforma",                        // applicativo da interrogare — vedi config('services.apps')
+ * "command": "clienti:check-missing-piva",  // check esposto dall'applicativo
+ * "email_template_code": "CHECK_PIVA"       // EmailTemplate.code (un template per severity)
+ * }
  * * ========================================================================
  */
 class ProcessTaskExecutionObserver
@@ -88,10 +100,17 @@ class ProcessTaskExecutionObserver
 
         // Recuperiamo tutte le azioni automatiche previste in questo task
         $automatedItems = $task->processTaskItems()
-            ->whereIn('action_type', ['automated_email', 'validation_rule', 'blacklist_check', 'system_task'])
+            ->whereIn('action_type', ['automated_email', 'validation_rule', 'blacklist_check', 'system_task', 'external_check'])
             ->get();
 
         foreach ($automatedItems as $item) {
+            // Una pratica può avere più esecuzioni dello stesso task (ProcessInstanceObserver e
+            // StartProcessAction ne creano una ciascuno): un'azione già completata non va rieseguita,
+            // altrimenti ogni email/check partirebbe due volte.
+            if (ProcessTaskItemAnswer::where('process_instance_id', $instance->id)->where('process_task_item_id', $item->id)->exists()) {
+                continue;
+            }
+
             $config = $item->config ?? [];
 
             // Smistamento logica in base al tipo di azione automatica
@@ -305,6 +324,24 @@ class ProcessTaskExecutionObserver
                             ->log("Job di sistema fallito ({$jobClass}): {$e->getMessage()}");
                         // Il task rimane appeso e non si genera la answer
                     }
+                    break;
+
+                    // --------------------------------------------------------
+                    // CASO 5: CHECK ESTERNO (stato + severity dall'applicativo, email via RACI)
+                    // --------------------------------------------------------
+                case 'external_check':
+                    $summary = app(ExternalCheckRunner::class)->run($item, $instance);
+
+                    ProcessTaskItemAnswer::create([
+                        'process_instance_id' => $instance->id,
+                        'process_task_execution_id' => $execution->id,
+                        'process_task_item_id' => $item->id,
+                        'user_id' => 0, // Bot
+                        'operator_type' => 'procedural',
+                        'operator_label' => $item->action_type,
+                        'value_text' => $summary,
+                        'completed_at' => now(),
+                    ]);
                     break;
 
                     // --------------------------------------------------------
