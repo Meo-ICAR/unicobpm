@@ -5,6 +5,7 @@ namespace App\Models;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\MediaLibrary\HasMedia;
@@ -19,66 +20,10 @@ class DocumentType extends CoreDocumentType implements HasMedia
 
     protected $orderDirection = 'asc';
 
-    protected $casts = [
-        'is_person' => 'boolean',
-        'is_company' => 'boolean',
-        'is_employee' => 'boolean',
-        'is_agent' => 'boolean',
-        'is_principal' => 'boolean',
-        'is_client' => 'boolean',
-        'is_practice' => 'boolean',
-        'is_signed' => 'boolean',
-        'is_monitored' => 'boolean',
-        'is_sensible' => 'boolean',
-        'is_template' => 'boolean',
-        'is_stored' => 'boolean',
-        'is_endMonth' => 'boolean',
-        'is_AiAbstract' => 'boolean',
-        'is_AiCheck' => 'boolean',
-        'allow_auto_verification' => 'boolean',
-        'is_versioned' => 'boolean',
-        'notify_days_before' => 'array',
-        'priority' => 'integer',
-        'training_hours' => 'integer',
-        'duration' => 'integer',
-        'min_confidence' => 'integer',
-        'retention_years' => 'integer',
-        'expire_days_before' => 'integer',
-    ];
-
-    public function durationCalculate(Carbon $emittedAt): ?Carbon
-    {
-        // Calcola la data di scadenza
-        if (! $emittedAt) {
-            return null;
-        }
-
-        $expirationDate = $emittedAt->copy();
-        switch ($this->duration_unit) {
-            case 'days':
-                $expirationDate = $expirationDate->addDays($this->duration);
-                break;
-            case 'months':
-                $expirationDate = $expirationDate->addMonths($this->duration);
-                break;
-            case 'years':
-                $expirationDate = $expirationDate->addYears($this->duration);
-                break;
-            default:
-                $expirationDate = null;
-                break;
-        }
-        if ($this->is_endMonth && $expirationDate) {
-            $expirationDate = $expirationDate->endOfMonth();
-        }
-
-        return $expirationDate;
-    }
-
     /**
      * Relazione con i documenti fisici caricati.
      */
-    public function documents()
+    public function documents(): HasMany
     {
         return $this->hasMany(Document::class);
     }
@@ -97,7 +42,7 @@ class DocumentType extends CoreDocumentType implements HasMedia
     public function tasks(): BelongsToMany
     {
         return $this
-            ->belongsToMany(Task::class, 'task_document_types')
+            ->belongsToMany(Task::class, 'document_requirements')
             ->withPivot('is_required')
             ->withTimestamps();
     }

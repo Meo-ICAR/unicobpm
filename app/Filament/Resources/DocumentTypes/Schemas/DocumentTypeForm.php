@@ -130,7 +130,7 @@ class DocumentTypeForm
                             ])
                             ->default('days')
                             ->visible(fn ($get) => $get('is_monitored')),
-                        Toggle::make('is_endMonth')
+                        Toggle::make('is_end_month')
                             ->label('Approssima a Fine Mese')
                             ->visible(fn ($get) => $get('is_monitored')),
                         Select::make('renewed_by_id')

@@ -71,9 +71,8 @@ class BusinessFunction extends Model
      */
     public function loginUsers(): Collection
     {
-        return $this->employees()->with('user')->get()
-            ->merge($this->clients()->with('user')->get())
-            ->pluck('user')
+        return $this->employees()->with('loginUser')->get()->pluck('loginUser')
+            ->merge($this->clients()->with('user')->get()->pluck('user'))
             ->filter()
             ->values();
     }

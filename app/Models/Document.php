@@ -14,30 +14,9 @@ class Document extends CoreDocument
 {
     use HasFactory,  SoftDeletes;
 
-    public function registerMediaCollections(): void
-    {
-        $this->addMediaCollection('documents')
-            ->useDisk('public');
-    }
-
     protected $orderBy = 'name';
 
     protected $orderDirection = 'asc';
-
-    protected $casts = [
-        'metadata' => 'array',
-        'is_template' => 'boolean',
-        'is_signed' => 'boolean',
-        'is_unique' => 'boolean',
-        'is_endMonth' => 'boolean',
-        'is_monitored' => 'boolean',
-        'emitted_at' => 'date',
-        'expires_at' => 'date',
-        'delivered_at' => 'datetime',
-        'signed_at' => 'datetime',
-        'verified_at' => 'datetime',
-        'ai_confidence_score' => 'integer',
-    ];
 
     /**
      * Relazione: Tipo di documento
@@ -67,14 +46,6 @@ class Document extends CoreDocument
     public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class);
-    }
-
-    /**
-     * Relazione Polimorfica (es. User, Employee, Contract)
-     */
-    public function documentable(): MorphTo
-    {
-        return $this->morphTo();
     }
 
     // --- Audit & User Relations ---
@@ -108,12 +79,5 @@ class Document extends CoreDocument
         }
 
         return $nomeDocumento;
-    }
-
-    public function scopeExpiringWithin(Builder $query, int $days): Builder
-    {
-        return $query
-            ->whereNotNull('expires_at')
-            ->where('expires_at', '<=', now()->addDays($days)->toDateString());
     }
 }

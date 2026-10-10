@@ -75,12 +75,14 @@ class Process extends Model
         }
 
         $query = $modelClass::query();
+        $model = new $modelClass;
 
         if ($this->trigger_field) {
             $field = $this->trigger_field;
+            $text = self::isTextColumn($model, $field);
             $query = match ($this->trigger_state) {
-                'filled' => $query->whereNotNull($field)->where($field, '!=', ''),
-                'empty' => $query->where(fn ($q) => $q->whereNull($field)->orWhere($field, '')),
+                'filled' => $text ? $query->whereNotNull($field)->where($field, '!=', '') : $query->whereNotNull($field),
+                'empty' => $text ? $query->where(fn ($q) => $q->whereNull($field)->orWhere($field, '')) : $query->whereNull($field),
                 'equals' => $query->where($field, $this->trigger_value),
                 default => $query,
             };
@@ -88,15 +90,31 @@ class Process extends Model
 
         if ($this->exclude_field) {
             $field = $this->exclude_field;
+            $text = self::isTextColumn($model, $field);
             $query = match ($this->exclude_state) {
-                'filled' => $query->where(fn ($q) => $q->whereNull($field)->orWhere($field, '')),
-                'empty' => $query->whereNotNull($field)->where($field, '!=', ''),
+                'filled' => $text ? $query->where(fn ($q) => $q->whereNull($field)->orWhere($field, '')) : $query->whereNull($field),
+                'empty' => $text ? $query->whereNotNull($field)->where($field, '!=', '') : $query->whereNotNull($field),
                 'equals' => $query->where($field, '!=', $this->exclude_value),
                 default => $query,
             };
         }
 
         return $query->count();
+    }
+
+    /**
+     * La colonna contiene testo? Confrontare con la stringa vuota è ammesso solo per quelle: su date, numeri e booleani
+     * MySQL rifiuta il valore (SQLite lo tollerava).
+     */
+    private static function isTextColumn(Model $model, string $column): bool
+    {
+        try {
+            $type = strtolower((string) $model->getConnection()->getSchemaBuilder()->getColumnType($model->getTable(), $column));
+        } catch (\Throwable) {
+            return true;
+        }
+
+        return in_array($type, ['varchar', 'char', 'string', 'text', 'tinytext', 'mediumtext', 'longtext'], true);
     }
 
     /**

@@ -83,7 +83,7 @@ class ProcessTaskItemAnswerObserver
         }
 
         // 2. Troviamo il prossimo task, saltando quelli non applicabili al soggetto della pratica
-        $nextTask = ProcessTask::nextApplicableTask($instance->process_id, $currentTask->ordine, $instance->subject);
+        $nextTask = ProcessTask::nextApplicableTask($instance->process_id, $currentTask->ordine, $instance->subject_type ? $instance->subject : null);
 
         if ($nextTask) {
             // Avanziamo al prossimo Task

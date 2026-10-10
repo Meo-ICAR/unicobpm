@@ -52,8 +52,12 @@ class Company extends CoreCompany
         return $this->morphOne(MailAccount::class, 'mailable');
     }
 
-    public function documents(): MorphMany
+    /**
+     * Documenti che hanno l'azienda come soggetto (documentable). Il pacchetto usa lo stesso nome per tutti i documenti
+     * del tenant: qui resta il significato storico dell'app, con un tipo di ritorno compatibile (HasMany).
+     */
+    public function documents(): HasMany
     {
-        return $this->morphMany(Document::class, 'documentable');
+        return $this->hasMany(Document::class, 'documentable_id')->withAttributes(['documentable_type' => 'company']);
     }
 }

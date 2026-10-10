@@ -39,9 +39,9 @@ class Task extends CoreTask implements HasMedia
     public function documentTypes()
     {
         return $this
-            ->belongsToMany(DocumentType::class, 'task_document_types')
+            ->belongsToMany(DocumentType::class, 'document_requirements')
             ->using(TaskDocumentType::class)  // <-- Usa il nuovo modello Pivot
-            ->withPivot('slug', 'is_required')
+            ->withPivot('is_required')
             ->withTimestamps();
     }
 
@@ -83,7 +83,7 @@ class Task extends CoreTask implements HasMedia
             }
             // 3. Uniamo lo stato iniziale richiesto
             $creationData = array_merge($templateData, [
-                'status' => 'pending',
+                'status' => \Unico\Core\Enums\DocumentStatus::PENDING->value,
             ]);
 
             // 4. Eseguiamo il firstOrCreate in sicurezza

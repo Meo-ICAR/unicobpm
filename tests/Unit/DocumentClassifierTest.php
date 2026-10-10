@@ -33,8 +33,8 @@ class DocumentClassifierTest extends TestCase
 
     public function test_does_not_guess_when_regex_matches_more_than_one_candidate_and_ai_is_not_enabled(): void
     {
-        $itemA = $this->pendingItem(1, ['name' => 'A', 'regex' => '/doc/i', 'is_AiCheck' => false]);
-        $itemB = $this->pendingItem(2, ['name' => 'B', 'regex' => '/doc/i', 'is_AiCheck' => false]);
+        $itemA = $this->pendingItem(1, ['name' => 'A', 'regex' => '/doc/i', 'is_ai_check' => false]);
+        $itemB = $this->pendingItem(2, ['name' => 'B', 'regex' => '/doc/i', 'is_ai_check' => false]);
 
         $result = (new DocumentClassifier)->classify(collect([$itemA, $itemB]), 'irrelevant/path.pdf', 'documento.pdf');
 
@@ -43,7 +43,7 @@ class DocumentClassifierTest extends TestCase
 
     public function test_skips_ai_stage_for_unsupported_file_extensions(): void
     {
-        $item = $this->pendingItem(1, ['name' => 'A', 'is_AiCheck' => true]);
+        $item = $this->pendingItem(1, ['name' => 'A', 'is_ai_check' => true]);
 
         $result = (new DocumentClassifier)->classify(collect([$item]), 'irrelevant/path.zip', 'archivio.zip');
 
@@ -55,7 +55,7 @@ class DocumentClassifierTest extends TestCase
         Storage::fake('public');
         Storage::disk('public')->put('documents/foo.pdf', 'contenuto finto del pdf');
 
-        $item = $this->pendingItem(5, ['name' => 'Visura Camerale', 'is_AiCheck' => true, 'AiPattern' => 'Documento CCIAA', 'min_confidence' => 70]);
+        $item = $this->pendingItem(5, ['name' => 'Visura Camerale', 'is_ai_check' => true, 'ai_pattern' => 'Documento CCIAA', 'min_confidence' => 70]);
 
         $this->fakeClassifierAgent(new DocumentClassificationResult(item_id: 5, confidence: 85, abstract: 'Visura camerale aggiornata'));
 
@@ -72,7 +72,7 @@ class DocumentClassifierTest extends TestCase
         Storage::fake('public');
         Storage::disk('public')->put('documents/foo.pdf', 'contenuto finto del pdf');
 
-        $item = $this->pendingItem(5, ['name' => 'Visura Camerale', 'is_AiCheck' => true, 'min_confidence' => 90]);
+        $item = $this->pendingItem(5, ['name' => 'Visura Camerale', 'is_ai_check' => true, 'min_confidence' => 90]);
 
         $this->fakeClassifierAgent(new DocumentClassificationResult(item_id: 5, confidence: 60, abstract: null));
 
@@ -86,7 +86,7 @@ class DocumentClassifierTest extends TestCase
         Storage::fake('public');
         Storage::disk('public')->put('documents/foo.pdf', 'contenuto finto del pdf');
 
-        $item = $this->pendingItem(5, ['name' => 'Visura Camerale', 'is_AiCheck' => true]);
+        $item = $this->pendingItem(5, ['name' => 'Visura Camerale', 'is_ai_check' => true]);
 
         $this->fakeClassifierAgent(new RuntimeException('API non raggiungibile'));
 

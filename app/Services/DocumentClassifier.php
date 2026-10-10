@@ -70,7 +70,7 @@ class DocumentClassifier
      */
     protected function matchByAi(Collection $pendingUploadItems, string $storedDiskPath, string $originalFilename): array
     {
-        $candidates = $pendingUploadItems->filter(fn (ProcessTaskItem $item) => (bool) $item->documentType?->is_AiCheck);
+        $candidates = $pendingUploadItems->filter(fn (ProcessTaskItem $item) => (bool) $item->documentType?->is_ai_check);
 
         $mediaType = $this->guessMediaType($originalFilename);
 
@@ -90,7 +90,7 @@ class DocumentClassifier
                     '- item_id %d: "%s" — %s',
                     $item->id,
                     $item->documentType->name,
-                    $item->documentType->AiPattern ?: 'nessuna descrizione fornita'
+                    $item->documentType->ai_pattern ?: 'nessuna descrizione fornita'
                 ))
                 ->implode("\n");
 

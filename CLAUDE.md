@@ -21,6 +21,16 @@ This application is a Laravel application and its main Laravel ecosystems packag
 - laravel/pint (PINT) - v1
 - phpunit/phpunit (PHPUNIT) - v12
 
+## Pacchetto unico-core
+Le tabelle condivise (utenti, aziende, documenti, tipi documento, task, dipendenti, ruoli, email, siti web...) sono del pacchetto `meo-icar/unico-core` (vedi il suo README e CLAUDE.md).
+- **Database condiviso, connessione `core`** (`UNICO_CORE_DB_CONNECTION=core`, `CORE_DB_DATABASE`): in sviluppo è `unicooam_core`, creato e seminato da unicooam. unicobpm legge e scrive lì le tabelle del pacchetto, come prima faceva su `mysql_unicooam`. Le tabelle dei processi (`processes`, `process_*`, `checklist*`, `business_function*`, `ai_action_drafts`) stanno invece nel database dell'app (`unicobpm_dev`, connessione `mysql`).
+- **Le migration del pacchetto non si eseguono da qui** quando `core` è un database condiviso: `AppServiceProvider` le carica solo se la connessione del pacchetto coincide con quella dell'app (come nei test, dove tutto sta in `unicobpm_test`). Mai `migrate:fresh` sul database condiviso. I seeder `DocumentTypeSeeder`, `TaskSeeder`, `TaskDocumentTypeSeeder`, `ModuleSeeder` ecc. scrivono su tabelle del pacchetto: non lanciarli contro `unicooam_core`, ma solo su un database dedicato.
+- I modelli locali che corrispondono a tabelle del pacchetto sono **sottoclassi** di `Unico\Core\Models\*` (solo ciò che è proprio di unicobpm; `casts`/`booted` chiamano `parent::`). Non ridefinire `$table`, `$connection`, `$fillable`, e non ridichiarare `InteractsWithMedia` su `Document`. Restano sul database Proforma `Client`, `Fornitore`, `FornitoriRole`, `PROFORMA\Clienti`.
+- Le colonne delle tabelle dei processi che richiamano entità condivise (`process_instances.company_id`, `business_function_members.employee_type_id`, `ai_action_drafts.created_by`) sono interi **senza chiave esterna** (tabelle in un altro database); `process_instances.subject_id` è `char(36)` (id intero o UUID). Per i join sul pivot `business_function_members` da modelli su altre connessioni si usa `BusinessFunctionMember::qualifiedTable()`, mai un nome di database scritto a mano.
+- ID interi. Stati dei documenti: `Unico\Core\Enums\DocumentStatus` (valori italiani). Colonne di `document_types`: `is_ai_check`, `is_ai_abstract`, `ai_pattern`, `is_end_month` (snake case).
+- `Employee::user()` è del pacchetto (`employees.user_id`); l'account di login collegato tramite il morph `profile` è `Employee::loginUser()`.
+- `User` non implementa `FilamentUser`: fuori dall'ambiente `local` Filament nega l'accesso al pannello (comportamento già esistente).
+
 ## Skills Activation
 
 This project has domain-specific skills available in `**/skills/**`. You MUST activate the relevant skill whenever you work in that domain—don't wait until you're stuck.

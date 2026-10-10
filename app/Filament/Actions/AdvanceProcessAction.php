@@ -29,7 +29,7 @@ class AdvanceProcessAction
             // 2. Calcolo del prossimo task, saltando quelli non applicabili al soggetto della pratica
             //    (trigger_field/exclude_field del task, valutati contro il record subject).
             $currentTask = $instance->currentTask;
-            $subject = $instance->subject;
+            $subject = $instance->subject_type ? $instance->subject : null; // senza subject_type il morph non è risolvibile (MySQL rifiuta la query)
 
             $nextTask = $actionType === 'complete'
                 ? ProcessTask::nextApplicableTask($instance->process_id, $currentTask->ordine, $subject)

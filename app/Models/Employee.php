@@ -38,9 +38,10 @@ class Employee extends CoreEmployee
     }
 
     /**
-     * Relazione: Account di Login
+     * Account di login collegato tramite il morph `profile` della tabella users. Il pacchetto usa `user()` per la
+     * chiave `employees.user_id` (BelongsTo): qui il significato storico dell'app ha un altro nome.
      */
-    public function user(): MorphOne
+    public function loginUser(): MorphOne
     {
         return $this->morphOne(User::class, 'profile');
     }
