@@ -3,19 +3,16 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Unico\Core\Models\Document as CoreDocument;
 
-class Document extends Model
+class Document extends CoreDocument
 {
-    use HasFactory, HasUuids,  SoftDeletes;
-
-    protected $connection = 'mysql_unicooam';
+    use HasFactory,  SoftDeletes;
 
     public function registerMediaCollections(): void
     {
@@ -26,50 +23,6 @@ class Document extends Model
     protected $orderBy = 'name';
 
     protected $orderDirection = 'asc';
-
-    protected $fillable = [
-        'company_id',
-        'documentable_type',
-        'documentable_id',
-        'document_type_id',
-        'name',
-        'docnumber',
-        'spatie_collection',
-        'document_url',
-        'status',
-        'sync_status',
-        'source_app',
-        'app_id',
-        'app_drive_id',
-        'app_etag',
-        'extracted_text',
-        'metadata',
-        'ai_abstract',
-        'ai_confidence_score',
-        'is_template',
-        'doctype',
-        'cellposition',
-        'is_signed',
-        'is_unique',
-        'is_endMonth',
-        'is_monitored',
-        'emitted_by',
-        'emitted_at',
-        'expires_at',
-        'delivered_at',
-        'signed_at',
-        'description',
-        'internal_notes',
-        'rejection_note',
-        'user_id',
-        'uploaded_by',
-        'verified_by',
-        'verified_at',
-        'created_by',
-        'updated_by',
-        'deleted_by',
-        'file_hash',
-    ];
 
     protected $casts = [
         'metadata' => 'array',
@@ -100,6 +53,7 @@ class Document extends Model
      */
     protected static function booted(): void
     {
+        parent::booted();
         static::updating(function (Document $document) {
             if (empty($document->expires_at) && ! empty($document->emitted_at)) {
                 $document->expires_at = $document->documentType?->durationCalculate($document->emitted_at);

@@ -3,8 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Unico\Core\Models\ChatMessage as CoreChatMessage;
 
 /**
  * Un singolo messaggio (utente, assistente o esito di una tool call) di una conversazione
@@ -14,28 +14,19 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * proprietario) — la Segretaria AI usa un tool dedicato per cercare esplicitamente tra le
  * conversazioni di tutti gli utenti, bypassando questo scope.
  */
-class ChatMessage extends Model
+class ChatMessage extends CoreChatMessage
 {
-    protected $table = 'chat_messages';
-
-    protected $fillable = [
-        'thread_id',
-        'role',
-        'content',
-        'meta',
-        'user_id',
-    ];
-
     protected function casts(): array
     {
-        return [
+        return array_merge(parent::casts(), [
             'content' => 'array',
             'meta' => 'array',
-        ];
+        ]);
     }
 
     protected static function booted(): void
     {
+        parent::booted();
         static::creating(function (self $message): void {
             if ($message->user_id === null && auth()->check()) {
                 $message->user_id = auth()->id();

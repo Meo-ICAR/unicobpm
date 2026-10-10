@@ -10,7 +10,7 @@ class BusinessFunctionMember extends MorphPivot
     /**
      * Il nome della tabella nel database.
      */
-    protected $table = 'unicobpm.business_function_members';
+    protected $table = 'business_function_members';
 
     /**
      * I campi che possono essere assegnati in massa (Mass Assignment).
@@ -67,5 +67,14 @@ class BusinessFunctionMember extends MorphPivot
     public function isOutsourced(): bool
     {
         return $this->member_type === (new Client)->getMorphClass();
+    }
+
+    /**
+     * Nome della tabella qualificato con il database dell'app: serve alle relazioni che partono da modelli su un'altra
+     * connessione (database condiviso, Proforma), il cui join sul pivot altrimenti cercherebbe la tabella nel database sbagliato.
+     */
+    public static function qualifiedTable(): string
+    {
+        return config('database.connections.'.config('database.default').'.database').'.business_function_members';
     }
 }

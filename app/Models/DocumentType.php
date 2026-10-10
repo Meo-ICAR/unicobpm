@@ -4,76 +4,20 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use Unico\Core\Models\DocumentType as CoreDocumentType;
 
-class DocumentType extends Model implements HasMedia
+class DocumentType extends CoreDocumentType implements HasMedia
 {
     use HasFactory, InteractsWithMedia, SoftDeletes;
-
-    protected $connection = 'mysql_unicooam';
 
     protected $orderBy = 'name';
 
     protected $orderDirection = 'asc';
-
-    protected $fillable = [
-        'name',
-        'description',
-        'document_url',
-        'code',
-        'codegroup',
-        'slug',
-        'regex_pattern',
-        'priority',
-        'phase',
-        'is_person',
-        'is_company',
-        'is_employee',
-        'is_agent',
-        'is_principal',
-        'is_client',
-        'is_practice',
-        'trigger_field',
-        'is_signed',
-        'is_monitored',
-        'doctype',
-        'cellposition',
-        'renewed_by_id',
-        'training_hours',
-        'training_organization',
-        'duration',
-        'duration_unit',
-        'nature',
-        'emitted_by',
-        'is_sensible',
-        'is_template',
-        'is_stored',
-        'regex',
-        'is_endMonth',
-        'document_typable',
-        'is_AiAbstract',
-        'is_AiCheck',
-        'AiPattern',
-        'min_confidence',
-        'allow_auto_verification',
-        'notify_days_before',
-        'retention_years',
-        'created_by',
-        'updated_by',
-        'deleted_by',
-        'is_versioned',
-        'trigger_state',
-        'trigger_value',
-        'exclude_field',
-        'exclude_state',
-        'exclude_value',
-        'expire_days_before',
-    ];
 
     protected $casts = [
         'is_person' => 'boolean',

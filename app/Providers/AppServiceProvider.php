@@ -36,6 +36,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Il pacchetto unico-core sta nel database condiviso (connessione `core`), creato da un'altra app: qui non si
+        // eseguono le sue migration. Se invece usa la connessione dell'app (es. nei test), si creano con `migrate`.
+        if (config('unico-core.connection') === config('database.default')) {
+            $this->loadMigrationsFrom(\Unico\Core\UnicoCoreServiceProvider::migrationsPath());
+        }
+
         Relation::morphMap([
             'audit' => Audit::class,
             'branch' => Branch::class,

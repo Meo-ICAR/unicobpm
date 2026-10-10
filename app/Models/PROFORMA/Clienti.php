@@ -189,7 +189,7 @@ class Clienti extends Model
         return $this
             ->belongsToMany(
                 OamCode::class,  // Il modello correlato
-                'unicooam.clienti_oam',  // La tabella pivot personalizzata
+                config('database.connections.core.database').'.clienti_oam',  // La tabella pivot personalizzata
                 'clienti_id',  // La chiave esterna di questa tabella nella pivot
                 'oam_code_id'  // La chiave esterna del modello correlato nella pivot
             )

@@ -23,7 +23,7 @@ return new class extends Migration
 
             $table->enum('status', ['pending', 'sent', 'cancelled', 'failed'])->default('pending');
 
-            $table->foreignId('created_by')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('created_by')->index()->comment('users.id (tabella del pacchetto, database condiviso: nessun vincolo)');
 
             $table->text('error')->nullable();
             $table->timestamp('sent_at')->nullable();

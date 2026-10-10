@@ -126,7 +126,7 @@ class Client extends Model
      */
     public function businessFunctions(): MorphToMany
     {
-        return $this->morphToMany(BusinessFunction::class, 'member', 'unicobpm.business_function_members')
+        return $this->morphToMany(BusinessFunction::class, 'member', \App\Models\BusinessFunctionMember::qualifiedTable())
             ->using(BusinessFunctionMember::class)
             ->withPivot('employee_type_id', 'is_manager')
             ->withTimestamps();

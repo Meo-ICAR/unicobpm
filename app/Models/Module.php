@@ -3,25 +3,16 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Unico\Core\Models\Module as CoreModule;
 
-class Module extends Model
+class Module extends CoreModule
 {
     use HasFactory;
-
-    protected $connection = 'mysql_unicooam';
 
     protected $orderBy = 'name';
 
     protected $orderDirection = 'asc';
-
-    protected $fillable = [
-        'code',
-        'name',
-        'description',
-        'is_active',
-    ];
 
     protected $casts = [
         'is_active' => 'boolean',

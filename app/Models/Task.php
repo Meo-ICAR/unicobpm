@@ -3,23 +3,19 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use Unico\Core\Models\Task as CoreTask;
 
-class Task extends Model implements HasMedia
+class Task extends CoreTask implements HasMedia
 {
     use HasFactory, InteractsWithMedia;
-
-    protected $connection = 'mysql_unicooam';
 
     protected $orderBy = 'name';
 
     protected $orderDirection = 'asc';
-
-    protected $fillable = ['parent_id', 'name', 'description', 'app_identifier', 'taskable', 'trigger_field', 'trigger_state', 'trigger_value', 'exclude_field', 'exclude_state', 'exclude_value', 'is_active'];
 
     /**
      * Task padre (attività precedente nella catena gerarchica).

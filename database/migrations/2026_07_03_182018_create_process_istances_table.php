@@ -22,7 +22,7 @@ return new class extends Migration
             $table->nullableMorphs('current_assignee', 'assignee_index');
 
             // Multi-tenant (opzionale ma utile se hai più agenzie nel DB)
-            $table->uuid('company_id')->nullable()->index()->comment('Agenzia di competenza');
+            $table->unsignedBigInteger('company_id')->nullable()->index()->comment('Agenzia di competenza (companies.id, database condiviso)');
 
             // Stato di avanzamento
             $table->enum('status', [

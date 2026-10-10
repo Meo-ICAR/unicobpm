@@ -11,10 +11,11 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Collection;
+use Unico\Core\Models\User as CoreUser;
 
 #[Fillable(['name', 'email', 'password', 'role'])]
 #[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable
+class User extends CoreUser
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
@@ -26,10 +27,10 @@ class User extends Authenticatable
      */
     protected function casts(): array
     {
-        return [
+        return array_merge(parent::casts(), [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-        ];
+        ]);
     }
 
     public function profile(): MorphTo

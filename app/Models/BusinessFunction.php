@@ -12,7 +12,7 @@ class BusinessFunction extends Model
 {
     protected $connection = 'mysql';
 
-    protected $table = 'unicobpm.business_functions';
+    protected $table = 'business_functions';
 
     protected $fillable = [
         'name',
@@ -29,7 +29,7 @@ class BusinessFunction extends Model
 
     public function employees(): MorphToMany
     {
-        return $this->morphedByMany(Employee::class, 'member', 'unicobpm.business_function_members')
+        return $this->morphedByMany(Employee::class, 'member', \App\Models\BusinessFunctionMember::qualifiedTable())
             ->using(BusinessFunctionMember::class)
             ->withPivot('employee_type_id', 'is_manager')
             ->withTimestamps();
@@ -40,7 +40,7 @@ class BusinessFunction extends Model
      */
     public function clients(): MorphToMany
     {
-        return $this->morphedByMany(Client::class, 'member', 'unicobpm.business_function_members')
+        return $this->morphedByMany(Client::class, 'member', \App\Models\BusinessFunctionMember::qualifiedTable())
             ->using(BusinessFunctionMember::class)
             ->withPivot('employee_type_id', 'is_manager')
             ->withTimestamps();
@@ -54,7 +54,7 @@ class BusinessFunction extends Model
     {
         return $this->belongsToMany(
             EmployeeType::class,
-            'unicobpm.business_function_members',
+            \App\Models\BusinessFunctionMember::qualifiedTable(),
             'business_function_id',
             'employee_type_id'
         )->withTimestamps();

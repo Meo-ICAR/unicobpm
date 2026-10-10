@@ -2,16 +2,11 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Unico\Core\Models\EmployeeTypeResourcePreset as CoreEmployeeTypeResourcePreset;
 
-class EmployeeTypeResourcePreset extends Model
+class EmployeeTypeResourcePreset extends CoreEmployeeTypeResourcePreset
 {
-    protected $fillable = [
-        'employee_type_id',
-        'resource_id',
-    ];
-
     public function employeeType(): BelongsTo
     {
         return $this->belongsTo(EmployeeType::class);

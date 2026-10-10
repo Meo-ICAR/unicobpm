@@ -4,36 +4,11 @@ namespace App\Models;
 
 use App\Enums\Severity;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use Unico\Core\Models\EmailTemplate as CoreEmailTemplate;
 
-class EmailTemplate extends Model
+class EmailTemplate extends CoreEmailTemplate
 {
     use HasFactory;
-
-    /**
-     * The table associated with the model.
-     *
-     * @var string
-     */
-    protected $connection = 'mysql_unicooam';
-
-    protected $table = 'email_templates';
-
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
-    protected $fillable = [
-        'code',
-        'name',
-        'subject',
-        'body',
-        'placeholders',
-        'is_active',
-        'app_identifier',
-        'severity',
-    ];
 
     /**
      * The attributes that should be cast.

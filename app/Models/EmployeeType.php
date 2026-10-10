@@ -3,39 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Unico\Core\Models\EmployeeType as CoreEmployeeType;
 
-class EmployeeType extends Model
+class EmployeeType extends CoreEmployeeType
 {
-    /*
-      'dipendente' => 'Dipendente',
-                                'istruttore' => 'Istruttore',
-                                'amministrativo' => 'Amministrativo',
-                                'segreteria' => 'Segreteria',
-                                'quality' => 'Qualita',
-                                'reclami' => 'Reclami',
-                                'dpo' => 'Privacy',
-                                'cda' => 'CdA',
-                                'compliance' => 'Compliance',
-                                'internal audit' => 'Auditor',
-                                'AML' => 'AML',
-                                'SOS' => 'Resp. SOS',
-                                'legale' => 'Legale',
-        */
-    /**
-     * I campi che possono essere assegnati in massa (mass assignable).
-     *
-     * @var array<int, string>
-     */
-    protected $fillable = [
-        'name',
-        'icon',
-        'companytype',
-        'is_external',
-    ];
-
     /**
      * Casting dei tipi di attributi (Sintassi moderna Laravel).
      *
@@ -43,9 +16,9 @@ class EmployeeType extends Model
      */
     protected function casts(): array
     {
-        return [
+        return array_merge(parent::casts(), [
             'is_external' => 'boolean',
-        ];
+        ]);
     }
 
     /* =========================================================================
@@ -103,7 +76,7 @@ class EmployeeType extends Model
     {
         return $this->belongsToMany(
             BusinessFunction::class,
-            'unicobpm.business_function_members',
+            \App\Models\BusinessFunctionMember::qualifiedTable(),
             'employee_type_id',
             'business_function_id'
         )->withTimestamps();

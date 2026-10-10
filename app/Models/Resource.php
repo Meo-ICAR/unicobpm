@@ -4,10 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Unico\Core\Models\Resource as CoreResource;
 
-class Resource extends Model
+class Resource extends CoreResource
 {
     use HasFactory;
 
@@ -25,14 +25,6 @@ class Resource extends Model
         self::PLAN_FULL => 3,
         // Il periodo di prova sblocca tutte le funzionalità (stesso livello di FULL).
         self::PLAN_TRIAL => 3,
-    ];
-
-    protected $fillable = [
-        'app_name',
-        'key',
-        'name',
-        'group',
-        'min_plan',
     ];
 
     /**
