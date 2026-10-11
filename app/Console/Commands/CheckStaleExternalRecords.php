@@ -47,11 +47,8 @@ class CheckStaleExternalRecords extends Command
     private function fetchLatestCreatedAt(ExternalAppResolver $appResolver, string $app, string $model): ?Carbon
     {
         try {
-            $response = Http::asJson()
-                ->withHeaders(['X-Api-Key' => (string) config('services.bpm.bridge_api_key')])
-                ->timeout(8)
-                ->connectTimeout(4)
-                ->get("{$appResolver->urlFor($app)}/api/models/{$model}/latest");
+            $client = app(\App\Services\ExternalAppClient::class);
+            $response = $client->for($app, 8)->get($client->url($app, "api/models/{$model}/latest"));
 
             $createdAt = $response->json('fields.created_at');
 

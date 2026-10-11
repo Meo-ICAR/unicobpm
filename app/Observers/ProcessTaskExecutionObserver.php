@@ -186,7 +186,7 @@ class ProcessTaskExecutionObserver
                             }
                         }
 
-                        $this->emailSendingService->send($toEmail, $subject, $body, $attachments);
+                        $this->emailSendingService->send($toEmail, $subject, $body, $attachments, $instance->company_id);
                     }
 
                     // Registra il completamento (Scatena l'avanzamento se è l'ultima azione)
@@ -254,10 +254,8 @@ class ProcessTaskExecutionObserver
 
                     if (! empty($praticaId)) {
                         try {
-                            $response = Http::asJson()
-                                ->timeout(8)
-                                ->connectTimeout(4)
-                                ->get(app(ExternalAppResolver::class)->urlFor($app)."/api/pratiche/{$praticaId}");
+                            $client = app(\App\Services\ExternalAppClient::class);
+                            $response = $client->for($app, 8)->get($client->url($app, "api/pratiche/{$praticaId}"));
 
                             $blacklisted = $response->successful() && $response->json('agente_blacklistato') === true;
                         } catch (\Throwable $e) {

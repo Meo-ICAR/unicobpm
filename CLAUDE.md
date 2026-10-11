@@ -409,3 +409,11 @@ livewire(ListUsers::class)
   - `$view`: `protected string` (not `protected static string`) on `Page` and `Widget` classes
 
 </laravel-boost-guidelines>
+
+## Chiamate verso le altre app
+- **Tutte le chiamate partono da `ExternalAppClient`** (JSON, tempi massimi, `X-Api-Key` del bridge, `X-Correlation-Id`); l'identificativo di correlazione (`Correlation`) è quello della richiesta o uno per esecuzione e si ritrova nei log delle app.
+- **Scritture e webhook passano da una coda** (`OutboundCallService` → `SendOutboundCall`, tabella `outbound_calls`): chiave di idempotenza, ritentativi con attesa crescente (1, 5, 15 min, 1 h, 4 h) per errori di rete, 5xx, 408/425/429; gli altri 4xx sono definitivi. Stato e «Riprova» in *Chiamate in uscita*. La scrittura di completamento di un processo (`completion_write_field`) usa questa coda e il registro attività si scrive alla consegna (`LogCompletionWrite`). Il controllo blacklist resta sincrono (serve la risposta).
+- **Webhook per i terzi** (`WebhookEndpoint`, *Webhook*): `process.status_changed` a ogni cambio di stato di un'istanza, corpo `{event, occurred_at, data}`, firma `X-Unico-Signature: sha256=HMAC(corpo)` con il segreto del destinatario, solo https (http in sviluppo).
+- **Comandi sulle altre app**: `bpm:dispatch-external-command {app} {comando} --option=nome=valore [--wait --timeout=600]` usa il bridge di unico-core (`/api/commands`, 202 con `run_id`); con `--wait` legge l'esito del lancio e fallisce se il comando fallisce.
+- **Email dei processi**: template scelti per company dell'istanza, app `unicobpm`, tipo `processo` e grado (`EmailTemplateResolver`; senza il grado richiesto vale quello inferiore più vicino); la casella mittente è quella di tipo `processo` della company (`mail_accounts`), altrimenti il mailer di default.
+

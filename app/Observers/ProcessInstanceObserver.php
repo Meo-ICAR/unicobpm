@@ -5,9 +5,9 @@ namespace App\Observers;
 use App\Models\ProcessInstance;
 use App\Models\ProcessTaskExecution;
 use App\Services\ExternalAppResolver;
+use App\Services\OutboundCallService;
+use App\Services\WebhookDispatcher;
 use Illuminate\Database\Eloquent\Relations\Relation;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 
 class ProcessInstanceObserver
 {
@@ -79,7 +79,13 @@ class ProcessInstanceObserver
      */
     public function updated(ProcessInstance $instance): void
     {
-        if (! $instance->wasChanged('status') || $instance->status !== 'completed') {
+        if (! $instance->wasChanged('status')) {
+            return;
+        }
+
+        $this->notifyWebhooks($instance);
+
+        if ($instance->status !== 'completed') {
             return;
         }
 
@@ -98,45 +104,32 @@ class ProcessInstanceObserver
         }
 
         $app = $instance->process->completion_write_app ?: ExternalAppResolver::DEFAULT_APP;
-        $appResolver = app(ExternalAppResolver::class);
 
         $value = $instance->process->completion_write_value === 'now'
             ? now()->toDateString()
             : $instance->process->completion_write_value;
 
-        try {
-            $response = Http::asJson()
-                ->timeout(8)
-                ->connectTimeout(4)
-                ->patch("{$appResolver->urlFor($app)}/api/models/{$modelType}/{$instance->subject_id}", [
-                    'field' => $field,
-                    'value' => $value,
-                ]);
+        // La scrittura passa dalla coda delle chiamate in uscita: se l'app non risponde non si perde, si ritenta (Chiamate in uscita).
+        // Il registro attività si scrive alla consegna (vedi LogCompletionWrite).
+        app(OutboundCallService::class)->enqueue(
+            'completion_write', $app, 'PATCH', "/api/models/{$modelType}/{$instance->subject_id}",
+            ['field' => $field, 'value' => $value],
+            ['instance_id' => $instance->id, 'field' => $field, 'value' => (string) $value, 'app' => $app],
+            "completion:{$instance->id}:{$field}",
+        );
+    }
 
-            if ($response->failed()) {
-                Log::warning("Scrittura completamento su {$app} fallita.", [
-                    'model_type' => $modelType,
-                    'subject_id' => $instance->subject_id,
-                    'field' => $field,
-                    'status' => $response->status(),
-                ]);
-
-                return;
-            }
-        } catch (\Throwable $e) {
-            Log::warning("Scrittura completamento su {$app} fallita per errore di rete.", [
-                'model_type' => $modelType,
-                'subject_id' => $instance->subject_id,
-                'field' => $field,
-            ]);
-
-            return;
-        }
-
-        activity('bpm')
-            ->performedOn($instance)
-            ->event('completion_field_written')
-            ->withProperties(['field' => $field, 'value' => (string) $value, 'app' => $app])
-            ->log("Scritto {$field} sul soggetto della pratica al completamento (via API {$app}).");
+    /** Avvisa i webhook di terzi del cambio di stato del processo. */
+    private function notifyWebhooks(ProcessInstance $instance): void
+    {
+        app(WebhookDispatcher::class)->dispatch(WebhookDispatcher::PROCESS_STATUS_CHANGED, [
+            'instance_id' => $instance->id,
+            'process_code' => $instance->process?->code,
+            'process_name' => $instance->process?->name,
+            'status' => $instance->status,
+            'previous_status' => $instance->getOriginal('status'),
+            'subject_type' => array_search($instance->subject_type, Relation::morphMap(), true) ?: null,
+            'subject_id' => $instance->subject_id,
+        ], $instance->id.':'.$instance->status.':'.($instance->updated_at?->timestamp ?? 0));
     }
 }

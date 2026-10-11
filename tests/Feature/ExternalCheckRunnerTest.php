@@ -88,11 +88,28 @@ class ExternalCheckRunnerTest extends TestCase
         $this->assertSame(Severity::Alert, $template->severity);
     }
 
-    public function test_resolves_no_template_when_severity_has_none(): void
+    public function test_resolves_the_closest_lower_severity_when_the_requested_one_is_missing(): void
     {
         EmailTemplate::where('code', self::CODE)->where('severity', Severity::Regular->value)->delete();
 
+        // Non c'è il template «regular»: vale quello del grado inferiore più vicino («ok»), mai uno più alto.
+        $this->assertSame(Severity::Ok, $this->item()->resolveCheckEmailTemplate(Severity::Regular)?->severity);
+
+        EmailTemplate::where('code', self::CODE)->where('severity', Severity::Ok->value)->delete();
+
         $this->assertNull($this->item()->resolveCheckEmailTemplate(Severity::Regular));
+    }
+
+    public function test_the_company_template_wins_over_the_shared_one(): void
+    {
+        $company = \Unico\Core\Models\Company::create(['name' => 'Acme '.uniqid()]);
+        $own = EmailTemplate::create(['code' => self::CODE, 'name' => 'Acme', 'subject' => 'Acme', 'body' => 'Acme', 'is_active' => true, 'severity' => Severity::Warning, 'company_id' => $company->id]);
+
+        $this->assertSame($own->id, $this->item()->resolveCheckEmailTemplate(Severity::Warning, $company->id)?->id);
+        $this->assertNotSame($own->id, $this->item()->resolveCheckEmailTemplate(Severity::Warning)?->id);
+
+        $own->delete();
+        $company->delete();
     }
 
     public function test_sends_template_matching_returned_severity(): void
@@ -100,7 +117,7 @@ class ExternalCheckRunnerTest extends TestCase
         Http::fake(['*/api/checks/*' => Http::response(['value' => 3, 'severity' => 'warning'])]);
 
         $runner = $this->runnerNotifying(['a@x.it'], function (MockInterface $mock) {
-            $mock->shouldReceive('send')->once()->with('a@x.it', 'Subject warning: 3', 'Body warning Warning');
+            $mock->shouldReceive('send')->once()->with('a@x.it', 'Subject warning: 3', 'Body warning Warning', [], null);
         });
 
         $summary = $runner->run($this->item());
@@ -113,7 +130,7 @@ class ExternalCheckRunnerTest extends TestCase
         Http::fake(['*/api/checks/*' => Http::response(['value' => 7])]);
 
         $runner = $this->runnerNotifying(['a@x.it'], function (MockInterface $mock) {
-            $mock->shouldReceive('send')->once()->with('a@x.it', 'Subject alert: 7', 'Body alert Alert');
+            $mock->shouldReceive('send')->once()->with('a@x.it', 'Subject alert: 7', 'Body alert Alert', [], null);
         });
 
         $runner->run($this->item());
@@ -151,8 +168,8 @@ class ExternalCheckRunnerTest extends TestCase
         Http::fake(['*/api/checks/*' => Http::response(['value' => 3, 'severity' => 'regular'])]);
 
         $runner = $this->runnerNotifying(['bad@x.it', 'ok@x.it'], function (MockInterface $mock) {
-            $mock->shouldReceive('send')->with('bad@x.it', \Mockery::any(), \Mockery::any())->once()->andThrow(new \RuntimeException('SMTP down'));
-            $mock->shouldReceive('send')->with('ok@x.it', \Mockery::any(), \Mockery::any())->once();
+            $mock->shouldReceive('send')->with('bad@x.it', \Mockery::any(), \Mockery::any(), [], null)->once()->andThrow(new \RuntimeException('SMTP down'));
+            $mock->shouldReceive('send')->with('ok@x.it', \Mockery::any(), \Mockery::any(), [], null)->once();
         });
 
         $summary = $runner->run($this->item());
@@ -166,7 +183,7 @@ class ExternalCheckRunnerTest extends TestCase
         Http::fake(['*/api/checks/*' => Http::response(['value' => 3, 'severity' => 'alert'])]);
 
         $runner = $this->runnerNotifying(['a@x.it'], function (MockInterface $mock) {
-            $mock->shouldReceive('send')->once()->with('a@x.it', 'Subject alert: 3', 'Body alert Alert');
+            $mock->shouldReceive('send')->once()->with('a@x.it', 'Subject alert: 3', 'Body alert Alert', [], null);
             $mock->shouldReceive('send')->once()->with('boss@x.it', \Mockery::pattern('/^Esito invio avvisi \(Alert\)/'), \Mockery::pattern('/Email inviate a: a@x\.it/'));
         }, managers: ['boss@x.it']);
 
@@ -178,7 +195,7 @@ class ExternalCheckRunnerTest extends TestCase
         Http::fake(['*/api/checks/*' => Http::response(['value' => 1, 'severity' => 'regular'])]);
 
         $runner = $this->runnerNotifying(['a@x.it'], function (MockInterface $mock) {
-            $mock->shouldReceive('send')->once()->with('a@x.it', 'Subject regular: 1', 'Body regular Regular');
+            $mock->shouldReceive('send')->once()->with('a@x.it', 'Subject regular: 1', 'Body regular Regular', [], null);
         }, managers: ['boss@x.it']);
 
         $runner->run($this->item());
@@ -189,7 +206,7 @@ class ExternalCheckRunnerTest extends TestCase
         Http::fake(['*/api/checks/*' => Http::response(['value' => 3, 'severity' => 'warning'])]);
 
         $runner = $this->runnerNotifying(['a@x.it'], function (MockInterface $mock) {
-            $mock->shouldReceive('send')->with('a@x.it', \Mockery::any(), \Mockery::any())->once();
+            $mock->shouldReceive('send')->with('a@x.it', \Mockery::any(), \Mockery::any(), [], null)->once();
             $mock->shouldReceive('send')->with('boss@x.it', \Mockery::any(), \Mockery::any())->once()->andThrow(new \RuntimeException('SMTP down'));
         }, managers: ['boss@x.it']);
 

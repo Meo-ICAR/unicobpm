@@ -28,7 +28,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Un solo identificativo di correlazione per richiesta/esecuzione, riusato da tutte le chiamate verso le altre app.
+        $this->app->singleton(\App\Services\Correlation::class);
     }
 
     /**

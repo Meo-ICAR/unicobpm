@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Enums\Severity;
+use Unico\Core\Enums\MailType;
+use Unico\Core\Mail\EmailTemplateResolver;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -67,10 +69,11 @@ class ProcessTaskItem extends Model
     }
 
     /**
-     * Per le azioni 'external_check': sceglie, tra i template con $this->config['email_template_code'],
-     * quello della severity indicata. Se la severity è assente prende il template con la severity più alta.
+     * Per le azioni 'external_check': sceglie, tra i template con $this->config['email_template_code'], il più specifico per company,
+     * app (unicobpm) e tipo «processo», del grado indicato o, se manca, del grado inferiore più vicino (Unico\Core\Mail\EmailTemplateResolver).
+     * Se la severity è assente prende il template del grado più alto che esiste.
      */
-    public function resolveCheckEmailTemplate(?Severity $severity): ?EmailTemplate
+    public function resolveCheckEmailTemplate(?Severity $severity, int|string|null $companyId = null): ?EmailTemplate
     {
         $code = $this->config['email_template_code'] ?? null;
 
@@ -78,16 +81,9 @@ class ProcessTaskItem extends Model
             return null;
         }
 
-        $templates = EmailTemplate::where('code', $code)
-            ->where('is_active', true)
-            ->whereNotNull('severity')
-            ->get();
+        $found = app(EmailTemplateResolver::class)->resolve((string) $code, $companyId, 'unicobpm', MailType::Processo, ($severity ?? Severity::Alert)->value);
 
-        if ($severity) {
-            return $templates->firstWhere('severity', $severity);
-        }
-
-        return $templates->sortByDesc(fn (EmailTemplate $template) => $template->severity->level())->first();
+        return $found === null ? null : EmailTemplate::query()->find($found->getKey());
     }
 
     /**

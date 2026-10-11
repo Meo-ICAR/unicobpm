@@ -52,7 +52,7 @@ class ExternalCheckRunner
             return "Check {$app}/{$command}: valore {$value}, severity ok — nessuna email da inviare.";
         }
 
-        $template = $item->resolveCheckEmailTemplate($severity);
+        $template = $item->resolveCheckEmailTemplate($severity, $instance?->company_id);
 
         if (! $template) {
             return "Check {$app}/{$command}: valore {$value}, severity ".($severity?->value ?? 'assente').' — nessun template email trovato.';
@@ -73,7 +73,7 @@ class ExternalCheckRunner
 
         foreach ($recipients as $email) {
             try {
-                $this->emailSender->send($email, $subject, $body);
+                $this->emailSender->send($email, $subject, $body, [], $instance?->company_id);
                 $sent->push($email);
             } catch (\Throwable $e) {
                 Log::error("Check {$app}/{$command}: invio email a {$email} fallito.", ['error' => $e->getMessage()]);
@@ -173,11 +173,8 @@ class ExternalCheckRunner
     private function fetchStatus(string $app, string $command): ?array
     {
         try {
-            $response = Http::asJson()
-                ->withHeaders(['X-Api-Key' => (string) config('services.bpm.bridge_api_key')])
-                ->timeout(15)
-                ->connectTimeout(4)
-                ->get("{$this->appResolver->urlFor($app)}/api/checks/{$command}");
+            $client = app(ExternalAppClient::class);
+            $response = $client->for($app)->get($client->url($app, "api/checks/{$command}"));
         } catch (\Throwable $e) {
             Log::warning("Check {$app}/{$command} fallito per errore di rete.", ['error' => $e->getMessage()]);
 
