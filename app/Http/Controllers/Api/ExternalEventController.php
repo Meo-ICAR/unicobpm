@@ -28,7 +28,12 @@ class ExternalEventController extends Controller
         $existing = ExternalEvent::query()->where('event_id', $data['event_id'])->first();
 
         if ($existing !== null) {
-            return $this->resource($existing, 200, duplicate: true);
+            // Un evento rimasto in errore si rielabora al nuovo invio; gli altri sono già stati gestiti.
+            if ($existing->status !== ExternalEvent::FAILED) {
+                return $this->resource($existing, 200, duplicate: true);
+            }
+
+            return $this->resource($processor->process($existing), 202, retried: true);
         }
 
         $event = ExternalEvent::create([
@@ -39,8 +44,12 @@ class ExternalEventController extends Controller
         return $this->resource($processor->process($event), 202);
     }
 
-    private function resource(ExternalEvent $event, int $status, bool $duplicate = false): JsonResponse
+    /** Se l'avvio dei processi è fallito risponde 503: il mittente ritenta e l'evento, già registrato, viene rielaborato. */
+    private function resource(ExternalEvent $event, int $status, bool $duplicate = false, bool $retried = false): JsonResponse
     {
-        return response()->json(['event_id' => $event->event_id, 'status' => $event->status, 'started' => $event->started_count, 'duplicate' => $duplicate], $status);
+        return response()->json(
+            ['event_id' => $event->event_id, 'status' => $event->status, 'started' => $event->started_count, 'duplicate' => $duplicate, 'retried' => $retried],
+            $event->status === ExternalEvent::FAILED ? 503 : $status,
+        );
     }
 }

@@ -12,6 +12,7 @@ use App\Models\ProcessTask;
 use App\Models\ProcessTaskRaci;
 use App\Models\ProcessTrigger;
 use App\Models\User;
+use App\Services\ExternalEventProcessor;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
@@ -184,5 +185,27 @@ class ExternalEventTest extends TestCase
         $instance->currentTaskExecution->update(['postponed_until' => now()->subDay()->toDateString()]);
         (new TaskEscalationWatchdogJob)->handle();
         $this->assertSame(['direzione@example.com'], $this->sentTo());
+    }
+
+    public function test_a_failed_event_answers_503_and_is_processed_again_when_resent(): void
+    {
+        $this->trigger();
+        $this->app->bind(\App\Filament\Actions\StartProcessAction::class, fn () => new class extends \App\Filament\Actions\StartProcessAction
+        {
+            public function execute(?\Illuminate\Database\Eloquent\Model $subject, int $processId): ProcessInstance
+            {
+                throw new \RuntimeException('database giù');
+            }
+        });
+
+        $this->postJson('/api/events', $this->event(), self::KEY)->assertStatus(503)->assertJson(['status' => 'failed']);
+        $this->assertSame('failed', ExternalEvent::sole()->status);
+
+        $this->app->forgetInstance(ExternalEventProcessor::class);
+        $this->app->bind(\App\Filament\Actions\StartProcessAction::class, \App\Filament\Actions\StartProcessAction::class);
+        $this->postJson('/api/events', $this->event(), self::KEY)->assertStatus(202)->assertJson(['status' => 'processed', 'started' => 1, 'retried' => true]);
+
+        $this->assertSame(1, ProcessInstance::count());
+        $this->assertSame(1, ExternalEvent::count());
     }
 }
