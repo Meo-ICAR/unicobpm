@@ -28,6 +28,12 @@ trait HasRelationPlanAccess
         return $user ? $user->hasPermission($featureKey, 'viewAny') : false;
     }
 
+    /** I ruoli di sola lettura (l'ispettore) vedono la scheda ma non possono creare, modificare o eliminare. */
+    public function isReadOnly(): bool
+    {
+        return parent::isReadOnly() || ! \checkPiano(static::getFeatureKey(), static::class, write: true);
+    }
+
     public static function getFeatureKey(): string
     {
         if (property_exists(static::class, 'featureKey') && static::$featureKey !== null) {
