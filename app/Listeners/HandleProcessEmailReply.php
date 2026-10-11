@@ -80,7 +80,7 @@ class HandleProcessEmailReply implements ShouldQueue
             'status' => ProcessEmailReply::NEEDS_REVIEW,
         ]);
 
-        $how = $this->applier->decide($interpretation, $item);
+        $how = $this->applier->decide($interpretation, $item, $execution);
 
         if ($how === ProcessReplyApplier::REVIEW) {
             activity('bpm')->performedOn($instance)->event('email_reply_needs_review')

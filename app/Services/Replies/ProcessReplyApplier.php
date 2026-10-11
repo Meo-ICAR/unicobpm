@@ -6,13 +6,20 @@ use App\Models\ProcessEmailReply;
 use App\Models\ProcessInstance;
 use App\Models\ProcessTaskItem;
 use App\Models\ProcessTaskItemAnswer;
+use App\Models\ProcessTaskExecution;
 use App\Models\User;
+use App\Services\EmailSendingService;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Cosa fare di una risposta interpretata, secondo la configurazione dell'azione «attesa risposta email» (`config` dell'item):
  *  - `min_confidence` (80): sotto questa soglia decide un operatore;
  *  - `on_refuse`: `review` (default, decide un operatore), `answer` (il rifiuto è la risposta e il processo avanza), `suspend` (sospende il processo);
- *  - `auto` (true): se false non avanza mai da solo.
+ *  - `auto` (true): se false non avanza mai da solo;
+ *  - `on_postpone`: `review` (default, decide un operatore) o `grant` (concede il rinvio chiesto, entro i limiti di
+ *    `max_postpone_days` e `max_postponements`: vedi PostponementService; lo step resta aperto con il termine spostato);
+ *  - `confirm_postpone_email` (true): al rinvio concesso si conferma alla controparte per email.
  * Una risposta applicata crea la risposta dell'azione: l'avanzamento del task lo fa l'observer esistente, come per ogni altra risposta.
  */
 class ProcessReplyApplier
@@ -23,8 +30,10 @@ class ProcessReplyApplier
 
     public const REVIEW = 'review';
 
+    public const POSTPONE = 'postpone';
+
     /** Cosa fare in automatico con questa interpretazione. */
-    public function decide(?Interpretation $interpretation, ProcessTaskItem $item): string
+    public function decide(?Interpretation $interpretation, ProcessTaskItem $item, ?ProcessTaskExecution $execution = null): string
     {
         $config = (array) $item->config;
 
@@ -33,6 +42,7 @@ class ProcessReplyApplier
         }
 
         return match ($interpretation->intent) {
+            Interpretation::POSTPONE => $this->canGrant($interpretation, $item, $execution) ? self::POSTPONE : self::REVIEW,
             Interpretation::CONFIRM => self::ANSWER,
             Interpretation::REFUSE => match ($config['on_refuse'] ?? 'review') {
                 'answer' => self::ANSWER,
@@ -43,6 +53,15 @@ class ProcessReplyApplier
         };
     }
 
+    private function canGrant(Interpretation $interpretation, ProcessTaskItem $item, ?ProcessTaskExecution $execution): bool
+    {
+        if ($execution === null || $interpretation->date === null || ($item->config['on_postpone'] ?? 'review') !== 'grant') {
+            return false;
+        }
+
+        return app(PostponementService::class)->violation($execution, $item, Carbon::parse($interpretation->date)) === null;
+    }
+
     /** Applica: crea la risposta dell'azione (o sospende il processo) e chiude la riga della risposta. */
     public function apply(ProcessEmailReply $reply, string $how, ?User $by = null, ?string $note = null): ?ProcessTaskItemAnswer
     {
@@ -50,6 +69,8 @@ class ProcessReplyApplier
 
         if ($how === self::SUSPEND) {
             $reply->instance->update(['status' => 'suspended']);
+        } elseif ($how === self::POSTPONE && $reply->proposed_date && $reply->process_task_execution_id) {
+            $this->postpone($reply, Carbon::parse($reply->proposed_date), $by);
         } elseif ($how === self::ANSWER && $reply->process_task_item_id) {
             $human = $by !== null;
             $answer = ProcessTaskItemAnswer::create([
@@ -80,6 +101,28 @@ class ProcessReplyApplier
             ->log('Risposta email applicata al processo.');
 
         return $answer;
+    }
+
+    /** Concede il rinvio chiesto (la risposta è già salvata con la data proposta) e, se previsto, lo conferma alla controparte. */
+    public function postpone(ProcessEmailReply $reply, Carbon $to, ?User $by = null, bool $moveHardDeadline = false): void
+    {
+        $execution = ProcessTaskExecution::query()->with('processInstance', 'processTask')->findOrFail($reply->process_task_execution_id);
+        app(PostponementService::class)->grant($execution, $to, $by, $reply, $moveHardDeadline);
+
+        if (($reply->item?->config['confirm_postpone_email'] ?? true) === false || blank($reply->from_email)) {
+            return;
+        }
+
+        try {
+            app(EmailSendingService::class)->send(
+                $reply->from_email,
+                'Re: '.preg_replace('/^(re:\s*)+/i', '', (string) $reply->subject),
+                "Abbiamo registrato il rinvio richiesto: il nuovo termine è il {$to->format('d/m/Y')}.",
+                [], $execution->processInstance->company_id, ['instance' => $execution->process_instance_id, 'execution' => $execution->id],
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Conferma del rinvio non inviata.', ['reply' => $reply->id, 'error' => class_basename($e)]);
+        }
     }
 
     public function ignore(ProcessEmailReply $reply, User $by): void

@@ -51,6 +51,10 @@ class ProcessTaskItemForm
             TextInput::make('config.min_confidence')->label('Confidenza minima per avanzare da solo')->numeric()->minValue(50)->maxValue(100)->default(80)->visible($isAwait),
             Select::make('config.on_refuse')->label('Se rifiutano')->options(['review' => 'Decide un operatore', 'answer' => 'Il rifiuto è la risposta e il processo avanza', 'suspend' => 'Sospendi il processo'])
                 ->default('review')->visible($isAwait),
+            Select::make('config.on_postpone')->label('Se chiedono un rinvio')->options(['review' => 'Decide un operatore', 'grant' => 'Concedi in automatico (entro i limiti)'])
+                ->default('review')->visible($isAwait),
+            TextInput::make('config.max_postpone_days')->label('Rinvio massimo (giorni oltre il termine attuale)')->numeric()->minValue(1)->default(30)->visible($isAwait),
+            TextInput::make('config.max_postponements')->label('Rinvii massimi per step')->numeric()->minValue(1)->default(2)->visible($isAwait),
             Toggle::make('config.auto')->label('Avanza in automatico')->default(true)->visible($isAwait)
                 ->helperText('Se spento, ogni risposta passa da un operatore.'),
         ];

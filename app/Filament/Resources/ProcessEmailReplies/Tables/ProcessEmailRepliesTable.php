@@ -6,7 +6,10 @@ use App\Models\ProcessEmailReply;
 use App\Services\Replies\Interpretation;
 use App\Services\Replies\ProcessReplyApplier;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Checkbox;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Textarea;
+use Illuminate\Support\Carbon;
 use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -95,6 +98,22 @@ class ProcessEmailRepliesTable
                         }
 
                         Notification::make()->title('Rifiuto registrato')->warning()->send();
+                    }),
+                Action::make('rinvio')
+                    ->label('Concedi rinvio')
+                    ->icon('heroicon-o-calendar-days')
+                    ->color('info')
+                    ->visible(fn (ProcessEmailReply $record): bool => $record->status === ProcessEmailReply::NEEDS_REVIEW && $record->process_task_execution_id !== null)
+                    ->schema(fn (ProcessEmailReply $record): array => [
+                        DatePicker::make('data')->label('Nuovo termine')->required()->minDate(now()->addDay())->default($record->proposed_date),
+                        Checkbox::make('sposta_pratica')->label('Sposta anche la data tassativa della pratica, se la nuova data la supera')
+                            ->visible(fn () => $record->instance?->hard_deadline_at !== null),
+                    ])
+                    ->action(function (ProcessEmailReply $record, array $data): void {
+                        $record->update(['intent' => Interpretation::POSTPONE, 'proposed_date' => $data['data']]);
+                        app(ProcessReplyApplier::class)->postpone($record->refresh(), Carbon::parse($data['data']), auth()->user(), (bool) ($data['sposta_pratica'] ?? false));
+                        $record->update(['status' => ProcessEmailReply::APPLIED, 'decided_by' => auth()->id(), 'decided_at' => now()]);
+                        Notification::make()->title('Rinvio concesso')->success()->send();
                     }),
                 Action::make('ignora')
                     ->label('Ignora')

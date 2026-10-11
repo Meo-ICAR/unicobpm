@@ -27,6 +27,7 @@ class ProcessTaskExecution extends Model
         'escalation_level',
         'due_at',
         'mandatory_days_to_complete',
+        'postponed_until',
         'execution_status',
     ];
 
@@ -36,6 +37,7 @@ class ProcessTaskExecution extends Model
         'completed_at' => 'datetime',
         'due_at' => 'datetime',
         'mandatory_days_to_complete' => 'integer',
+        'postponed_until' => 'date',
         'escalation_level' => 'integer',
     ];
 
@@ -106,11 +108,24 @@ class ProcessTaskExecution extends Model
      */
     public function effectiveDueAt(): ?Carbon
     {
-        if ($this->mandatory_days_to_complete !== null && $this->started_at) {
-            return $this->started_at->copy()->addDays($this->mandatory_days_to_complete);
+        $base = $this->mandatory_days_to_complete !== null && $this->started_at
+            ? $this->started_at->copy()->addDays($this->mandatory_days_to_complete)
+            : $this->due_at;
+
+        // Un rinvio concordato con la controparte sposta il termine in avanti, mai indietro.
+        if ($this->postponed_until !== null) {
+            $postponed = $this->postponed_until->copy()->endOfDay();
+
+            return $base === null || $postponed->gt($base) ? $postponed : $base;
         }
 
-        return $this->due_at;
+        return $base;
+    }
+
+    /** Lo step ha un rinvio ancora valido: l'escalation resta ferma fino a quella data. */
+    public function isPostponed(): bool
+    {
+        return $this->postponed_until !== null && $this->postponed_until->copy()->endOfDay()->isFuture();
     }
 
     /**

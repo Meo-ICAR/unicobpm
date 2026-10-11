@@ -32,6 +32,11 @@ class TaskEscalationWatchdogJob implements ShouldQueue
             $task = $execution->processTask;
             $rules = $task->escalation_rules ?? [];
 
+            // Rinvio concordato: l'escalation riprende dopo la data.
+            if ($execution->isPostponed()) {
+                continue;
+            }
+
             if (empty($rules)) {
                 continue;
             }
