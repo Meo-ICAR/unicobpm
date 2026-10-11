@@ -49,6 +49,8 @@ return [
         'url' => env('BPM_API_URL', 'https://unicobpm.hassisto.com'), // Il secondo parametro è un fallback
         // Chiave condivisa inviata (header X-Api-Key) alle API protette degli applicativi esterni.
         'bridge_api_key' => env('BPM_BRIDGE_API_KEY'),
+        // Dominio degli identificativi di conversazione delle email dei processi (<bpm-ISTANZA-ESECUZIONE-xxxx@dominio>); vuoto = host di APP_URL.
+        'thread_domain' => env('BPM_THREAD_DOMAIN'),
     ],
 
     /*
