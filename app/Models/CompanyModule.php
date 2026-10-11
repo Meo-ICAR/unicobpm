@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Enums\PlanType;
+use Unico\Core\Access\PlanType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Unico\Core\Models\CompanyModule as CoreCompanyModule;
