@@ -186,7 +186,7 @@ class ProcessTaskExecutionObserver
                             }
                         }
 
-                        $this->emailSendingService->send($toEmail, $subject, $body, $attachments, $instance->company_id);
+                        $this->emailSendingService->send($toEmail, $subject, $body, $attachments, $instance->company_id, ['instance' => $instance->id, 'execution' => $execution->id]);
                     }
 
                     // Registra il completamento (Scatena l'avanzamento se è l'ultima azione)

@@ -31,6 +31,28 @@ class ProcessTaskItemForm
             'validation_rule' => 'Regola di Validazione',
             'system_task' => 'Task di Sistema (Job)',
             'external_check' => 'Check Esterno (severity + RACI)',
+            'await_email_reply' => 'Attesa Risposta Email',
+        ];
+    }
+
+    /**
+     * Campi di config per 'await_email_reply': il processo aspetta la risposta a un'email e avanza quando arriva (letta da regole e
+     * dall'AI); le risposte poco sicure le decide un operatore in «Risposte email».
+     *
+     * @return array<int, Component>
+     */
+    public static function awaitEmailReplyFields(): array
+    {
+        $isAwait = fn (Get $get) => $get('action_type') === 'await_email_reply';
+
+        return [
+            TextInput::make('config.question')->label('Cosa si è chiesto')->visible($isAwait)
+                ->helperText('Aiuta l\'AI a capire la risposta (es. «Conferma la data della visita del 12/11»). Vuoto = nome dell\'azione.'),
+            TextInput::make('config.min_confidence')->label('Confidenza minima per avanzare da solo')->numeric()->minValue(50)->maxValue(100)->default(80)->visible($isAwait),
+            Select::make('config.on_refuse')->label('Se rifiutano')->options(['review' => 'Decide un operatore', 'answer' => 'Il rifiuto è la risposta e il processo avanza', 'suspend' => 'Sospendi il processo'])
+                ->default('review')->visible($isAwait),
+            Toggle::make('config.auto')->label('Avanza in automatico')->default(true)->visible($isAwait)
+                ->helperText('Se spento, ogni risposta passa da un operatore.'),
         ];
     }
 
@@ -127,6 +149,7 @@ class ProcessTaskItemForm
                             ->visible(fn (Get $get) => $get('action_type') === 'system_task')
                             ->helperText('Classe PHP eseguita in automatico quando la pratica raggiunge questo task (anche di un pacchetto/applicativo esterno installato via composer). Deve avere un costruttore (int $processInstanceId, array $config = []).'),
                         ...self::externalCheckFields(),
+                        ...self::awaitEmailReplyFields(),
                         KeyValue::make('config')
                             ->label('Configurazione')
                             ->keyLabel('Chiave')

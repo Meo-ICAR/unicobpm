@@ -73,7 +73,7 @@ class ExternalCheckRunner
 
         foreach ($recipients as $email) {
             try {
-                $this->emailSender->send($email, $subject, $body, [], $instance?->company_id);
+                $this->emailSender->send($email, $subject, $body, [], $instance?->company_id, $instance ? ['instance' => $instance->id] : null);
                 $sent->push($email);
             } catch (\Throwable $e) {
                 Log::error("Check {$app}/{$command}: invio email a {$email} fallito.", ['error' => $e->getMessage()]);

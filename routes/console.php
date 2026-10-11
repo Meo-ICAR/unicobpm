@@ -57,3 +57,6 @@ Schedule::command('bpm:dispatch-external-command proforma vcoge:calculate --opti
 // 8. Ricalcolo contributi ENASARCO trimestrali (azione "Ricalcola contributi" di admin/venasarco-trimestres su Proforma):
 // il 5 del mese successivo a fine trimestre (gennaio, aprile, luglio, ottobre)
 Schedule::command('bpm:dispatch-external-command proforma venasarco-trimestre:calculate')->cron('0 6 5 1,4,7,10 *');
+
+// Risposte email ai processi: si scaricano le caselle di tipo «processo» (mail_accounts); HandleProcessEmailReply le collega ai processi.
+Schedule::command('unico-core:mail-fetch --type=processo')->everyFiveMinutes()->withoutOverlapping();

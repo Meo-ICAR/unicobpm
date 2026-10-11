@@ -30,6 +30,12 @@ class AppServiceProvider extends ServiceProvider
     {
         // Un solo identificativo di correlazione per richiesta/esecuzione, riusato da tutte le chiamate verso le altre app.
         $this->app->singleton(\App\Services\Correlation::class);
+
+        // Risposte email: prima le regole (risposte brevi e inequivocabili), poi l'AI per il resto.
+        $this->app->bind(\App\Services\Replies\ReplyInterpreter::class, fn () => new \App\Services\Replies\CompositeReplyInterpreter([
+            new \App\Services\Replies\RuleBasedReplyInterpreter,
+            new \App\Services\Replies\NeuronReplyInterpreter,
+        ]));
     }
 
     /**

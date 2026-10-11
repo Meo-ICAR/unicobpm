@@ -11,7 +11,12 @@ use Illuminate\Mail\Mailables\Envelope;
 class ProcessMail extends Mailable
 {
     /** @param array<int, string|array{path: string, as?: string}> $files */
-    public function __construct(public string $subjectLine, public string $text, public array $files = []) {}
+    public function __construct(public string $subjectLine, public string $text, public array $files = [], public ?string $messageId = null)
+    {
+        if ($messageId !== null) {
+            $this->withSymfonyMessage(fn ($message) => $message->getHeaders()->addIdHeader('Message-ID', $messageId));
+        }
+    }
 
     public function envelope(): Envelope
     {
