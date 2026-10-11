@@ -30,13 +30,14 @@ class ExternalEventProcessor
             }
 
             try {
-                $instance = $this->start->execute(null, $trigger->process_id);
-                $instance->update([
+                // Gli attributi si danno all'avvio: le azioni automatiche del primo passo (es. l'email al responsabile) partono subito e li leggono.
+                $this->start->execute(null, $trigger->process_id, array_filter([
                     'title' => $this->title($event),
                     'external_ref' => $event->source && $event->subject_ref ? "{$event->source}:{$event->subject_ref}" : $event->subject_ref,
                     'external_data' => $event->data,
-                    'company_id' => $this->companyId((array) $event->data) ?? $instance->company_id,
-                ]);
+                    'company_id' => $this->companyId((array) $event->data),
+                    'hard_deadline_at' => $this->hardDeadline((array) $event->data),
+                ], fn ($value) => $value !== null));
                 $started++;
             } catch (Throwable $e) {
                 $failed = true;
@@ -69,9 +70,17 @@ class ExternalEventProcessor
         return true;
     }
 
+    /** Data tassativa indicata dall'evento (`data.hard_deadline`, AAAA-MM-GG): se c'è, la pratica nasce con quel termine. */
+    private function hardDeadline(array $data): ?string
+    {
+        $date = data_get($data, 'hard_deadline');
+
+        return is_string($date) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) ? $date : null;
+    }
+
     private function title(ExternalEvent $event): string
     {
-        $labels = ['pratica.perfezionata' => 'Pratica perfezionata'];
+        $labels = ['pratica.perfezionata' => 'Pratica perfezionata', 'segnalazione.ricevuta' => 'Segnalazione whistleblowing'];
 
         return trim(($labels[$event->name] ?? $event->name).' '.($event->subject_ref ?? ''));
     }

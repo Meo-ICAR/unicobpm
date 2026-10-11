@@ -192,7 +192,7 @@ class ExternalEventTest extends TestCase
         $this->trigger();
         $this->app->bind(\App\Filament\Actions\StartProcessAction::class, fn () => new class extends \App\Filament\Actions\StartProcessAction
         {
-            public function execute(?\Illuminate\Database\Eloquent\Model $subject, int $processId): ProcessInstance
+            public function execute(?\Illuminate\Database\Eloquent\Model $subject, int $processId, array $attributes = []): ProcessInstance
             {
                 throw new \RuntimeException('database giù');
             }

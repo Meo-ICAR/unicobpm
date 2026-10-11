@@ -125,28 +125,35 @@ class ProcessTaskExecutionObserver
                         break;
                     }
 
-                    $toEmail = null;
+                    $recipients = [];
 
-                    // --- NUOVA LOGICA: Risoluzione dinamica della Business Function ---
+                    // --- Risoluzione dinamica della Business Function ---
                     if (! empty($config['target_business_function'])) {
                         // Cerchiamo l'ufficio tramite il suo codice (es. 'it')
                         $department = BusinessFunction::where('code', $config['target_business_function'])->first();
 
-                        if ($department && $department->email) {
-                            $toEmail = $department->email;
+                        // Con `to_role` (nome di un EmployeeType) scrive ai membri della funzione che ricoprono quel ruolo
+                        // (es. il responsabile whistleblowing); se non ce n'è nessuno, all'indirizzo della funzione.
+                        if ($department && ! empty($config['to_role'])) {
+                            $recipients = $department->emailsForRole($config['to_role'])->all();
+                        }
+
+                        if ($recipients === [] && $department && $department->email) {
+                            $recipients = [$department->email];
                         }
                     }
 
                     // --- FALLBACK: Se non è una funzione aziendale, usiamo la mail diretta (es. per il cliente) ---
-                    if (empty($toEmail) && ! empty($config['to_email'])) {
-                        $toEmail = $item->compileTemplate($config['to_email'], $instance);
+                    if ($recipients === [] && ! empty($config['to_email'])) {
+                        $recipients = [$item->compileTemplate($config['to_email'], $instance)];
                     }
 
-                    // Se dopo entrambi i tentativi non abbiamo un'email, interrompiamo l'azione
-                    if (empty($toEmail)) {
+                    // Se dopo i tentativi non abbiamo un'email, interrompiamo l'azione
+                    if ($recipients === []) {
                         Log::warning("Task ID {$item->id}: Nessuna email destinataria trovata.");
                         break;
                     }
+                    $toEmail = implode(', ', $recipients);
 
                     // Compilazione dinamica
 
@@ -154,7 +161,7 @@ class ProcessTaskExecutionObserver
                     $body = $item->compileTemplate($template->body, $instance);
 
                     // Spedizione
-                    if ($toEmail && $subject && $body) {
+                    if ($subject && $body) {
                         // A) Allegati Statici (Modulistica)
                         $attachments = [];
                         if (! empty($template->attachments)) {
@@ -186,7 +193,9 @@ class ProcessTaskExecutionObserver
                             }
                         }
 
-                        $this->emailSendingService->send($toEmail, $subject, $body, $attachments, $instance->company_id, ['instance' => $instance->id, 'execution' => $execution->id]);
+                        foreach ($recipients as $recipient) {
+                            $this->emailSendingService->send($recipient, $subject, $body, $attachments, $instance->company_id, ['instance' => $instance->id, 'execution' => $execution->id]);
+                        }
                     }
 
                     // Registra il completamento (Scatena l'avanzamento se è l'ultima azione)

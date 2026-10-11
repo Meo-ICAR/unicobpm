@@ -69,6 +69,27 @@ class BusinessFunction extends Model
      * Utenti applicativi (account di login) appartenenti a questa funzione aziendale,
      * sia essi dipendenti (Employee) o clienti/mediatori (Client).
      */
+    /**
+     * Indirizzi email dei membri della funzione che ricoprono il ruolo (nome di EmployeeType) indicato: dipendenti e consulenti esterni,
+     * con l'email dell'anagrafica (non serve un account di login). Vuoto se il ruolo non esiste o nessuno lo ricopre qui.
+     *
+     * @return Collection<int, string>
+     */
+    public function emailsForRole(string $role): Collection
+    {
+        $typeId = EmployeeType::query()->where('name', $role)->value('id');
+
+        if ($typeId === null) {
+            return collect();
+        }
+
+        return $this->employees()->wherePivot('employee_type_id', $typeId)->pluck('email')
+            ->merge($this->clients()->wherePivot('employee_type_id', $typeId)->pluck('email'))
+            ->filter(fn ($email) => filter_var($email, FILTER_VALIDATE_EMAIL))
+            ->unique()
+            ->values();
+    }
+
     public function loginUsers(): Collection
     {
         return $this->employees()->with('loginUser')->get()->pluck('loginUser')

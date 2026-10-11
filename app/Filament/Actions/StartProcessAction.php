@@ -12,9 +12,13 @@ use Illuminate\Support\Facades\DB;
 
 class StartProcessAction
 {
-    public function execute(?Model $subject, int $processId): ProcessInstance
+    /**
+     * @param  array<string, mixed>  $attributes  campi dell'istanza noti all'avvio (titolo, riferimento esterno...): servono perché le azioni
+     *                                            automatiche del primo passo (es. l'email) partono subito e li leggono
+     */
+    public function execute(?Model $subject, int $processId, array $attributes = []): ProcessInstance
     {
-        return DB::transaction(function () use ($subject, $processId) {
+        return DB::transaction(function () use ($subject, $processId, $attributes) {
 
             $process = Process::findOrFail($processId);
 
@@ -49,7 +53,7 @@ class StartProcessAction
             }
 
             // 1. Crea l'istanza principale (con l'assegnatario automatico se trovato)
-            $instance = ProcessInstance::create([
+            $instance = ProcessInstance::create($attributes + [
                 'process_id' => $process->id,
                 // Se il soggetto è null, i campi polimorfi saranno null
                 'subject_type' => $subject ? get_class($subject) : null,
