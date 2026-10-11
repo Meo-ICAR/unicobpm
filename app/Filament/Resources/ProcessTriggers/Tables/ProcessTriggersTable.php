@@ -41,12 +41,14 @@ class ProcessTriggersTable
                         'created' => 'success',
                         'updated' => 'warning',
                         'idle' => 'danger',
+                        'external' => 'info',
                         default => 'gray',
                     })
                     ->formatStateUsing(fn (string $state): string => match ($state) {
                         'created' => 'Creazione Record',
                         'updated' => 'Cambio Stato',
                         'idle' => 'Inattività (Sollecito)',
+                        'external' => 'Evento da un\'altra app',
                         default => $state,
                     })
                     ->sortable(),

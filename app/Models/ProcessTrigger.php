@@ -17,6 +17,7 @@ class ProcessTrigger extends Model
         'name',
         'model_class',
         'event_type',
+        'external_event',
         'process_id',
         'conditions',
         'idle_days',

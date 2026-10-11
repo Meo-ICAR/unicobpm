@@ -30,6 +30,8 @@ class ProcessInstance extends Model
         'subject_type',
         'subject_id',
         'title',
+        'external_ref',
+        'external_data',
         'current_assignee_type',
         'current_assignee_id',
         'company_id',
@@ -46,6 +48,7 @@ class ProcessInstance extends Model
      */
     protected $casts = [
         'status' => 'string', // enum ('pending','in_progress','completed','rejected','cancelled')
+        'external_data' => 'array',
         'reminders_sent_count' => 'integer',
         'completed_at' => 'datetime',
         'hard_deadline_at' => 'date',

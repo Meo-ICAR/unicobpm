@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\ProcessTaskExecution;
+use App\Services\EscalationNotifier;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Foundation\Queue\Queueable;
@@ -26,7 +27,14 @@ class TaskEscalationWatchdogJob implements ShouldQueue
          *    per inoltrare solleciti, notificare i manager o riassegnare d'ufficio il task, incrementando poi il livello di escalation.
          */
         // Peschiamo solo i task ancora aperti (es. non completati o non annullati)
-        $openExecutions = ProcessTaskExecution::where('execution_status', 'pending')->with('processTask')->get();
+        // Oltre ai passi «pending», contano i passi avviati ma non ancora presi in carico: sono i soli a cui si applicano le regole
+        // con `until_claimed` (vedi sotto), che si fermano appena qualcuno prende in carico la pratica.
+        $openExecutions = ProcessTaskExecution::query()
+            ->whereNull('completed_at')
+            ->whereNotIn('execution_status', ['completed', 'rejected_and_rewinded'])
+            ->where(fn ($query) => $query->where('execution_status', 'pending')->orWhereHas('processInstance', fn ($instance) => $instance->where('status', 'in_progress')->whereNull('current_assignee_id')))
+            ->with('processTask', 'processInstance')
+            ->get();
 
         foreach ($openExecutions as $execution) {
             $task = $execution->processTask;
@@ -51,6 +59,14 @@ class TaskEscalationWatchdogJob implements ShouldQueue
                 continue;
             } // Abbiamo esaurito i livelli di escalation per questo task
 
+            // Regola `until_claimed`: vale solo finché nessuno ha preso in carico la pratica.
+            $unclaimed = $execution->processInstance?->current_assignee_id === null;
+            $isPending = $execution->execution_status === 'pending';
+
+            if (($rule['until_claimed'] ?? false) ? ! $unclaimed : ! $isPending) {
+                continue;
+            }
+
             // Calcoliamo da quante ore è aperto questo task
             $hoursOpen = $execution->created_at->diffInHours(now());
 
@@ -66,28 +82,10 @@ class TaskEscalationWatchdogJob implements ShouldQueue
         $instance = $execution->processInstance;
         $taskName = $execution->processTask->name;
 
-        switch ($rule['action']) {
-            case 'notify_assignee':
-                // Logica per avvisare chi ce l'ha in carico (es. Ufficio assegnatario)
-                Log::info("Sollecito Livello 1 inviato per Task: {$taskName}");
-                // Esempio: Mail::raw("Il task {$taskName} è in ritardo...", ...);
-                break;
+        // Le email partono davvero (EscalationNotifier); senza destinatari l'escalation si registra comunque e il livello avanza.
+        $sent = app(EscalationNotifier::class)->notify($execution, $rule);
 
-            case 'notify_manager':
-                // Logica per avvisare un supervisore
-                $managerEmail = $rule['manager_email'] ?? 'admin@azienda.com';
-                Log::warning("Escalation Livello 2: Task {$taskName} segnalato a {$managerEmail}");
-                // Invia email al manager...
-                break;
-
-            case 'reassign':
-                // Riassegnazione drastica a un altro dipartimento
-                $newDept = $rule['target_business_function'];
-                // Assumiamo che ci sia un campo 'assigned_to_business_function' su ProcessTaskExecution
-                // $execution->update(['assigned_to_business_function' => $newDept]);
-                Log::error("Escalation Livello 3: Task {$taskName} tolto all'assegnatario e passato a {$newDept}");
-                break;
-        }
+        Log::warning("Escalation livello {$rule['level']} ({$rule['action']}) sul task: {$taskName}", ['sent_to' => count($sent)]);
 
         // FONDAMENTALE: Incrementiamo il livello per evitare loop infiniti
         $execution->increment('escalation_level');
@@ -96,7 +94,7 @@ class TaskEscalationWatchdogJob implements ShouldQueue
         activity('bpm')
             ->performedOn($instance)
             ->event('escalation_triggered')
-            ->withProperties(['level' => $rule['level'], 'action' => $rule['action']])
+            ->withProperties(['level' => $rule['level'], 'action' => $rule['action'], 'emails_sent' => count($sent)])
             ->log("Escalation Livello {$rule['level']} sul task: {$taskName}");
     }
 }

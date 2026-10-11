@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\BpmActivitiesController;
+use App\Http\Controllers\Api\ExternalEventController;
 use App\Http\Controllers\Api\SsoTokenApiController;
 use Illuminate\Support\Facades\Route;
 
@@ -14,3 +15,9 @@ Route::post('/bpm/available-activities', [BpmActivitiesController::class, 'avail
 // Proforma) per validare i token SSO emessi da UnicoBPM.
 Route::post('/verify-token', [SsoTokenApiController::class, 'verify'])
     ->name('api.verify-token');
+
+// Eventi comunicati dalle altre app (es. pratica.perfezionata di unicoagent): avviano i processi con un trigger «evento esterno».
+// Chiave condivisa nell'intestazione X-Api-Key (BPM_BRIDGE_API_KEY, come per il bridge); senza chiave configurata risponde 503.
+Route::post('/events', [ExternalEventController::class, 'store'])
+    ->middleware([\Unico\Core\Bridge\Http\Middleware\CorrelationId::class, \Unico\Core\Bridge\Http\Middleware\VerifyBridgeKey::class, 'throttle:300,1'])
+    ->name('api.events.store');

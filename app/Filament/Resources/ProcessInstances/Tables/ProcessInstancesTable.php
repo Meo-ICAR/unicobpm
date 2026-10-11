@@ -133,7 +133,8 @@ class ProcessInstancesTable
                             'current_assignee_type' => get_class($user),
                         ]);
 
-                        // Se hai implementato la tabella delle esecuzioni, qui puoi aggiornare anche il claimed_at di process_task_executions
+                        // La presa in carico ferma i solleciti del passo (escalation con `until_claimed`).
+                        $record->currentTaskExecution?->update(['claimed_at' => now(), 'assignee_id' => $user->id, 'assignee_type' => get_class($user)]);
 
                         Notification::make()
                             ->title('Pratica presa in carico con successo')

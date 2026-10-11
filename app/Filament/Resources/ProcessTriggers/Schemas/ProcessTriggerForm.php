@@ -57,6 +57,8 @@ class ProcessTriggerForm
 
                                 Select::make('model_class')
                                     ->label('Modello Monitorato')
+                                    ->required(fn (Get $get) => $get('event_type') !== 'external')
+                                    ->visible(fn (Get $get) => $get('event_type') !== 'external')
                                     ->options(function () {
                                         // Recupera l'array del morphMap dal ServiceProvider. Il valore salvato è il
                                         // nome di classe completo (non l'alias), per essere confrontabile con
@@ -80,10 +82,18 @@ class ProcessTriggerForm
                                 'created' => '✨ Creazione Record (Immediato)',
                                 'updated' => '🔄 Modifica Stato/Campo (Immediato)',
                                 'idle' => '⏳ Inattività / Sollecito (Dopo X giorni)',
+                                'external' => '📨 Evento da un\'altra app (es. pratica perfezionata)',
                             ])
                             ->required()
                             ->live() // Rende il form reattivo al cambio di questa select
                             ->native(false),
+
+                        TextInput::make('external_event')
+                            ->label('Nome dell\'evento')
+                            ->placeholder('pratica.perfezionata')
+                            ->required(fn (Get $get) => $get('event_type') === 'external')
+                            ->visible(fn (Get $get) => $get('event_type') === 'external')
+                            ->helperText('Le altre app lo comunicano con POST /api/events. Le regole sotto si applicano ai dati dell\'evento (es. campo product.type).'),
 
                         // Compare solo se il tipo è "idle"
                         TextInput::make('idle_days')
