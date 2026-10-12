@@ -2,7 +2,9 @@
     "agents": [
         "claude_code",
         "antigravity",
-        "kiro"
+        "kiro",
+        "cursor",
+        "grok_build"
     ],
     "cloud": true,
     "guidelines": true,
@@ -13,7 +15,12 @@
     ],
     "sail": false,
     "skills": [
+        "infer-conventions",
+        "deploying-to-cloud",
         "laravel-best-practices",
-        "socialite-development"
+        "testing-best-practices",
+        "socialite-development",
+        "tailwindcss-development",
+        "filament-development"
     ]
 }

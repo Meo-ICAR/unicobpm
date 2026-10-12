@@ -5,154 +5,36 @@
 namespace App\Models;
 
 use App\Traits\HasBpmTriggers;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
-use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Database\Eloquent\SoftDeletes;
+use Unico\Core\Models\Fornitore as CoreFornitore;
 
-class Fornitore extends Model
+/**
+ * Agenti di commercio / Collaboratori (Fornitori di servizi).
+ * Legge e scrive sulla connessione 'core' -> database unico_core_test.
+ *
+ * NB: la versione originale usava HasUuids (UUID come PK). Nel pacchetto core
+ * la PK è bigint auto-increment. Verificare che eventuali UUID già salvati
+ * nei campi *_type / *_id delle tabelle BPM vengano aggiornati.
+ *
+ * Metodi ereditati da CoreFornitore (non ridefinire):
+ *   branch(), company(), fornitorirole(), user(), blacklistClientiFornitori(),
+ *   complaintRegistry(), pratiches(), provvigioniRules()
+ */
+class Fornitore extends CoreFornitore
 {
     use HasBpmTriggers;
-    use HasFactory, HasUuids, SoftDeletes;
-
-    protected $connection = 'proforma';
-
-    protected $table = 'proforma.fornitoris';
-
-    protected $primaryKey = 'id';
-
-    public $incrementing = false;
-
-    protected $keyType = 'string';
+    use HasFactory;
 
     protected $orderBy = 'name';
 
     protected $orderDirection = 'asc';
 
-    protected $fillable = [
-        'id',
-        'name',
-        'nome',
-        'stipulated_at',
-        'pec',
-        'description',
-        'email_private',
-        'supervisor_type',
-        'oam',
-        'oam_at',
-        'oam_name',
-        'numero_iscrizione_rui',
-        'ivass',
-        'ivass_at',
-        'dismissed_at',
-        'ivass_name',
-        'ivass_section',
-        'type',
-        'is_active',
-        'is_art108',
-        'company_branch_id',
-        'coordinated_type',
-        'coordinated_id',
-        'user_id',
-        'oam_dismissed_at',
-        'welcome_bonus',
-        'campagna',
-        'available_at',
-        'budget',
-        'codice',
-        'coge',
-        'natoil',
-        'indirizzo',
-        'comune',
-        'cap',
-        'prov',
-        'tel',
-        'coordinatore',
-        'piva',
-        'cf',
-        'nomecoge',
-        'nomefattura',
-        'email',
-        'anticipo',
-        'enasarco',
-        'anticipo_residuo',
-        'contributo',
-        'contributo_description',
-        'anticipo_description',
-        'issubfornitore',
-        'operatore',
-        'iscollaboratore',
-        'isdipendente',
-        'regione',
-        'citta',
-        'company_id',
-        'contributoperiodicita',
-        'contributodalmese',
-        'branch_id',
-        'employee_roles',
-    ];
-
-    /**
-     * I cast dei tipi di dato nativi di Laravel 13.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            // Date
-            'stipulated_at' => 'date',
-            'oam_at' => 'date',
-            'ivass_at' => 'date',
-            'dismissed_at' => 'date',
-            'oam_dismissed_at' => 'date',
-            'available_at' => 'date',
-            'natoil' => 'date',
-            'contributodalmese' => 'date',
-            'deleted_at' => 'datetime',
-            // Booleani (tinyint)
-            'is_active' => 'boolean',
-            'is_art108' => 'boolean',
-            'issubfornitore' => 'boolean',
-            'iscollaboratore' => 'boolean',
-            'isdipendente' => 'boolean',
-            // Decimali
-            'welcome_bonus' => 'decimal:2',
-            'budget' => 'decimal:2',
-            'anticipo' => 'decimal:2',
-            'anticipo_residuo' => 'decimal:2',
-            'contributo' => 'decimal:2',
-            // Interi
-            'company_branch_id' => 'integer',
-            'coordinated_type' => 'integer',
-            'coordinated_id' => 'integer',
-            'user_id' => 'integer',
-            'branch_id' => 'integer',
-            'contributoperiodicita' => 'integer',
-            'employee_roles' => 'array',
-        ];
-    }
-
-    /**
-     * Valori predefiniti per gli attributi del Model basati sul database SQL.
-     *
-     * @var array<string, mixed>
-     */
-    protected $attributes = [
-        'supervisor_type' => 'no',
-        'is_active' => true,
-        'is_art108' => false,
-        'enasarco' => 'plurimandatario',
-        'contributo_description' => 'Contributo spese',
-        'anticipo_description' => 'Anticipo attuale',
-        'isdipendente' => false,
-    ];
-
     protected static function booted(): void
     {
+        parent::booted();
+
         static::creating(function (self $fornitore) {
             if (empty($fornitore->company_id) && auth()->check()) {
                 $fornitore->company_id = auth()->user()->profile?->company_id;
@@ -161,39 +43,24 @@ class Fornitore extends Model
     }
 
     /**
-     * Cerca un cliente per name, prende la piva, cerca il fornitore con la stessa piva
-     * e flag is_dummy = false, e ritorna il campo nome del fornitore.
+     * Cerca un fornitore per nome e ritorna il campo 'nome'.
      */
     public static function getFornitoreNomeByName(string $name): ?string
     {
-        $cliente = static::where('name', $name)->first();
-        $nome = $cliente?->nome;
+        $fornitore = static::where('name', $name)->first();
 
-        return $nome;
+        return $fornitore?->nome;
     }
 
-    /**
-     * Relazione: Account di Login
-     */
-    public function user(): MorphOne
-    {
-        return $this->morphOne(User::class, 'profile');
-    }
-
+    /** Morph inverso: profile_type / profile_id nella tabella users. */
     public function profile(): MorphTo
     {
-        // Cerca automaticamente i campi profile_type e profile_id nella tabella users
         return $this->morphTo();
     }
 
     public function websites()
     {
         return $this->morphMany(Website::class, 'websiteable');
-    }
-
-    public function complaints(): MorphMany
-    {
-        return $this->morphMany(ComplaintRegistry::class, 'complainant');
     }
 
     public function documents(): MorphMany
@@ -204,11 +71,6 @@ class Fornitore extends Model
     public function branches()
     {
         return $this->morphMany(Branch::class, 'branchable');
-    }
-
-    public function branch()
-    {
-        return $this->belongsTo(Branch::class, 'branch_id');
     }
 
     public function processInstances(): MorphMany

@@ -30,6 +30,39 @@ class BusinessFunctionMember extends MorphPivot
         'is_manager' => 'boolean',
     ];
 
+    protected static function booted(): void
+    {
+        static::saved(function (self $member): void {
+            $member->syncClientEmployeeRole();
+        });
+    }
+
+    /**
+     * Se il member è un Client (consulente esterno), propaga il ruolo della
+     * funzione in clients.employee_roles così AccessChecker e Filament restano allineati.
+     */
+    public function syncClientEmployeeRole(): void
+    {
+        if (! $this->employee_type_id || ! $this->isOutsourced()) {
+            return;
+        }
+
+        $client = $this->relationLoaded('member')
+            ? $this->member
+            : Client::query()->find($this->member_id);
+
+        if (! $client instanceof Client) {
+            return;
+        }
+
+        $roleName = $this->employeeType?->name
+            ?? EmployeeType::query()->whereKey($this->employee_type_id)->value('name');
+
+        if (filled($roleName)) {
+            $client->ensureEmployeeRole($roleName);
+        }
+    }
+
     // ==========================================
     //                 RELAZIONI
     // ==========================================

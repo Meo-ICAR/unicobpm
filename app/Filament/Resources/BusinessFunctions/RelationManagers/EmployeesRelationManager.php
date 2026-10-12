@@ -47,11 +47,10 @@ class EmployeesRelationManager extends RelationManager
      * I ruoli selezionabili sono limitati a quelli effettivamente ricoperti dal
      * dipendente (Employee::employee_roles), dato che un dipendente può avere più ruoli.
      *
-     * La colonna è JSON, ma la classe App\Models\Employee attiva (app/Models/Employee.php,
-     * distinta dall'omonima in app/Models/UNICOOAM/Employee.php) non dichiara il cast
-     * 'array' su questo campo: il valore arriva quindi come stringa JSON grezza e va
-     * decodificato manualmente, gestendo anche il caso di un singolo ruolo non incapsulato
-     * in un array JSON (es. "dipendente" invece di ["dipendente"]).
+     * La colonna è JSON; App\Models\Employee (wrapper di Unico\Core\Models\Employee) può
+     * ricevere il valore come stringa JSON grezza: va decodificato manualmente, gestendo
+     * anche il caso di un singolo ruolo non incapsulato in un array JSON
+     * (es. "dipendente" invece di ["dipendente"]).
      */
     protected function employeeTypeOptions(?Employee $employee): array
     {

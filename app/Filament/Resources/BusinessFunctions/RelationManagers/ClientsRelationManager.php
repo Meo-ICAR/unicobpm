@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\BusinessFunctions\RelationManagers;
 
 use App\Filament\Traits\HasRelationPlanAccess;
+use App\Models\Client;
 use App\Models\EmployeeType;
 use Filament\Actions\AttachAction;
 use Filament\Actions\BulkActionGroup;
@@ -11,9 +12,11 @@ use Filament\Actions\DetachBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Support\Arr;
 
 class ClientsRelationManager extends RelationManager
 {
@@ -27,21 +30,55 @@ class ClientsRelationManager extends RelationManager
     {
         return $schema
             ->components([
-                $this->employeeTypeSelect(),
+                Select::make('employee_type_id')
+                    ->label('Ruolo esternalizzato')
+                    ->options(fn (Get $get, ?Client $record) => $this->employeeTypeOptions($record ?? Client::find($get('recordId'))))
+                    ->live()
+                    ->searchable()
+                    ->required(),
             ]);
     }
 
     /**
-     * Il consulente esternalizza un ruolo (EmployeeType) normalmente svolto da un
-     * dipendente: qui non c'è un employee_roles da cui limitare le opzioni.
+     * I ruoli selezionabili sono limitati a quelli in Client::employee_roles
+     * (stesso pattern degli Employee). Se l'anagrafica non ha ancora ruoli,
+     * si mostrano tutti gli EmployeeType così il primo attach può bootstrapparli.
      */
-    protected function employeeTypeSelect(): Select
+    protected function employeeTypeOptions(?Client $client): array
     {
-        return Select::make('employee_type_id')
-            ->label('Ruolo esternalizzato')
-            ->options(EmployeeType::pluck('name', 'id'))
-            ->searchable()
-            ->required();
+        $roles = $client ? $this->employeeRoles($client) : [];
+
+        return EmployeeType::query()
+            ->when($roles !== [], fn ($query) => $query->whereIn('name', $roles))
+            ->pluck('name', 'id')
+            ->all();
+    }
+
+    protected function employeeRoles(Client $client): array
+    {
+        $roles = $client->employee_roles;
+
+        if (is_string($roles)) {
+            $roles = json_decode($roles, true);
+        }
+
+        return array_values(array_filter(Arr::wrap($roles), fn ($role) => filled($role)));
+    }
+
+    protected function syncAttachedClientRole(array $data): void
+    {
+        $client = Client::query()->find($data['recordId'] ?? null);
+        $typeId = $data['employee_type_id'] ?? null;
+
+        if (! $client || ! $typeId) {
+            return;
+        }
+
+        $roleName = EmployeeType::query()->whereKey($typeId)->value('name');
+
+        if (filled($roleName)) {
+            $client->ensureEmployeeRole($roleName);
+        }
     }
 
     public function table(Table $table): Table
@@ -73,11 +110,27 @@ class ClientsRelationManager extends RelationManager
                     ->preloadRecordSelect()
                     ->schema(fn (AttachAction $action): array => [
                         $action->getRecordSelect(),
-                        $this->employeeTypeSelect(),
-                    ]),
+                        Select::make('employee_type_id')
+                            ->label('Ruolo esternalizzato')
+                            ->options(fn (Get $get) => $this->employeeTypeOptions(Client::find($get('recordId'))))
+                            ->live()
+                            ->searchable()
+                            ->required(),
+                    ])
+                    ->after(fn (array $data) => $this->syncAttachedClientRole($data)),
             ])
             ->actions([
-                EditAction::make(),
+                EditAction::make()
+                    ->after(function (Client $record, array $data): void {
+                        $typeId = $data['employee_type_id'] ?? $record->pivot?->employee_type_id;
+                        $roleName = $typeId
+                            ? EmployeeType::query()->whereKey($typeId)->value('name')
+                            : null;
+
+                        if (filled($roleName)) {
+                            $record->ensureEmployeeRole($roleName);
+                        }
+                    }),
                 DetachAction::make(),
             ])
             ->bulkActions([
