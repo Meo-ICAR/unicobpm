@@ -28,9 +28,11 @@ class ProcessTaskResource extends Resource
 
     protected static ?int $navigationSort = 4;
 
-    protected static ?string $label = 'Task di Processo';
+    protected static ?string $navigationLabel = 'Attività di processo';
 
-    protected static ?string $pluralLabel = 'Task di Processo';
+    protected static ?string $label = 'Attività di processo';
+
+    protected static ?string $pluralLabel = 'Attività di processo';
 
     protected static ?string $recordTitleAttribute = 'name';
 

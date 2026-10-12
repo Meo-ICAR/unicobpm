@@ -85,6 +85,7 @@ class DatabaseSeeder extends Seeder
             ComplianceDocumentazioneProcessSeeder::class, // Compliance (documenti scaduti da UnicoOAM)
 
             // 5. Preset di accesso per ruolo (richiede employee_types e resources già censiti)
+            EmployeeTypeSeeder::class,
             EmployeeTypeResourcePresetSeeder::class,
         ]);
     }
