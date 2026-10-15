@@ -23,6 +23,13 @@ class EmployeeTypeSeeder extends Seeder
             ['id' => 8,  'name' => 'amministrativo',  'icon' => null, 'companytype' => 'FINANCE', 'is_external' => false],
             ['id' => 9,  'name' => 'commerciale',    'icon' => null, 'companytype' => 'FINANCE', 'is_external' => false],
             ['id' => 10, 'name' => 'qualita',        'icon' => null, 'companytype' => 'FINANCE', 'is_external' => false],
+            // Dall'organigramma (Relazione sui requisiti organizzativi, luglio 2026)
+            ['id' => 11, 'name' => 'amministratore delegato', 'icon' => null, 'companytype' => 'FINANCE', 'is_external' => false],
+            ['id' => 12, 'name' => 'antiriciclaggio', 'icon' => null, 'companytype' => 'FINANCE', 'is_external' => false],
+            ['id' => 13, 'name' => 'it',              'icon' => null, 'companytype' => 'FINANCE', 'is_external' => false],
+            ['id' => 14, 'name' => 'risorse umane',   'icon' => null, 'companytype' => 'FINANCE', 'is_external' => false],
+            ['id' => 15, 'name' => 'dpo',             'icon' => null, 'companytype' => 'FINANCE', 'is_external' => true],
+            ['id' => 16, 'name' => 'legale',          'icon' => null, 'companytype' => 'FINANCE', 'is_external' => true],
         ];
 
         foreach ($employeeTypes as $type) {

@@ -105,7 +105,7 @@ class ProcessInstanceForm
                                                         return $query->whereHas('businessFunctions', function ($q) use ($task) {
                                                             $q->whereIn('business_functions.id', function ($sub) use ($task) {
                                                                 $sub->select('business_function_id')
-                                                                    ->from('process_task_raci')
+                                                                    ->from(\App\Models\ProcessTaskRaci::qualifiedTable())
                                                                     ->where('process_task_id', $task->id)
                                                                     ->where('raci_role', 'R');
                                                             });
@@ -134,7 +134,7 @@ class ProcessInstanceForm
                                                         return $query->whereHas('businessFunctions', function ($q) use ($task) {
                                                             $q->whereIn('business_functions.id', function ($sub) use ($task) {
                                                                 $sub->select('business_function_id')
-                                                                    ->from('process_task_raci')
+                                                                    ->from(\App\Models\ProcessTaskRaci::qualifiedTable())
                                                                     ->where('process_task_id', $task->id)
                                                                     ->where('raci_role', 'R');
                                                             });

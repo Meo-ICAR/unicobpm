@@ -6,6 +6,7 @@ use App\Listeners\ResolveCompanyPlanTypeOnLogin;
 use App\Listeners\ResolveUserRoleOnLogin;
 use App\Models\Audit;
 use App\Models\Branch;
+use App\Models\Client;
 use App\Models\Company;
 use App\Models\ComplaintRegistry;
 use App\Models\Document;
@@ -52,6 +53,7 @@ class AppServiceProvider extends ServiceProvider
         Relation::morphMap([
             'audit' => Audit::class,
             'branch' => Branch::class,
+            'client' => Client::class,
             'cliente' => Clienti::class,
             'company' => Company::class,
             'complaint' => ComplaintRegistry::class,

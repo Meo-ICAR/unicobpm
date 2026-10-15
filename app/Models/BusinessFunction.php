@@ -2,18 +2,18 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Collection;
+use Unico\Core\Models\BusinessFunction as CoreBusinessFunction;
 
-class BusinessFunction extends Model
+/**
+ * Le funzioni aziendali e i loro membri stanno nel database condiviso (connessione `core`, gestite da unico-core): qui si
+ * aggiungono le relazioni con i modelli dell'app (Employee, Client, EmployeeType) e con la matrice RACI dei processi.
+ */
+class BusinessFunction extends CoreBusinessFunction
 {
-    protected $connection = 'mysql';
-
-    protected $table = 'business_functions';
-
     protected $fillable = [
         'name',
         'code',

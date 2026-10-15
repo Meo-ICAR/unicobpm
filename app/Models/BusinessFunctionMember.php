@@ -3,15 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\MorphPivot;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Unico\Core\Models\BusinessFunctionMember as CoreBusinessFunctionMember;
 
-class BusinessFunctionMember extends MorphPivot
+class BusinessFunctionMember extends CoreBusinessFunctionMember
 {
-    /**
-     * Il nome della tabella nel database.
-     */
-    protected $table = 'business_function_members';
-
     /**
      * I campi che possono essere assegnati in massa (Mass Assignment).
      */
@@ -55,8 +51,8 @@ class BusinessFunctionMember extends MorphPivot
             return;
         }
 
-        $roleName = $this->employeeType?->name
-            ?? EmployeeType::query()->whereKey($this->employee_type_id)->value('name');
+        // Sempre dal database: la relazione in memoria può avere ancora il ruolo precedente.
+        $roleName = EmployeeType::query()->whereKey($this->employee_type_id)->value('name');
 
         if (filled($roleName)) {
             $client->ensureEmployeeRole($roleName);
@@ -70,15 +66,15 @@ class BusinessFunctionMember extends MorphPivot
     /**
      * Relazione verso la Funzione di Business.
      */
-    public function businessFunction()
+    public function businessFunction(): BelongsTo
     {
-        return $this->belongsTo(BusinessFunction::class);
+        return $this->belongsTo(BusinessFunction::class, 'business_function_id');
     }
 
     /**
      * Relazione Polimorfica verso il membro (Employee o Client).
      */
-    public function member()
+    public function member(): MorphTo
     {
         return $this->morphTo();
     }
@@ -103,11 +99,11 @@ class BusinessFunctionMember extends MorphPivot
     }
 
     /**
-     * Nome della tabella qualificato con il database dell'app: serve alle relazioni che partono da modelli su un'altra
-     * connessione (database condiviso, Proforma), il cui join sul pivot altrimenti cercherebbe la tabella nel database sbagliato.
+     * Nome della tabella qualificato con il database condiviso (core): serve alle relazioni che partono da modelli su un'altra
+     * connessione, il cui join sul pivot altrimenti cercherebbe la tabella nel database sbagliato.
      */
     public static function qualifiedTable(): string
     {
-        return config('database.connections.'.config('database.default').'.database').'.business_function_members';
+        return config('database.connections.'.config('unico-core.connection').'.database').'.business_function_members';
     }
 }
