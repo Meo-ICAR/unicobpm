@@ -25,11 +25,14 @@ class ApiLogController extends Controller
             'error' => ['nullable', 'string', 'max:200'],
             'correlation_id' => ['nullable', 'string', 'max:64'],
             'event_id' => ['nullable', 'string', 'max:120'],
+            'company_id' => ['nullable', 'integer'],
+            'company_vat' => ['nullable', 'string', 'max:20'],
             'ai' => ['nullable', 'array'],
         ]);
 
         $log = $logger->record([
             'direction' => ApiLog::OUT,
+            'company_id' => $logger->companyId($data),
             'origin' => $data['origin'],
             'app' => parse_url($data['url'], PHP_URL_HOST) ?: null,
             'method' => strtoupper($data['method']),

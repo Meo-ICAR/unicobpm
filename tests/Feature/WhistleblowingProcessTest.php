@@ -5,8 +5,10 @@ namespace Tests\Feature;
 use App\Models\BusinessFunction;
 use App\Models\Employee;
 use App\Models\EmployeeType;
+use App\Models\Process;
 use App\Models\ProcessInstance;
 use App\Models\ProcessTaskItemAnswer;
+use App\Models\ProcessTrigger;
 use Database\Seeders\WhistleblowingProcessSeeder;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\Mail;
@@ -55,8 +57,8 @@ class WhistleblowingProcessTest extends TestCase
 
         $this->assertSame(1, EmployeeType::where('name', 'responsabile whistleblowing')->count());
         $this->assertSame(1, BusinessFunction::where('code', 'WHISTLEBLOWING')->count());
-        $this->assertSame(1, \App\Models\ProcessTrigger::where('external_event', 'segnalazione.ricevuta')->count());
-        $this->assertSame(2, \App\Models\Process::where('code', 'PRC-WHISTLE')->firstOrFail()->tasks()->count());
+        $this->assertSame(1, ProcessTrigger::where('external_event', 'segnalazione.ricevuta')->count());
+        $this->assertSame(2, Process::where('code', 'PRC-WHISTLE')->firstOrFail()->tasks()->count());
     }
 
     public function test_a_report_notifies_only_the_members_with_the_whistleblowing_role(): void
@@ -88,8 +90,8 @@ class WhistleblowingProcessTest extends TestCase
         $this->postJson('/api/events', $this->event(), self::KEY)->assertStatus(202);
         $this->assertEqualsCanonicalizing(['uno@example.com', 'due@example.com'], $this->sentTo());
 
-        \Illuminate\Support\Facades\Mail::mailer('array')->getSymfonyTransport()->flush();
-        \App\Models\Employee::query()->whereIn('email', ['uno@example.com', 'due@example.com'])->get()->each(fn ($e) => BusinessFunction::where('code', 'WHISTLEBLOWING')->first()->employees()->detach($e->id));
+        Mail::mailer('array')->getSymfonyTransport()->flush();
+        Employee::query()->whereIn('email', ['uno@example.com', 'due@example.com'])->get()->each(fn ($e) => BusinessFunction::where('code', 'WHISTLEBLOWING')->first()->employees()->detach($e->id));
         BusinessFunction::where('code', 'WHISTLEBLOWING')->update(['email' => 'whistle@example.com']);
         $second = $this->event();
         $second['event_id'] = 'segnalazione.ricevuta:8';

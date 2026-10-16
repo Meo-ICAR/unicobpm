@@ -3,8 +3,9 @@
 namespace Tests\Unit;
 
 use App\Services\Replies\Interpretation;
-use App\Services\Replies\RuleBasedReplyInterpreter;
 use App\Services\Replies\ReplyText;
+use App\Services\Replies\RuleBasedReplyInterpreter;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class ReplyInterpretationTest extends TestCase
@@ -20,7 +21,7 @@ class ReplyInterpretationTest extends TestCase
         ];
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('replies')]
+    #[DataProvider('replies')]
     public function test_only_clear_short_replies_are_decided_by_the_rules(string $reply, ?string $intent): void
     {
         $result = (new RuleBasedReplyInterpreter)->interpret($reply);

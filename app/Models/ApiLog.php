@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -28,6 +29,11 @@ class ApiLog extends Model
     public function isSuccessful(): bool
     {
         return $this->error === null && $this->status_code !== null && $this->status_code < 400;
+    }
+
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
     }
 
     /**

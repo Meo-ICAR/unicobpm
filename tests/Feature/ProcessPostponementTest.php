@@ -101,7 +101,7 @@ class ProcessPostponementTest extends TestCase
         $this->assertNull($row->granted_by);
         $this->assertSame($reply->id, $row->process_email_reply_id);
 
-        $sent = \Illuminate\Support\Facades\Mail::mailer('array')->getSymfonyTransport()->messages();
+        $sent = Mail::mailer('array')->getSymfonyTransport()->messages();
         $this->assertCount(1, $sent);
         $this->assertStringContainsString(now()->addDays(12)->format('d/m/Y'), quoted_printable_decode($sent->first()->getOriginalMessage()->getBody()->bodyToString()));
     }

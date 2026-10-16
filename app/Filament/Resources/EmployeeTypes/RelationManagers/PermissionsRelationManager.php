@@ -25,6 +25,11 @@ class PermissionsRelationManager extends RelationManager
             // Mostriamo la lista completa delle risorse censite nel sistema
             ->query(Resource::query())
             ->columns([
+                TextColumn::make('app_name')
+                    ->label('App')
+                    ->badge()
+                    ->sortable(),
+
                 TextColumn::make('name')
                     ->label('Risorsa')
                     ->searchable()
@@ -99,6 +104,10 @@ class PermissionsRelationManager extends RelationManager
                     ->updateStateUsing(fn (Resource $record, bool $state) => $this->togglePermission($record->id, 'delete', $state)),
             ])
             ->filters([
+                SelectFilter::make('app_name')
+                    ->label('Filtra per App')
+                    ->options(fn () => Resource::query()->whereNotNull('app_name')->distinct()->pluck('app_name', 'app_name')->toArray()),
+
                 SelectFilter::make('group')
                     ->label('Filtra per Gruppo')
                     ->options(fn () => Resource::query()->whereNotNull('group')->pluck('group', 'group')->toArray()),

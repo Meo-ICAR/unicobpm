@@ -31,10 +31,12 @@ class AdminPanelProvider extends PanelProvider
     {
         return $panel
             ->navigationGroups([
-                //  NavigationGroup::make()->label('Pratiche'),
-                //  NavigationGroup::make()->label('Contabilita'),
-                //  NavigationGroup::make()->label('Anagrafiche'),  // ->collapsed(),
-                // NavigationGroup::make()->label('System')->collapsed(),
+                NavigationGroup::make()->label('BPM'),
+                NavigationGroup::make()->label('Sistema'),
+                NavigationGroup::make()->label('System')->collapsed(),
+                NavigationGroup::make()->label('Configurazioni')->collapsed(),
+                NavigationGroup::make()->label('Documentazione')->collapsed(),
+                NavigationGroup::make()->label('Manuali')->collapsed(),
             ])
             ->brandLogo(asset('images/unicobpm.png'))
             ->brandLogoHeight('3rem')
@@ -62,7 +64,7 @@ class AdminPanelProvider extends PanelProvider
                 NavigationItem::make('Manuale operativo BPM')
                     ->url(fn () => route('manuale-operativo-bpm'), shouldOpenInNewTab: true)
                     ->icon('heroicon-o-book-open')
-                    ->group('Documentazione')
+                    ->group('Manuali')
                     ->sort(100),
             ])
             ->middleware([
@@ -93,7 +95,7 @@ class AdminPanelProvider extends PanelProvider
                             ->outlined(false)
                             ->stateless(false),
                     ])
-                    // ->registration(true)
+                // ->registration(true)
             )
 
             ->authMiddleware([

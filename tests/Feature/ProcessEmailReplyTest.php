@@ -11,12 +11,17 @@ use App\Models\ProcessTask;
 use App\Models\ProcessTaskItem;
 use App\Models\ProcessTaskItemAnswer;
 use App\Models\User;
+use App\Neuron\EmailReplyAgent;
+use App\Services\EmailSendingService;
+use App\Services\Replies\CompositeReplyInterpreter;
 use App\Services\Replies\Interpretation;
 use App\Services\Replies\ReplyInterpreter;
+use App\Services\Replies\RuleBasedReplyInterpreter;
 use App\Support\ProcessThread;
 use Filament\Actions\Testing\TestAction;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Livewire\Livewire;
 use Tests\TestCase;
 use Unico\Core\Events\IncomingEmailReceived;
@@ -40,9 +45,9 @@ class ProcessEmailReplyTest extends TestCase
         parent::setUp();
 
         // L'AI è sostituita da un finto: nei test non si chiama nessun servizio.
-        $this->app->bind(\App\Neuron\EmailReplyAgent::class, fn () => throw new \RuntimeException('AI non disponibile nei test'));
-        $this->app->bind(ReplyInterpreter::class, fn () => new \App\Services\Replies\CompositeReplyInterpreter([
-            new \App\Services\Replies\RuleBasedReplyInterpreter,
+        $this->app->bind(EmailReplyAgent::class, fn () => throw new \RuntimeException('AI non disponibile nei test'));
+        $this->app->bind(ReplyInterpreter::class, fn () => new CompositeReplyInterpreter([
+            new RuleBasedReplyInterpreter,
             new class($this) implements ReplyInterpreter
             {
                 public function __construct(private ProcessEmailReplyTest $test) {}
@@ -267,10 +272,10 @@ class ProcessEmailReplyTest extends TestCase
     {
         config(['mail.default' => 'array', 'services.bpm.thread_domain' => 'bpm.test']);
 
-        app(\App\Services\EmailSendingService::class)->send('cliente@example.com', 'Conferma visita', 'Testo', [], null, ['instance' => 5, 'execution' => 9]);
-        app(\App\Services\EmailSendingService::class)->send('cliente@example.com', 'Senza thread', 'Testo');
+        app(EmailSendingService::class)->send('cliente@example.com', 'Conferma visita', 'Testo', [], null, ['instance' => 5, 'execution' => 9]);
+        app(EmailSendingService::class)->send('cliente@example.com', 'Senza thread', 'Testo');
 
-        $messages = \Illuminate\Support\Facades\Mail::mailer('array')->getSymfonyTransport()->messages();
+        $messages = Mail::mailer('array')->getSymfonyTransport()->messages();
         $ids = $messages->map(fn ($m) => $m->getOriginalMessage()->getHeaders()->get('Message-ID')?->getBodyAsString())->all();
 
         $this->assertMatchesRegularExpression('/^<bpm-5-9-[a-z0-9]{10}@bpm\.test>$/', $ids[0]);

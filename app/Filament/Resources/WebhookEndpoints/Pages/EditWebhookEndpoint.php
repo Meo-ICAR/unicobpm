@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\WebhookEndpoints\Pages;
 
 use App\Filament\Resources\WebhookEndpoints\WebhookEndpointResource;
+use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 
 class EditWebhookEndpoint extends EditRecord
@@ -11,6 +12,6 @@ class EditWebhookEndpoint extends EditRecord
 
     protected function getHeaderActions(): array
     {
-        return [\Filament\Actions\DeleteAction::make()];
+        return [DeleteAction::make()];
     }
 }

@@ -9,8 +9,11 @@ use App\Models\Process;
 use App\Models\ProcessInstance;
 use App\Models\WebhookEndpoint;
 use App\Services\Correlation;
+use App\Services\ExternalAppClient;
 use App\Services\OutboundCallService;
+use App\Services\WebhookDispatcher;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Spatie\Activitylog\Models\Activity;
@@ -66,7 +69,7 @@ class OutboundCallTest extends TestCase
         $call = $this->enqueue();
 
         try {
-            (new SendOutboundCall($call->id))->handle(app(\App\Services\ExternalAppClient::class), app(Correlation::class));
+            (new SendOutboundCall($call->id))->handle(app(ExternalAppClient::class), app(Correlation::class));
             $this->fail('Doveva lanciare per ritentare.');
         } catch (\RuntimeException $e) {
             $this->assertStringContainsString('HTTP 503', $e->getMessage());
@@ -82,12 +85,12 @@ class OutboundCallTest extends TestCase
 
     public function test_a_network_error_is_retried_and_exhausted_attempts_fail_the_call(): void
     {
-        Http::fake(fn () => throw new \Illuminate\Http\Client\ConnectionException('timeout'));
+        Http::fake(fn () => throw new ConnectionException('timeout'));
         Queue::fake();
         $call = $this->enqueue();
 
         try {
-            (new SendOutboundCall($call->id))->handle(app(\App\Services\ExternalAppClient::class), app(Correlation::class));
+            (new SendOutboundCall($call->id))->handle(app(ExternalAppClient::class), app(Correlation::class));
         } catch (\RuntimeException) {
         }
 
@@ -103,13 +106,13 @@ class OutboundCallTest extends TestCase
         Queue::fake();
         Http::fake(fn ($request) => $request->header('Idempotency-Key') === ['k-429'] ? Http::response([], 429) : Http::response([], 422));
         $final = $this->enqueue('k-422');
-        (new SendOutboundCall($final->id))->handle(app(\App\Services\ExternalAppClient::class), app(Correlation::class));
+        (new SendOutboundCall($final->id))->handle(app(ExternalAppClient::class), app(Correlation::class));
         $this->assertSame('failed', $final->fresh()->status);
         $this->assertSame('HTTP 422 (definitivo)', $final->fresh()->last_error);
 
         $limited = $this->enqueue('k-429');
         try {
-            (new SendOutboundCall($limited->id))->handle(app(\App\Services\ExternalAppClient::class), app(Correlation::class));
+            (new SendOutboundCall($limited->id))->handle(app(ExternalAppClient::class), app(Correlation::class));
         } catch (\RuntimeException) {
         }
         $this->assertSame('pending', $limited->fresh()->status);
@@ -143,7 +146,7 @@ class OutboundCallTest extends TestCase
 
     public function test_an_unreachable_app_does_not_lose_the_completion_write(): void
     {
-        Http::fake(fn () => throw new \Illuminate\Http\Client\ConnectionException('down'));
+        Http::fake(fn () => throw new ConnectionException('down'));
         Queue::fake();
         $process = Process::create(['name' => 'Onboarding', 'code' => 'PRC-OUT2', 'is_active' => true, 'completion_write_field' => 'stipulated_at', 'completion_write_value' => 'now']);
         $instance = ProcessInstance::create(['process_id' => $process->id, 'subject_type' => Fornitore::class, 'subject_id' => 'fornitore-uuid-2', 'status' => 'in_progress']);
@@ -193,7 +196,7 @@ class OutboundCallTest extends TestCase
         $this->endpoint(['url' => 'http://terzo.test/hook']);
         $this->app['env'] = 'production';
 
-        $count = app(\App\Services\WebhookDispatcher::class)->dispatch('process.status_changed', ['x' => 1], 'ref-1');
+        $count = app(WebhookDispatcher::class)->dispatch('process.status_changed', ['x' => 1], 'ref-1');
 
         $this->assertSame(0, $count);
         $this->assertSame(0, OutboundCall::count());

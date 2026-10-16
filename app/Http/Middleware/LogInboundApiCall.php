@@ -21,6 +21,7 @@ class LogInboundApiCall
 
         $this->logger->record([
             'direction' => ApiLog::IN,
+            'company_id' => $this->logger->companyId((array) $request->input('data', [])),
             'app' => $request->input('source'),
             'method' => $request->method(),
             'url' => $request->fullUrl(),

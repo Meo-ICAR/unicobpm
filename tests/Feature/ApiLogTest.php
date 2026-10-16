@@ -5,8 +5,10 @@ namespace Tests\Feature;
 use App\Filament\Resources\ApiLogs\Pages\ListApiLogs;
 use App\Filament\Resources\ApiLogs\Pages\ViewApiLog;
 use App\Models\ApiLog;
+use App\Models\Company;
 use App\Models\User;
 use App\Services\ExternalAppClient;
+use Filament\Actions\Testing\TestAction;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Http\Client\ConnectionException;
@@ -102,5 +104,54 @@ class ApiLogTest extends TestCase
 
         Livewire::test(ListApiLogs::class)->assertCanSeeTableRecords([$log])->assertSee('$ 0,0108');
         Livewire::test(ViewApiLog::class, ['record' => $log->getRouteKey()])->assertSee('Costo interrogazione AI')->assertSee('processed');
+    }
+
+    public function test_incoming_event_stores_the_company_from_vat_and_the_list_filters_by_company_and_period(): void
+    {
+        $company = Company::create(['name' => 'Acme', 'vat_number' => '01234567890']);
+        $other = Company::create(['name' => 'Beta', 'vat_number' => '09876543210']);
+
+        $this->postJson('/api/events', [
+            'event_id' => 'pratica.perfezionata:FIN-2', 'event' => 'pratica.perfezionata', 'source' => 'unicoagent', 'subject_ref' => 'FIN-2',
+            'data' => ['company_vat' => '01234567890'],
+        ], ['X-Api-Key' => 'chiave-eventi'])->assertStatus(202);
+
+        $log = ApiLog::query()->firstOrFail();
+        $this->assertSame($company->id, $log->company_id);
+
+        $old = ApiLog::create([
+            'direction' => 'out', 'method' => 'GET', 'url' => 'https://loan.test/old', 'status_code' => 200,
+            'company_id' => $company->id, 'created_at' => '2020-01-01 10:00:00',
+        ]);
+        $other = ApiLog::create([
+            'direction' => 'out', 'method' => 'GET', 'url' => 'https://loan.test/other', 'status_code' => 200,
+            'company_id' => $other->id,
+        ]);
+
+        config(['app.env' => 'local']);
+        Filament::setCurrentPanel('admin');
+        $this->actingAs(User::factory()->create(['role' => 'admin']));
+
+        Livewire::test(ListApiLogs::class)
+            ->assertCanSeeTableRecords([$log, $old, $other])
+            ->assertActionExists(TestAction::make('export')->table())
+            ->filterTable('company_id', $company->id)
+            ->assertCanSeeTableRecords([$log, $old])
+            ->assertCanNotSeeTableRecords([$other])
+            ->filterTable('periodo', ['dal' => now()->toDateString(), 'al' => now()->toDateString()])
+            ->assertCanSeeTableRecords([$log])
+            ->assertCanNotSeeTableRecords([$old, $other]);
+    }
+
+    public function test_other_apps_can_report_the_company_by_vat(): void
+    {
+        $company = Company::create(['name' => 'Acme', 'vat_number' => '01234567890']);
+
+        $this->postJson('/api/api-logs', [
+            'origin' => 'unicoagent', 'method' => 'post', 'url' => 'https://api.anthropic.com/v1/messages', 'status_code' => 200,
+            'company_vat' => '01234567890',
+        ], ['X-Api-Key' => 'chiave-eventi'])->assertCreated();
+
+        $this->assertSame($company->id, ApiLog::query()->sole()->company_id);
     }
 }

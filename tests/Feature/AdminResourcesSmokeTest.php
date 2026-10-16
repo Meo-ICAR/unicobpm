@@ -5,9 +5,9 @@ namespace Tests\Feature;
 use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
-use Tests\TestCase;
 use Illuminate\Routing\Exceptions\UrlGenerationException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
+use Tests\TestCase;
 use Throwable;
 
 /**

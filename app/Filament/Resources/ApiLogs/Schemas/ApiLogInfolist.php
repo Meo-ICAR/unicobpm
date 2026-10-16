@@ -18,6 +18,7 @@ class ApiLogInfolist
                 TextEntry::make('created_at')->label('Quando')->dateTime('d/m/Y H:i:s'),
                 TextEntry::make('direction')->label('Verso')->badge()->formatStateUsing(fn (string $state): string => $state === ApiLog::IN ? 'Ricevuta' : 'Inviata'),
                 TextEntry::make('origin')->label('Fatta da')->placeholder('unicobpm'),
+                TextEntry::make('company.name')->label('Azienda')->placeholder('—'),
                 TextEntry::make('app')->label('Con')->placeholder('—'),
                 TextEntry::make('method')->label('Metodo'),
                 TextEntry::make('url')->label('Indirizzo')->columnSpan(2)->copyable(),

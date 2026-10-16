@@ -10,6 +10,7 @@ use App\Services\ExternalAppClient;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
 use Throwable;
@@ -79,14 +80,14 @@ class SendOutboundCall implements ShouldQueue
         Log::error("Chiamata in uscita #{$this->callId} non consegnata dopo {$this->tries} tentativi.");
     }
 
-    private function sendToApp(OutboundCall $call, ExternalAppClient $client): \Illuminate\Http\Client\Response
+    private function sendToApp(OutboundCall $call, ExternalAppClient $client): Response
     {
         return $client->for((string) $call->app)
             ->withHeaders(['Idempotency-Key' => $call->idempotency_key])
             ->send($call->method, $client->url((string) $call->app, $call->path), $call->payload === null ? [] : ['json' => $call->payload]);
     }
 
-    private function sendWebhook(OutboundCall $call, ExternalAppClient $client): \Illuminate\Http\Client\Response
+    private function sendWebhook(OutboundCall $call, ExternalAppClient $client): Response
     {
         $endpoint = WebhookEndpoint::query()->find($call->meta['webhook_endpoint_id'] ?? 0);
 

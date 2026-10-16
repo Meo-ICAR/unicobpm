@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Filament\Actions\StartProcessAction;
 use App\Models\ExternalEvent;
-use App\Models\ProcessInstance;
 use App\Models\ProcessTrigger;
 use Illuminate\Support\Facades\Log;
 use Throwable;

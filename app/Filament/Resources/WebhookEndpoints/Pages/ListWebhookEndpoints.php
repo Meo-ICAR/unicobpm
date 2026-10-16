@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\WebhookEndpoints\Pages;
 
 use App\Filament\Resources\WebhookEndpoints\WebhookEndpointResource;
+use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 
 class ListWebhookEndpoints extends ListRecords
@@ -11,6 +12,6 @@ class ListWebhookEndpoints extends ListRecords
 
     protected function getHeaderActions(): array
     {
-        return [\Filament\Actions\CreateAction::make()];
+        return [CreateAction::make()];
     }
 }

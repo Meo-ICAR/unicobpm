@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\ApiLog;
+use App\Models\Company;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -40,6 +41,28 @@ class ApiLogger
 
             return null;
         }
+    }
+
+    /**
+     * Agenzia della chiamata: `company_id` se è già noto, altrimenti `company_vat` (partita IVA in `companies`).
+     *
+     * @param  array<string,mixed>  $data
+     */
+    public function companyId(array $data): ?int
+    {
+        if (filled($data['company_id'] ?? null)) {
+            return (int) $data['company_id'];
+        }
+
+        $vat = data_get($data, 'company_vat');
+
+        if (blank($vat)) {
+            return null;
+        }
+
+        $id = Company::query()->where('vat_number', $vat)->value('id');
+
+        return $id === null ? null : (int) $id;
     }
 
     /**

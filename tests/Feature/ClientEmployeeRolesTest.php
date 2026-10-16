@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Filament\Resources\Clients\Pages\CreateClient;
 use App\Filament\Resources\Clients\Pages\EditClient;
 use App\Models\BusinessFunction;
+use App\Models\BusinessFunctionMember;
 use App\Models\Client;
 use App\Models\EmployeeType;
 use App\Models\User;
@@ -50,7 +51,7 @@ class ClientEmployeeRolesTest extends TestCase
         $client = Client::create(['name' => 'Consulente Rossi', 'email' => 'rossi@example.com']);
         $function = BusinessFunction::create(['name' => 'Compliance', 'code' => 'CMP-'.uniqid()]);
 
-        $member = \App\Models\BusinessFunctionMember::create([
+        $member = BusinessFunctionMember::create([
             'business_function_id' => $function->id,
             'member_type' => $client->getMorphClass(),
             'member_id' => $client->id,

@@ -100,7 +100,7 @@ class EscalationNotifier
 
         return [
             strtr('Sollecito: {pratica} in attesa ({task})', $values),
-            strtr("La pratica {pratica} è ferma al passo «{task}» da {ore} ore (sollecito di livello {livello}). Serve una presa in carico.", $values),
+            strtr('La pratica {pratica} è ferma al passo «{task}» da {ore} ore (sollecito di livello {livello}). Serve una presa in carico.', $values),
         ];
     }
 }

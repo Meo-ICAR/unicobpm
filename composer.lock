@@ -4607,7 +4607,7 @@
             "dist": {
                 "type": "path",
                 "url": "../unico-core",
-                "reference": "d20ed8dfd234ee3111c14669e0b831aaac8074cd"
+                "reference": "c3b147e476e898201a254dbffa0667c3956333dd"
             },
             "require": {
                 "filament/support": "^5.0",
@@ -4643,7 +4643,10 @@
             "autoload": {
                 "psr-4": {
                     "Unico\\Core\\": "src/"
-                }
+                },
+                "files": [
+                    "src/helpers.php"
+                ]
             },
             "autoload-dev": {
                 "psr-4": {

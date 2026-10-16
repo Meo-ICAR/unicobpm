@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Actions\StartProcessAction;
 use App\Jobs\TaskEscalationWatchdogJob;
 use App\Models\BusinessFunction;
 use App\Models\Employee;
@@ -13,6 +14,7 @@ use App\Models\ProcessTaskRaci;
 use App\Models\ProcessTrigger;
 use App\Models\User;
 use App\Services\ExternalEventProcessor;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
@@ -190,9 +192,9 @@ class ExternalEventTest extends TestCase
     public function test_a_failed_event_answers_503_and_is_processed_again_when_resent(): void
     {
         $this->trigger();
-        $this->app->bind(\App\Filament\Actions\StartProcessAction::class, fn () => new class extends \App\Filament\Actions\StartProcessAction
+        $this->app->bind(StartProcessAction::class, fn () => new class extends StartProcessAction
         {
-            public function execute(?\Illuminate\Database\Eloquent\Model $subject, int $processId, array $attributes = []): ProcessInstance
+            public function execute(?Model $subject, int $processId, array $attributes = []): ProcessInstance
             {
                 throw new \RuntimeException('database giù');
             }
@@ -202,7 +204,7 @@ class ExternalEventTest extends TestCase
         $this->assertSame('failed', ExternalEvent::sole()->status);
 
         $this->app->forgetInstance(ExternalEventProcessor::class);
-        $this->app->bind(\App\Filament\Actions\StartProcessAction::class, \App\Filament\Actions\StartProcessAction::class);
+        $this->app->bind(StartProcessAction::class, StartProcessAction::class);
         $this->postJson('/api/events', $this->event(), self::KEY)->assertStatus(202)->assertJson(['status' => 'processed', 'started' => 1, 'retried' => true]);
 
         $this->assertSame(1, ProcessInstance::count());
