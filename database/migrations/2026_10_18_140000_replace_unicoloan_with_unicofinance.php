@@ -47,20 +47,22 @@ return new class extends Migration
         }
 
         if (Schema::hasTable('outbound_calls')) {
-            // Anche meta.app, che il registro attività legge alla consegna della scrittura di fine processo.
-            DB::table('outbound_calls')->where('app', $from)->whereIn('status', ['pending', 'failed'])->orderBy('id')->get(['id', 'meta'])
-                ->each(function (object $call) use ($from, $to): void {
+            // Anche meta.app, che il registro attività legge alla consegna della scrittura di fine processo. Lo stato si
+            // ricontrolla in ogni UPDATE, così una chiamata consegnata nel frattempo resta com'era.
+            $open = fn () => DB::table('outbound_calls')->where('app', $from)->whereIn('status', ['pending', 'failed']);
+
+            $open()->select(['id', 'meta'])->chunkById(500, function ($calls) use ($open, $from, $to): void {
+                foreach ($calls as $call) {
                     $meta = json_decode((string) $call->meta, true);
 
                     if (is_array($meta) && ($meta['app'] ?? null) === $from) {
                         $meta['app'] = $to;
+                        $open()->where('id', $call->id)->update(['meta' => json_encode($meta)]);
                     }
+                }
+            });
 
-                    DB::table('outbound_calls')->where('id', $call->id)->update([
-                        'app' => $to,
-                        'meta' => is_array($meta) ? json_encode($meta) : $call->meta,
-                    ]);
-                });
+            $open()->update(['app' => $to]);
         }
     }
 };
