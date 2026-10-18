@@ -85,6 +85,9 @@ class AppSwitcherWidget extends Widget
         $user = auth()->user();
         $resolver = app(ExternalAppResolver::class);
 
+        // Per le app che lo ricevono in POST il token non va mai in un indirizzo: si passa da /passa-a/{app}.
+        abort_if((bool) config("services.apps.{$app}.sso_post"), 404);
+
         $token = app(SsoTokenBroker::class)->issueToken($user->email);
 
         $url = $resolver->urlFor($app).'/bpm-landing/dashboard?'.http_build_query([

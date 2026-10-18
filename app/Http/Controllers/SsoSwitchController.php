@@ -15,7 +15,7 @@ class SsoSwitchController extends Controller
 {
     public function __invoke(Request $request, string $app, ExternalAppResolver $resolver, SsoTokenBroker $tokens): Response
     {
-        abort_unless(in_array($app, $resolver->allApps(), true) && config("services.apps.{$app}.sso_post"), 404);
+        abort_unless(in_array($app, $resolver->allApps(), true) && config("services.apps.{$app}.sso_post") && filled(config("services.apps.{$app}.url")), 404);
 
         $email = (string) $request->user()->email;
 
