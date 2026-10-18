@@ -208,13 +208,10 @@ Prima di scrivere codice che coinvolge dati su `proforma` o `mysql_unicooam`:
   Inoltre la query non esclude le pratiche senza soggetto (es. quelle ricorrenti avviate da
   `BpmSchedulerCommand`): se una di queste ha un task con `has_reminders=true`, `$pratica->subject->email`
   fallisce su soggetto nullo.
-- **`ExternalAppResolver`/`config('services.apps')`: nessuna variabile d'ambiente configurata** per i 3
-  applicativi esterni (`UNICOFINANCE_API_URL`/`UNICOOAM_API_URL`/`PROFORMA_API_URL`; unicoloan è dismesso), né in `.env` né in
-  `.env.example`. I default sono i **domini di produzione reali** — senza configurarle esplicitamente,
-  ambienti locali/staging chiamano davvero i servizi di produzione per blacklist check, scrittura di
-  completamento pratica e switch app.
-  **Azione**: aggiungere le 3 righe (vuote o su un dominio di test) a `.env.example`, con un commento che
-  spiega cosa succede se lasciate vuote/puntate a produzione; valutare se in ambiente non-`production`
+- **`ExternalAppResolver`/`config('services.apps')`**: `UNICOFINANCE_API_URL` (unicoloan è dismesso) non ha
+  default ed è in `.env.example`; `UNICOOAM_API_URL` e `PROFORMA_API_URL` invece ricadono sui **domini di
+  produzione reali**: senza configurarle, ambienti locali/staging chiamano davvero quei servizi.
+  **Azione**: togliere i default di produzione di unicooam e proforma; valutare se in ambiente non-`production`
   convenga far fallire esplicitamente `ExternalAppResolver::urlFor()` invece di usare il default reale.
 - **`AppSwitcherWidget::switchTo($app)` non cattura l'eccezione di `ExternalAppResolver::urlFor()`**: con
   una chiave app non valida (chiamata diretta al metodo Livewire, bypassando i pulsanti già filtrati)
