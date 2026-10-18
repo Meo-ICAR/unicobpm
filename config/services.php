@@ -91,6 +91,8 @@ return [
         'unicofinance' => [
             'url' => env('UNICOFINANCE_API_URL'),
             'label' => 'UnicoFinance',
+            // Il token di accesso parte in POST (non resta nella cronologia né nei log): l'app lo accetta così.
+            'sso_post' => true,
         ],
         'unicooam' => [
             'url' => env('UNICOOAM_API_URL', 'https://unicooam.hassisto.com'),
