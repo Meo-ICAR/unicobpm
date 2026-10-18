@@ -22,7 +22,7 @@ class AppSwitcherWidget extends Widget
     protected int|string|array $columnSpan = 'full';
 
     /**
-     * @return array<int, array{key: string, label: string, url: string, logo: ?string}>
+     * @return array<int, array{key: string, label: string, url: string, logo: ?string, post: bool}>
      */
     public function getAvailableApps(): array
     {
@@ -40,7 +40,7 @@ class AppSwitcherWidget extends Widget
     }
 
     /**
-     * @return array<int, array{key: string, label: string, url: string, logo: ?string}>
+     * @return array<int, array{key: string, label: string, url: string, logo: ?string, post: bool}>
      */
     private function lookupAvailableApps(string $email): array
     {
@@ -56,6 +56,7 @@ class AppSwitcherWidget extends Widget
                     $apps[] = [
                         'key' => $app,
                         'label' => $resolver->labelFor($app),
+                        'post' => (bool) config("services.apps.{$app}.sso_post"),
                         'url' => $resolver->urlFor($app),
                         'logo' => $this->logoFor($app),
                     ];

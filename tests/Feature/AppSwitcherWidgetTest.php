@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Filament\Widgets\AppSwitcherWidget;
 use App\Models\User;
+use App\Services\SsoTokenBroker;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
@@ -48,5 +49,25 @@ class AppSwitcherWidgetTest extends TestCase
 
         Livewire::test(AppSwitcherWidget::class)
             ->assertSee('Nessun altro account trovato con questa email.');
+    }
+
+    public function test_the_switch_to_unicofinance_sends_the_token_in_a_post_form(): void
+    {
+        $user = User::factory()->create(['email' => 'agente@example.com']);
+        config()->set('services.apps', [
+            'unicofinance' => ['url' => 'https://unicofinance.test', 'label' => 'UnicoFinance', 'sso_post' => true],
+            'unicooam' => ['url' => 'https://unicooam.test', 'label' => 'UnicoOAM'],
+        ]);
+
+        $response = $this->actingAs($user)->post('/passa-a/unicofinance')->assertOk()->assertHeader('Referrer-Policy', 'no-referrer');
+
+        $response->assertSee('action="https://unicofinance.test/bpm-landing/dashboard"', false)
+            ->assertSee('name="user_email" value="agente@example.com"', false);
+        preg_match('/name="token" value="([^"]+)"/', $response->getContent(), $match);
+        $this->assertTrue(app(SsoTokenBroker::class)->verifyAndConsume($match[1], 'agente@example.com'));
+
+        $this->actingAs($user)->post('/passa-a/unicooam')->assertNotFound();
+        auth()->logout();
+        $this->post('/passa-a/unicofinance')->assertRedirect('/admin/login');
     }
 }
