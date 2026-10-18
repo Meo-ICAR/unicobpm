@@ -17,7 +17,9 @@ return new class extends Migration
     {
         $connection = DB::connection((new Module)->getConnectionName());
 
-        if (! Schema::connection($connection->getName())->hasTable('modules')) {
+        $schema = Schema::connection($connection->getName());
+
+        if (! $schema->hasTable('modules') || ! $schema->hasTable('company_modules')) {
             return;
         }
 
@@ -37,8 +39,11 @@ return new class extends Migration
         }
 
         $connection->transaction(function () use ($connection, $old, $new, $now): void {
+            // Gli id si leggono prima: MySQL non accetta una sottoquery sulla stessa tabella dell'UPDATE (errore 1093).
+            $haGiaUnicofinance = $connection->table('company_modules')->where('module_id', $new->id)->pluck('company_id')->all();
+
             $connection->table('company_modules')->where('module_id', $old->id)
-                ->whereNotIn('company_id', $connection->table('company_modules')->where('module_id', $new->id)->select('company_id'))
+                ->whereNotIn('company_id', $haGiaUnicofinance)
                 ->update(['module_id' => $new->id, 'updated_at' => $now]);
 
             $connection->table('modules')->where('id', $old->id)->update(['is_active' => false, 'updated_at' => $now]);

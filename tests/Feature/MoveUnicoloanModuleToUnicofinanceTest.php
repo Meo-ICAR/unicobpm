@@ -44,6 +44,7 @@ class MoveUnicoloanModuleToUnicofinanceTest extends TestCase
 
         $this->assertSame($finance->id, $moved->fresh()->module_id);
         $this->assertSame('MEDIUM', $moved->fresh()->plan_type->value);
+        $this->assertSame(90.0, (float) $moved->fresh()->monthly_cost);
         $this->assertSame($loan->id, $kept->fresh()->module_id);
         $this->assertFalse($loan->fresh()->is_active);
     }
