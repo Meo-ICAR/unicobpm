@@ -32,8 +32,8 @@ class OutboundCallResourcesTest extends TestCase
     public function test_failed_calls_can_be_retried_from_the_list(): void
     {
         Queue::fake();
-        $failed = OutboundCall::create(['event' => 'completion_write', 'app' => 'unicoloan', 'method' => 'PATCH', 'path' => '/x', 'idempotency_key' => 'a', 'status' => 'failed', 'attempts' => 6, 'last_error' => 'HTTP 503']);
-        $sent = OutboundCall::create(['event' => 'completion_write', 'app' => 'unicoloan', 'method' => 'PATCH', 'path' => '/y', 'idempotency_key' => 'b', 'status' => 'sent', 'attempts' => 1]);
+        $failed = OutboundCall::create(['event' => 'completion_write', 'app' => 'unicofinance', 'method' => 'PATCH', 'path' => '/x', 'idempotency_key' => 'a', 'status' => 'failed', 'attempts' => 6, 'last_error' => 'HTTP 503']);
+        $sent = OutboundCall::create(['event' => 'completion_write', 'app' => 'unicofinance', 'method' => 'PATCH', 'path' => '/y', 'idempotency_key' => 'b', 'status' => 'sent', 'attempts' => 1]);
 
         Livewire::test(ListOutboundCalls::class)
             ->assertCanSeeTableRecords([$failed, $sent])

@@ -27,17 +27,17 @@ class OutboundCallTest extends TestCase
     {
         parent::setUp();
 
-        config(['services.apps.unicoloan.url' => 'https://unicoloan.test', 'services.bpm.bridge_api_key' => 'chiave-bridge']);
+        config(['services.apps.unicofinance.url' => 'https://unicofinance.test', 'services.bpm.bridge_api_key' => 'chiave-bridge']);
     }
 
     private function enqueue(string $key = 'k1'): OutboundCall
     {
-        return app(OutboundCallService::class)->enqueue('completion_write', 'unicoloan', 'PATCH', '/api/models/fornitore/abc', ['field' => 'stipulated_at', 'value' => '2026-10-11'], ['instance_id' => 0, 'field' => 'stipulated_at', 'app' => 'unicoloan'], $key);
+        return app(OutboundCallService::class)->enqueue('completion_write', 'unicofinance', 'PATCH', '/api/models/fornitore/abc', ['field' => 'stipulated_at', 'value' => '2026-10-11'], ['instance_id' => 0, 'field' => 'stipulated_at', 'app' => 'unicofinance'], $key);
     }
 
     public function test_a_delivered_call_is_marked_sent_with_the_shared_headers(): void
     {
-        Http::fake(['https://unicoloan.test/*' => Http::response(['ok' => true])]);
+        Http::fake(['https://unicofinance.test/*' => Http::response(['ok' => true])]);
         app(Correlation::class)->use('corr-12345678');
 
         $call = $this->enqueue()->fresh();
@@ -46,7 +46,7 @@ class OutboundCallTest extends TestCase
         $this->assertSame(1, $call->attempts);
         $this->assertSame(200, $call->last_status_code);
         $this->assertNotNull($call->sent_at);
-        Http::assertSent(fn ($request) => $request->method() === 'PATCH' && $request->url() === 'https://unicoloan.test/api/models/fornitore/abc'
+        Http::assertSent(fn ($request) => $request->method() === 'PATCH' && $request->url() === 'https://unicofinance.test/api/models/fornitore/abc'
             && $request->header('X-Api-Key') === ['chiave-bridge'] && $request->header('X-Correlation-Id') === ['corr-12345678']
             && $request->header('Idempotency-Key') === ['k1'] && $request['field'] === 'stipulated_at');
     }
@@ -121,7 +121,7 @@ class OutboundCallTest extends TestCase
     public function test_retry_puts_a_failed_call_back_in_the_queue(): void
     {
         Queue::fake();
-        $call = OutboundCall::create(['event' => 'x', 'app' => 'unicoloan', 'method' => 'PATCH', 'path' => '/x', 'idempotency_key' => 'r1', 'status' => 'failed', 'attempts' => 6, 'last_error' => 'HTTP 503']);
+        $call = OutboundCall::create(['event' => 'x', 'app' => 'unicofinance', 'method' => 'PATCH', 'path' => '/x', 'idempotency_key' => 'r1', 'status' => 'failed', 'attempts' => 6, 'last_error' => 'HTTP 503']);
 
         app(OutboundCallService::class)->retry($call);
 
@@ -132,7 +132,7 @@ class OutboundCallTest extends TestCase
 
     public function test_the_completion_write_goes_through_the_queue_and_is_logged_on_delivery(): void
     {
-        Http::fake(['https://unicoloan.test/*' => Http::response(['ok' => true])]);
+        Http::fake(['https://unicofinance.test/*' => Http::response(['ok' => true])]);
         $process = Process::create(['name' => 'Onboarding', 'code' => 'PRC-OUT', 'is_active' => true, 'completion_write_field' => 'stipulated_at', 'completion_write_value' => 'now']);
         $instance = ProcessInstance::create(['process_id' => $process->id, 'subject_type' => Fornitore::class, 'subject_id' => 'fornitore-uuid-1', 'status' => 'in_progress']);
 

@@ -7,10 +7,10 @@ use App\Models\Document;
 use App\Models\ProcessTaskExecution;
 use App\Models\ProcessTaskItemAnswer;
 use App\Services\EmailSendingService;
+use App\Services\ExternalAppClient;
 use App\Services\ExternalAppResolver;
 use App\Services\ExternalCheckRunner;
 use Illuminate\Support\Facades\Bus;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
@@ -49,7 +49,7 @@ use Illuminate\Support\Facades\Storage;
  * JSON config:
  * {
  * "pratica_id_field": "subject_id",  // (Opzionale, default "subject_id") campo di $instance da cui leggere l'ID pratica
- * "app": "unicoloan"                 // (Opzionale, default "unicoloan") applicativo da interrogare — vedi config('services.apps')
+ * "app": "unicofinance"              // (Opzionale, default "unicofinance") applicativo da interrogare — vedi config('services.apps')
  * }
  * * 4. action_type: 'system_task'
  * Esegue in automatico il Job Laravel indicato in handler_job (FQCN, es. 'App\Jobs\MioJob'
@@ -252,7 +252,7 @@ class ProcessTaskExecutionObserver
                     break;
 
                     // --------------------------------------------------------
-                    // CASO 3: VERIFICA BLACKLIST AGENTE (chiede a UnicoLoan)
+                    // CASO 3: VERIFICA BLACKLIST AGENTE (chiede a UnicoFinance)
                     // --------------------------------------------------------
                 case 'blacklist_check':
                     $praticaIdField = $config['pratica_id_field'] ?? 'subject_id';
@@ -263,7 +263,7 @@ class ProcessTaskExecutionObserver
 
                     if (! empty($praticaId)) {
                         try {
-                            $client = app(\App\Services\ExternalAppClient::class);
+                            $client = app(ExternalAppClient::class);
                             $response = $client->for($app, 8)->get($client->url($app, "api/pratiche/{$praticaId}"));
 
                             $blacklisted = $response->successful() && $response->json('agente_blacklistato') === true;

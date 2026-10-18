@@ -78,19 +78,19 @@ return [
     | Applicativi esterni interrogabili/scrivibili da UnicoBPM
     |--------------------------------------------------------------------------
     |
-    | UnicoLoan e UnicoOAM sono due deploy dello stesso codebase che condividono
-    | gli stessi database (proforma, unicooam): entrambi espongono le stesse API
-    | generiche (/api/pratiche/{id}, /api/models/{model}/fields, /api/models/{model}/{id}).
-    | La configurazione di un Process (completion_write_app) o di un
-    | ProcessTaskItem 'blacklist_check' (config['app']) indica quale dei due
+    | UnicoFinance (istruttoria, al posto di UnicoLoan dismesso) e UnicoOAM
+    | espongono le stesse API generiche (/api/pratiche/{id}, /api/models/{model}/fields,
+    | /api/models/{model}/{id}). La configurazione di un Process (completion_write_app)
+    | o di un ProcessTaskItem 'blacklist_check' (config['app']) indica quale
     | interrogare/scrivere; il default applicato nel codice se non specificato
-    | è 'unicoloan'.
+    | è 'unicofinance'.
     |
     */
     'apps' => [
-        'unicoloan' => [
-            'url' => env('UNICOLOAN_API_URL', 'https://unicoloan.hassisto.com'),
-            'label' => 'UnicoLoan',
+        // Nessun indirizzo di ripiego: senza UNICOFINANCE_API_URL l'app risulta sconosciuta invece di chiamare la produzione.
+        'unicofinance' => [
+            'url' => env('UNICOFINANCE_API_URL'),
+            'label' => 'UnicoFinance',
         ],
         'unicooam' => [
             'url' => env('UNICOOAM_API_URL', 'https://unicooam.hassisto.com'),

@@ -72,7 +72,7 @@ class ProcessInstanceObserver
      * `completion_write_field` configurato (es. 'stipulated_at' per
      * l'Onboarding Agente, 'dismissed_at' per l'Offboarding), chiede
      * all'applicativo esterno indicato da `completion_write_app` (default
-     * 'unicoloan' — vedi config('services.apps')) di scrivere quel campo sul
+     * 'unicofinance' — vedi config('services.apps')) di scrivere quel campo sul
      * soggetto tramite la sua API generica di scrittura. UnicoBPM non accede
      * mai direttamente al modello/tabella del soggetto per farlo, coerentemente
      * con l'API già usata per il controllo blacklist su Pratica.

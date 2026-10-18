@@ -19,17 +19,17 @@ class AppSwitcherWidgetTest extends TestCase
         $this->actingAs($user);
 
         config()->set('services.apps', [
-            'unicoloan' => ['url' => 'https://unicoloan.test', 'label' => 'UnicoLoan'],
+            'unicofinance' => ['url' => 'https://unicofinance.test', 'label' => 'UnicoFinance'],
             'unicooam' => ['url' => 'https://unicooam.test', 'label' => 'UnicoOAM'],
         ]);
 
         Http::fake([
-            'https://unicoloan.test/api/users/lookup*' => Http::response(['exists' => true]),
+            'https://unicofinance.test/api/users/lookup*' => Http::response(['exists' => true]),
             'https://unicooam.test/api/users/lookup*' => Http::response(['exists' => false]),
         ]);
 
         Livewire::test(AppSwitcherWidget::class)
-            ->assertSee('UnicoLoan')
+            ->assertSee('UnicoFinance')
             ->assertDontSee('UnicoOAM');
     }
 
@@ -39,11 +39,11 @@ class AppSwitcherWidgetTest extends TestCase
         $this->actingAs($user);
 
         config()->set('services.apps', [
-            'unicoloan' => ['url' => 'https://unicoloan.test', 'label' => 'UnicoLoan'],
+            'unicofinance' => ['url' => 'https://unicofinance.test', 'label' => 'UnicoFinance'],
         ]);
 
         Http::fake([
-            'https://unicoloan.test/api/users/lookup*' => Http::response(['exists' => false]),
+            'https://unicofinance.test/api/users/lookup*' => Http::response(['exists' => false]),
         ]);
 
         Livewire::test(AppSwitcherWidget::class)

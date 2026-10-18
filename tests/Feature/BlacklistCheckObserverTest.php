@@ -16,15 +16,15 @@ class BlacklistCheckObserverTest extends TestCase
     use LazilyRefreshDatabase;
 
     /**
-     * UnicoBPM has no local Pratica model — it asks UnicoLoan for the pratica's
+     * UnicoBPM has no local Pratica model — it asks UnicoFinance for the pratica's
      * blacklist status via API when a 'blacklist_check' task item is entered.
      */
-    public function test_suspends_the_instance_when_unicoloan_reports_the_agent_as_blacklisted(): void
+    public function test_suspends_the_instance_when_unicofinance_reports_the_agent_as_blacklisted(): void
     {
-        config()->set('services.apps.unicoloan.url', 'https://unicoloan.test');
+        config()->set('services.apps.unicofinance.url', 'https://unicofinance.test');
 
         Http::fake([
-            'https://unicoloan.test/api/pratiche/*' => Http::response(['agente_blacklistato' => true]),
+            'https://unicofinance.test/api/pratiche/*' => Http::response(['agente_blacklistato' => true]),
         ]);
 
         [$instance, $task] = $this->makeInstanceWithBlacklistCheckTask();
@@ -41,10 +41,10 @@ class BlacklistCheckObserverTest extends TestCase
 
     public function test_does_not_suspend_the_instance_when_the_agent_is_not_blacklisted(): void
     {
-        config()->set('services.apps.unicoloan.url', 'https://unicoloan.test');
+        config()->set('services.apps.unicofinance.url', 'https://unicofinance.test');
 
         Http::fake([
-            'https://unicoloan.test/api/pratiche/*' => Http::response(['agente_blacklistato' => false]),
+            'https://unicofinance.test/api/pratiche/*' => Http::response(['agente_blacklistato' => false]),
         ]);
 
         [$instance, $task] = $this->makeInstanceWithBlacklistCheckTask();
@@ -61,7 +61,7 @@ class BlacklistCheckObserverTest extends TestCase
 
     /**
      * The target app is per-ProcessTaskItem config, not hardcoded: a
-     * 'blacklist_check' item can point at unicooam instead of unicoloan.
+     * 'blacklist_check' item can point at unicooam instead of unicofinance.
      */
     public function test_queries_the_app_named_in_the_item_config_instead_of_the_default(): void
     {

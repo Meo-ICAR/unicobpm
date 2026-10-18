@@ -209,7 +209,7 @@ Prima di scrivere codice che coinvolge dati su `proforma` o `mysql_unicooam`:
   `BpmSchedulerCommand`): se una di queste ha un task con `has_reminders=true`, `$pratica->subject->email`
   fallisce su soggetto nullo.
 - **`ExternalAppResolver`/`config('services.apps')`: nessuna variabile d'ambiente configurata** per i 3
-  applicativi esterni (`UNICOLOAN_API_URL`/`UNICOOAM_API_URL`/`PROFORMA_API_URL`), né in `.env` né in
+  applicativi esterni (`UNICOFINANCE_API_URL`/`UNICOOAM_API_URL`/`PROFORMA_API_URL`; unicoloan è dismesso), né in `.env` né in
   `.env.example`. I default sono i **domini di produzione reali** — senza configurarle esplicitamente,
   ambienti locali/staging chiamano davvero i servizi di produzione per blacklist check, scrittura di
   completamento pratica e switch app.

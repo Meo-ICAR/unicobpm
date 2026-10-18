@@ -7,7 +7,7 @@ use Illuminate\Support\Str;
 
 /**
  * Emette e verifica i token one-time usati per il passaggio con login
- * automatico da UnicoBPM verso le altre app (bpm-landing su UnicoLoan/
+ * automatico da UnicoBPM verso le altre app (bpm-landing su UnicoFinance/
  * UnicoOAM/Proforma), riusando lo stesso schema già in produzione su quelle
  * app (POST {app}/api/verify-token con {token, email}).
  */

@@ -16,7 +16,7 @@ class ModuleSeeder extends Seeder
             ['code' => 'UNICOBPM', 'name' => 'UnicoBPM', 'description' => 'Gestione processi'],
             ['code' => 'UNICOOAM', 'name' => 'UnicoOAM', 'description' => 'Gestione compliance'],
             ['code' => 'PROFORMA', 'name' => 'Proforma', 'description' => 'Gestione contabilità'],
-            ['code' => 'UNICOLOAN', 'name' => 'UnicoLoan', 'description' => 'Gestione finanziamenti'],
+            ['code' => 'UNICOFINANCE', 'name' => 'UnicoFinance', 'description' => 'Istruttoria delle pratiche'],
             ['code' => 'DASHBOARDAI', 'name' => 'DashboardAI', 'description' => 'Reporting direzionale'],
         ];
 

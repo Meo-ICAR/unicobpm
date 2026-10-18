@@ -17,15 +17,15 @@ class CompletionWriteBackTest extends TestCase
      * When a ProcessInstance's status transitions to 'completed', and its
      * Process has `completion_write_field` configured (e.g. AGENT_ONBOARDING
      * writing 'stipulated_at'), ProcessInstanceObserver::updated() must ask
-     * UnicoLoan's generic field-write API to write it — UnicoBPM never
+     * UnicoFinance's generic field-write API to write it — UnicoBPM never
      * updates the subject's own table directly.
      */
-    public function test_asks_unicoloan_to_write_the_configured_field_when_the_instance_completes(): void
+    public function test_asks_unicofinance_to_write_the_configured_field_when_the_instance_completes(): void
     {
-        config()->set('services.apps.unicoloan.url', 'https://unicoloan.test');
+        config()->set('services.apps.unicofinance.url', 'https://unicofinance.test');
 
         Http::fake([
-            'https://unicoloan.test/api/models/*' => Http::response(['field' => 'stipulated_at', 'value_stored' => now()->toDateString()]),
+            'https://unicofinance.test/api/models/*' => Http::response(['field' => 'stipulated_at', 'value_stored' => now()->toDateString()]),
         ]);
 
         $process = Process::create([
@@ -46,7 +46,7 @@ class CompletionWriteBackTest extends TestCase
         $instance->update(['status' => 'completed', 'completed_at' => now()]);
 
         Http::assertSent(function ($request) {
-            return $request->url() === 'https://unicoloan.test/api/models/fornitore/fornitore-uuid-123'
+            return $request->url() === 'https://unicofinance.test/api/models/fornitore/fornitore-uuid-123'
                 && $request->method() === 'PATCH'
                 && $request['field'] === 'stipulated_at';
         });
@@ -54,7 +54,7 @@ class CompletionWriteBackTest extends TestCase
 
     /**
      * The target app is per-Process config, not hardcoded: completion_write_app
-     * can point at unicooam instead of the 'unicoloan' default.
+     * can point at unicooam instead of the 'unicofinance' default.
      */
     public function test_writes_to_the_app_named_in_completion_write_app(): void
     {
@@ -85,9 +85,9 @@ class CompletionWriteBackTest extends TestCase
         Http::assertSent(fn ($request) => $request->url() === 'https://unicooam.test/api/models/fornitore/fornitore-uuid-456');
     }
 
-    public function test_does_not_call_unicoloan_when_the_process_has_no_completion_write_field(): void
+    public function test_does_not_call_unicofinance_when_the_process_has_no_completion_write_field(): void
     {
-        config()->set('services.apps.unicoloan.url', 'https://unicoloan.test');
+        config()->set('services.apps.unicofinance.url', 'https://unicofinance.test');
 
         Http::fake();
 

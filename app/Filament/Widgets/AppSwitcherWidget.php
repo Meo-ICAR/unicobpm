@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Mostra le altre app (UnicoLoan/UnicoOAM/Proforma) in cui l'utente loggato
+ * Mostra le altre app (UnicoFinance/UnicoOAM/Proforma) in cui l'utente loggato
  * ha anche un account, interrogando la loro API /api/users/lookup, e
  * permette di passare con login automatico riusando il bridge SSO già
  * presente in ognuna di esse (BpmBridgeController + /bpm-landing/{id}).
