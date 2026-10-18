@@ -39,8 +39,9 @@ return new class extends Migration
         }
 
         $connection->transaction(function () use ($connection, $old, $new, $now): void {
-            // Gli id si leggono prima: MySQL non accetta una sottoquery sulla stessa tabella dell'UPDATE (errore 1093).
-            $haGiaUnicofinance = $connection->table('company_modules')->where('module_id', $new->id)->pluck('company_id')->all();
+            // Gli id si leggono prima: MySQL non accetta una sottoquery sulla stessa tabella dell'UPDATE (errore 1093). La lettura
+            // blocca le righe di UNICOFINANCE fino alla fine della transazione, così nessuno ne aggiunge una nel frattempo.
+            $haGiaUnicofinance = $connection->table('company_modules')->where('module_id', $new->id)->lockForUpdate()->pluck('company_id')->all();
 
             $connection->table('company_modules')->where('module_id', $old->id)
                 ->whereNotIn('company_id', $haGiaUnicofinance)
