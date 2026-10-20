@@ -39,7 +39,7 @@ class AdminPanelProvider extends PanelProvider
                 NavigationGroup::make()->label('Manuali')->collapsed(),
             ])
             ->brandLogo(asset('brand/logos/unico-bpm.jpg'))
-            ->brandLogoHeight('2.75rem')
+            ->brandLogoHeight('5rem')
             ->favicon(asset('brand/icons/unico-bpm-64.png'))
             ->default()
             ->id('admin')
