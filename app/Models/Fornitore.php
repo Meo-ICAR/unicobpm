@@ -12,7 +12,7 @@ use Unico\Core\Models\Fornitore as CoreFornitore;
 
 /**
  * Agenti di commercio / Collaboratori (Fornitori di servizi).
- * Legge e scrive sulla connessione 'core' -> database unico_core_test.
+ * Legge e scrive sulla connessione 'core' -> database unicosuite.
  *
  * NB: la versione originale usava HasUuids (UUID come PK). Nel pacchetto core
  * la PK è bigint auto-increment. Verificare che eventuali UUID già salvati

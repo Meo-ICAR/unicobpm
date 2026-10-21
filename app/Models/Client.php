@@ -11,7 +11,7 @@ use Unico\Core\Models\Client as CoreClient;
 
 /**
  * Client del mediatore (persone fisiche e giuridiche, con dati KYC e consensi privacy).
- * Legge e scrive sulla connessione 'core' -> database unico_core_test.
+ * Legge e scrive sulla connessione 'core' -> database unicosuite.
  */
 class Client extends CoreClient
 {
