@@ -11,7 +11,7 @@ use Illuminate\Database\Seeder;
 
 /**
  * Processo ricorrente "Scadenziario COGE": ogni giorno (bpm:run-scheduler) apre una pratica senza
- * soggetto il cui unico task "Scadenze" interroga i check di Proforma (action_type 'external_check').
+ * soggetto il cui unico task "Scadenze" interroga i check di UnicoCoge (action_type 'external_check').
  * Per ogni check, UnicoBPM sceglie il template email (code + severity) e scrive ai ruoli RACI del
  * task in base al grado (regular: R; warning: R+A; alert: R+A+C).
  *
@@ -21,7 +21,7 @@ use Illuminate\Database\Seeder;
 class ScadenziarioCogeProcessSeeder extends Seeder
 {
     /**
-     * Check di Proforma: comando esposto, nome dell'azione, codice template e descrizione per il testo email.
+     * Check di UnicoCoge: comando esposto, nome dell'azione, codice template e descrizione per il testo email.
      *
      * @var array<int, array{command: string, name: string, template: string, subject: string, intro: string}>
      */
@@ -62,7 +62,7 @@ class ScadenziarioCogeProcessSeeder extends Seeder
 
         $process = Process::updateOrCreate(['code' => 'PRC-COGE'], [
             'name' => 'Scadenziario COGE',
-            'description' => 'Controllo giornaliero delle scadenze e delle anomalie contabili rilevate da Proforma: UnicoBPM avvisa i ruoli RACI in base alla severity di ogni check.',
+            'description' => 'Controllo giornaliero delle scadenze e delle anomalie contabili rilevate da UnicoCoge: UnicoBPM avvisa i ruoli RACI in base alla severity di ogni check.',
             'is_active' => true,
             'is_periodic' => true,
             'recurrence_frequency' => 'daily',
@@ -91,7 +91,7 @@ class ScadenziarioCogeProcessSeeder extends Seeder
                     'action_type' => 'external_check',
                     'is_required' => true,
                     'config' => [
-                        'app' => 'proforma',
+                        'app' => 'unicocoge',
                         'command' => $check['command'],
                         'email_template_code' => $check['template'],
                     ],

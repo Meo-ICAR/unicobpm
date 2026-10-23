@@ -6,7 +6,7 @@ use InvalidArgumentException;
 
 /**
  * Risolve l'URL base di uno degli applicativi esterni interrogabili/scrivibili
- * da UnicoBPM (UnicoFinance per le pratiche, UnicoOAM, Proforma...). Il default
+ * da UnicoBPM (UnicoFinance per le pratiche, UnicoOAM, UnicoCoge...). Il default
  * 'unicofinance' viene applicato dai chiamanti quando una configurazione non
  * specifica esplicitamente l'app.
  */

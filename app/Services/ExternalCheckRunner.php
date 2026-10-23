@@ -8,7 +8,6 @@ use App\Models\ProcessInstance;
 use App\Models\ProcessTask;
 use App\Models\ProcessTaskItem;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -17,7 +16,7 @@ use Illuminate\Support\Facades\Log;
  * cosa farne: si sceglie l'EmailTemplate (code + severity) e si scrive ai ruoli RACI del task
  * padre previsti per quella severity (vedi Severity::raciRolesToNotify()).
  *
- * config dell'item: {"app": "proforma", "command": "clienti:check-missing-piva", "email_template_code": "CHECK_PIVA"}
+ * config dell'item: {"app": "unicocoge", "command": "clienti:check-missing-piva", "email_template_code": "CHECK_PIVA"}
  */
 class ExternalCheckRunner
 {

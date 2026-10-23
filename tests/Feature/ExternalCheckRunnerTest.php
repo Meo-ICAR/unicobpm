@@ -12,6 +12,7 @@ use App\Services\ExternalCheckRunner;
 use Illuminate\Support\Facades\Http;
 use Mockery\MockInterface;
 use Tests\TestCase;
+use Unico\Core\Models\Company;
 
 /**
  * Gli EmailTemplate vivono su mysql_unicooam (DB reale, vedi BPM-DOMAIN-SPEC §9):
@@ -49,7 +50,7 @@ class ExternalCheckRunnerTest extends TestCase
     private function item(): ProcessTaskItem
     {
         $item = new ProcessTaskItem(['config' => [
-            'app' => 'proforma',
+            'app' => 'unicocoge',
             'command' => 'clienti:check-missing-piva',
             'email_template_code' => self::CODE,
         ]]);
@@ -102,7 +103,7 @@ class ExternalCheckRunnerTest extends TestCase
 
     public function test_the_company_template_wins_over_the_shared_one(): void
     {
-        $company = \Unico\Core\Models\Company::create(['name' => 'Acme '.uniqid()]);
+        $company = Company::create(['name' => 'Acme '.uniqid()]);
         $own = EmailTemplate::create(['code' => self::CODE, 'name' => 'Acme', 'subject' => 'Acme', 'body' => 'Acme', 'is_active' => true, 'severity' => Severity::Warning, 'company_id' => $company->id]);
 
         $this->assertSame($own->id, $this->item()->resolveCheckEmailTemplate(Severity::Warning, $company->id)?->id);

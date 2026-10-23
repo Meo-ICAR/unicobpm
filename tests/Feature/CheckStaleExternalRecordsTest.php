@@ -13,7 +13,7 @@ class CheckStaleExternalRecordsTest extends TestCase
         parent::setUp();
 
         config(['services.stale_record_reminders' => [[
-            'app' => 'proforma',
+            'app' => 'unicocoge',
             'model' => 'sales_invoice',
             'label' => 'Fatture di vendita',
             'max_age_days' => 30,

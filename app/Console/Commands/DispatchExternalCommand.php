@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Log;
 
 class DispatchExternalCommand extends Command
 {
-    protected $signature = 'bpm:dispatch-external-command {app : Chiave dell\'applicativo esterno (es. proforma)} {external_command : Comando in whitelist sull\'applicativo (es. vcoge:calculate)} {--option=* : Opzione del comando nel formato nome=valore (valore omesso = flag attivo)} {--wait : Attende l\'esito del lancio (lo legge da GET /api/commands/runs/{id}) e fallisce se il comando fallisce} {--timeout=600 : Secondi massimi di attesa con --wait}';
+    protected $signature = 'bpm:dispatch-external-command {app : Chiave dell\'applicativo esterno (es. unicocoge)} {external_command : Comando in whitelist sull\'applicativo (es. vcoge:calculate)} {--option=* : Opzione del comando nel formato nome=valore (valore omesso = flag attivo)} {--wait : Attende l\'esito del lancio (lo legge da GET /api/commands/runs/{id}) e fallisce se il comando fallisce} {--timeout=600 : Secondi massimi di attesa con --wait}';
 
     protected $description = 'Mette in coda un comando Artisan su un applicativo esterno tramite POST /api/commands/{command}; con --wait ne attende l\'esito';
 

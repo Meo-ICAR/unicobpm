@@ -65,7 +65,7 @@ return [
     */
     'stale_record_reminders' => [
         [
-            'app' => 'proforma',
+            'app' => 'unicocoge',
             'model' => 'sales_invoice',
             'label' => 'Fatture di vendita',
             'max_age_days' => 30,
@@ -78,7 +78,7 @@ return [
     | Applicativi esterni interrogabili/scrivibili da UnicoBPM
     |--------------------------------------------------------------------------
     |
-    | UnicoFinance (istruttoria, al posto di UnicoLoan dismesso) e UnicoOAM
+    | UnicoFinance (istruttoria, al posto di UnicoLoan dismesso), UnicoCoge (contabilità, al posto di Proforma) e UnicoOAM
     | espongono le stesse API generiche (/api/pratiche/{id}, /api/models/{model}/fields,
     | /api/models/{model}/{id}). La configurazione di un Process (completion_write_app)
     | o di un ProcessTaskItem 'blacklist_check' (config['app']) indica quale
@@ -98,9 +98,10 @@ return [
             'url' => env('UNICOOAM_API_URL', 'https://unicooam.hassisto.com'),
             'label' => 'UnicoOAM',
         ],
-        'proforma' => [
-            'url' => env('PROFORMA_API_URL', 'https://proforma.hassisto.com'),
-            'label' => 'Proforma',
+        // UnicoCoge è il nuovo nome di Proforma. Nessun indirizzo di ripiego: senza UNICOCOGE_API_URL l'app risulta sconosciuta.
+        'unicocoge' => [
+            'url' => env('UNICOCOGE_API_URL'),
+            'label' => 'UnicoCoge',
         ],
         'unicogdpr' => [
             'url' => env('UNICOGDPR_API_URL', 'https://unicogdpr.hassisto.com'),

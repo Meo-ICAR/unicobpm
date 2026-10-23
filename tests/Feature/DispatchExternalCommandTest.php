@@ -12,7 +12,7 @@ class DispatchExternalCommandTest extends TestCase
         config(['services.bpm.bridge_api_key' => 'secret']);
         Http::fake(['*/api/commands/vcoge:calculate' => Http::response([], 202)]);
 
-        $this->artisan('bpm:dispatch-external-command', ['app' => 'proforma', 'external_command' => 'vcoge:calculate', '--option' => ['invia']])
+        $this->artisan('bpm:dispatch-external-command', ['app' => 'unicocoge', 'external_command' => 'vcoge:calculate', '--option' => ['invia']])
             ->assertSuccessful();
 
         Http::assertSent(fn ($request) => $request->method() === 'POST'
@@ -25,7 +25,7 @@ class DispatchExternalCommandTest extends TestCase
     {
         Http::fake(['*' => Http::response(['message' => 'no'], 404)]);
 
-        $this->artisan('bpm:dispatch-external-command', ['app' => 'proforma', 'external_command' => 'x:y'])
+        $this->artisan('bpm:dispatch-external-command', ['app' => 'unicocoge', 'external_command' => 'x:y'])
             ->assertFailed();
     }
 
@@ -37,7 +37,7 @@ class DispatchExternalCommandTest extends TestCase
             '*/api/commands/runs/7' => Http::response(['status' => 'succeeded', 'finished' => true, 'exit_code' => 0, 'attempts' => 1]),
         ]);
 
-        $this->artisan('bpm:dispatch-external-command', ['app' => 'proforma', 'external_command' => 'vcoge:calculate', '--wait' => true])
+        $this->artisan('bpm:dispatch-external-command', ['app' => 'unicocoge', 'external_command' => 'vcoge:calculate', '--wait' => true])
             ->expectsOutputToContain('lancio #7')
             ->expectsOutputToContain('Esito: succeeded')
             ->assertSuccessful();
@@ -51,7 +51,7 @@ class DispatchExternalCommandTest extends TestCase
             '*/api/commands/runs/9' => Http::response(['status' => 'failed', 'finished' => true, 'exit_code' => 1, 'attempts' => 3]),
         ]);
 
-        $this->artisan('bpm:dispatch-external-command', ['app' => 'proforma', 'external_command' => 'x:y', '--wait' => true])->assertFailed();
+        $this->artisan('bpm:dispatch-external-command', ['app' => 'unicocoge', 'external_command' => 'x:y', '--wait' => true])->assertFailed();
     }
 
     public function test_wait_gives_up_after_the_timeout(): void
@@ -61,6 +61,6 @@ class DispatchExternalCommandTest extends TestCase
             '*/api/commands/runs/3' => Http::response(['status' => 'running', 'finished' => false]),
         ]);
 
-        $this->artisan('bpm:dispatch-external-command', ['app' => 'proforma', 'external_command' => 'x:y', '--wait' => true, '--timeout' => 1])->assertFailed();
+        $this->artisan('bpm:dispatch-external-command', ['app' => 'unicocoge', 'external_command' => 'x:y', '--wait' => true, '--timeout' => 1])->assertFailed();
     }
 }

@@ -65,7 +65,7 @@ use Illuminate\Support\Facades\Storage;
  * (regular: R; warning: R,A; alert: R,A,C; ok: nessuno). Vedi ExternalCheckRunner.
  * JSON config:
  * {
- * "app": "proforma",                        // applicativo da interrogare — vedi config('services.apps')
+ * "app": "unicocoge",                       // applicativo da interrogare — vedi config('services.apps')
  * "command": "clienti:check-missing-piva",  // check esposto dall'applicativo
  * "email_template_code": "CHECK_PIVA"       // EmailTemplate.code (un template per severity)
  * }
