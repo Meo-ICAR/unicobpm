@@ -17,7 +17,7 @@ return new class extends Migration
     {
         $shared = config('unico-core.connection');
 
-        if ($shared === config('database.default') || ! Schema::hasTable('business_functions')) {
+        if ($shared === config('database.default') || $this->sameDatabase($shared) || ! Schema::hasTable('business_functions')) {
             return;
         }
 
@@ -46,6 +46,20 @@ return new class extends Migration
 
         Schema::dropIfExists('business_function_members');
         Schema::dropIfExists('business_functions');
+    }
+
+    /**
+     * Connessioni con nomi diversi possono puntare allo stesso database (unicosuite): lì le tabelle "locali" sono quelle
+     * condivise e toglierle cancellerebbe funzioni e membri.
+     */
+    private function sameDatabase(string $shared): bool
+    {
+        $local = DB::connection();
+        $core = DB::connection($shared);
+
+        return $local->getDatabaseName() === $core->getDatabaseName()
+            && $local->getConfig('host') === $core->getConfig('host')
+            && (string) $local->getConfig('port') === (string) $core->getConfig('port');
     }
 
     public function down(): void
