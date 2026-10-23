@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasTable('process_tasks')) {
+            return;
+        }
+
         Schema::create('process_tasks', function (Blueprint $table) {
             $table->comment('Fasi dei Processi aziendali');
 

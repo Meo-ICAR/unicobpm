@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasTable('process_instances')) {
+            return;
+        }
+
         Schema::create('process_instances', function (Blueprint $table) {
             $table->id()->comment('ID univoco della pratica/istanza di processo');
             $table->unsignedBigInteger('process_id')->index()->comment('Quale processo si sta eseguendo (es. Onboarding)');

@@ -13,6 +13,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('process_instances', function (Blueprint $table) {
+            if (collect(Schema::getIndexes('process_instances'))->contains('name', 'process_instances_status_index')) {
+                return;
+            }
+
             $table->index('status');
             $table->index('current_task_id');
         });
@@ -25,6 +29,10 @@ return new class extends Migration
         }
 
         Schema::table('process_task_executions', function (Blueprint $table) {
+            if (collect(Schema::getIndexes('process_task_executions'))->contains('name', 'process_task_executions_execution_status_index')) {
+                return;
+            }
+
             $table->index('execution_status');
         });
     }

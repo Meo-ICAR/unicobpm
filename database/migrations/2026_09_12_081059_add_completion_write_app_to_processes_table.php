@@ -12,6 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('processes', function (Blueprint $table) {
+            if (Schema::hasColumn('processes', 'completion_write_app')) {
+                return;
+            }
+
             // Quale applicativo esterno (vedi config('services.apps')) scrive
             // completion_write_field. Null => 'unicoloan' (default applicato dal codice).
             $table->string('completion_write_app')->nullable()->after('completion_write_value');

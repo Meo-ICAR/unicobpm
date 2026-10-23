@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasTable('checklist_submissions')) {
+            return;
+        }
+
         Schema::create('checklist_submissions', function (Blueprint $table) {
             $table->id()->comment('ID univoco della compilazione');
             $table->unsignedBigInteger('checklist_id')->index()->comment('Riferimento alla checklist di base');

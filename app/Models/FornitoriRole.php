@@ -7,9 +7,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class FornitoriRole extends Model
 {
-    protected $connection = 'mysql_proforma';
+    protected $connection = 'proforma';
 
-    protected $table = 'proforma.fornitoriroles';
+    protected $table = 'fornitoriroles';
 
     /**
      * I campi assegnabili massivamente.

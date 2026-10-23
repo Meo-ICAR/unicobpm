@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasTable('checklists')) {
+            return;
+        }
+
         Schema::create('checklists', function (Blueprint $table) {
             $table->id()->comment('ID univoco checklist');
             $table->string('name')->nullable()->comment('Nome della checklist (es. Antiriciclaggio, Trasparenza)');

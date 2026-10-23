@@ -12,6 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('processes', function (Blueprint $table) {
+            if (Schema::hasColumn('processes', 'completion_write_field')) {
+                return;
+            }
+
             // Al completamento dell'istanza, se valorizzato, il campo del soggetto da scrivere
             // (es. 'stipulated_at' per l'Onboarding, 'dismissed_at' per l'Offboarding).
             $table->string('completion_write_field')->nullable()->after('exclude_value');

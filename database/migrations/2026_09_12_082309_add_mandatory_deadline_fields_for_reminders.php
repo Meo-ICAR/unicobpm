@@ -12,17 +12,29 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('process_instances', function (Blueprint $table) {
+            if (Schema::hasColumn('process_instances', 'hard_deadline_at')) {
+                return;
+            }
+
             // Data tassativa di termine dell'intera istanza di processo (facoltativa).
             $table->date('hard_deadline_at')->nullable()->after('completed_at');
         });
 
         Schema::table('process_task_executions', function (Blueprint $table) {
+            if (Schema::hasColumn('process_task_executions', 'mandatory_days_to_complete')) {
+                return;
+            }
+
             // Giorni entro cui questo specifico step deve essere tassativamente completato
             // (facoltativo, sovrascrive/affianca il default ereditato dal ProcessTask template).
             $table->unsignedSmallInteger('mandatory_days_to_complete')->nullable()->after('due_at');
         });
 
         Schema::table('processes', function (Blueprint $table) {
+            if (Schema::hasColumn('processes', 'include_eligible_count_in_reminders')) {
+                return;
+            }
+
             // Se true, il conteggio dei record che oggi soddisfano i criteri di attivazione
             // del processo (target_model + trigger/exclude) viene incluso nei reminder
             // inviati all'utente responsabile (RACI 'R') dei task aperti.

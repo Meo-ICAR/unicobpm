@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasTable('process_task_executions')) {
+            return;
+        }
+
         Schema::create('process_task_executions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('process_instance_id')->constrained('process_instances')->cascadeOnDelete();

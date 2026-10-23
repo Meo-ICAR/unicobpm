@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('checklist_answers')) {
+            return;
+        }
+
         Schema::create('checklist_answers', function (Blueprint $table) {
             $table->id();
 

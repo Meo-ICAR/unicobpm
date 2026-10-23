@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('process_task_items')) {
+            return;
+        }
+
         Schema::create('process_task_items', function (Blueprint $blueprint) {
             $blueprint->id();
             // Chiave esterna verso il task padre

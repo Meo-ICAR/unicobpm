@@ -12,6 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('process_task_item_answers', function (Blueprint $table) {
+            if (Schema::hasColumn('process_task_item_answers', 'operator_type')) {
+                return;
+            }
+
             // Chi/cosa ha davvero prodotto la risposta: un operatore umano, un bot procedurale
             // (regole/regex del motore BPM) o un agente AI. Complementa la convenzione esistente
             // "user_id = 0" senza sostituirla, per non rompere codice che già la usa.

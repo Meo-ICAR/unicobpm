@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasTable('process_task_raci')) {
+            return;
+        }
+
         Schema::create('process_task_raci', function (Blueprint $table) {
             $table->id()->comment('ID univoco assegnazione RACI');
             $table->unsignedBigInteger('process_task_id')->index()->comment('Task di processo di riferimento');

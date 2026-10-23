@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasTable('processes')) {
+            return;
+        }
+
         Schema::create('processes', function (Blueprint $table) {
             $table->comment('Processi aziendali principali che rappresentano le attività strategiche e operative dell’organizzazione');
 

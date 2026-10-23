@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasTable('business_functions')) {
+            return;
+        }
+
         Schema::create('business_functions', function (Blueprint $table) {
             $table->id()->comment('ID univoco funzione business');
             $table->string('code')->unique()->comment('Codice identificativo univoco funzione');

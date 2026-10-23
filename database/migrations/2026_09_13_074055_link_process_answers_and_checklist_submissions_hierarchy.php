@@ -22,6 +22,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('process_task_item_answers', function (Blueprint $table) {
+            if (Schema::hasColumn('process_task_item_answers', 'process_task_execution_id')) {
+                return;
+            }
+
             $table->foreignId('process_task_execution_id')
                 ->nullable()
                 ->after('process_instance_id')
@@ -30,6 +34,10 @@ return new class extends Migration
         });
 
         Schema::table('checklist_submissions', function (Blueprint $table) {
+            if (Schema::hasColumn('checklist_submissions', 'process_task_item_answer_id')) {
+                return;
+            }
+
             $table->foreignId('process_task_item_answer_id')
                 ->nullable()
                 ->after('checklist_id')
@@ -38,6 +46,10 @@ return new class extends Migration
         });
 
         Schema::table('checklist_answers', function (Blueprint $table) {
+            if (Schema::hasColumn('checklist_answers', 'checklist_submission_id')) {
+                return;
+            }
+
             $table->foreignId('checklist_submission_id')
                 ->nullable()
                 ->after('process_instance_id')

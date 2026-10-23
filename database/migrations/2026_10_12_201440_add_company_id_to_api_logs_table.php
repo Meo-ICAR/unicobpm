@@ -9,6 +9,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('api_logs', function (Blueprint $table) {
+            if (Schema::hasColumn('api_logs', 'company_id')) {
+                return;
+            }
+
             $table->unsignedBigInteger('company_id')->nullable()->after('origin')->index()
                 ->comment('Agenzia (companies.id, database condiviso), se la chiamata la indica');
         });

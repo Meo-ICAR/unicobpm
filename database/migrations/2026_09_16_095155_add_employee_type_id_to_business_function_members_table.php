@@ -12,6 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('business_function_members', function (Blueprint $table) {
+            if (Schema::hasColumn('business_function_members', 'employee_type_id')) {
+                return;
+            }
+
             // Ruolo (EmployeeType) ricoperto dal member in questa funzione aziendale.
             // Il member (Employee o Client) resta invariato: un Client qui rappresenta
             // il ruolo esternalizzato su un consulente.

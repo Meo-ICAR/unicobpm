@@ -12,6 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('process_task_items', function (Blueprint $table) {
+            if (Schema::hasColumn('process_task_items', 'checklist_id')) {
+                return;
+            }
+
             // Checklist da compilare quando action_type = 'fill_checklist'. "checklists" vive sulla
             // stessa connessione locale del motore BPM, quindi qui la FK è un vincolo vero.
             $table->foreignId('checklist_id')

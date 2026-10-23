@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('business_function_members')) {
+            return;
+        }
+
         Schema::create('business_function_members', function (Blueprint $table) {
             $table->id(); // ID univoco per il record pivot
 
