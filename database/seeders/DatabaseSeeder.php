@@ -68,6 +68,7 @@ class DatabaseSeeder extends Seeder
             TaskSeeder::class,
             TaskDocumentTypeSeeder::class, // Dipende da DocumentTypeSeeder e TaskSeeder
             OfficeRoleSeeder::class,
+            OrganigrammaSeeder::class,
             ChecklistSeeder::class,
             ProcessSeeder::class,
 

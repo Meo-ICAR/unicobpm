@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Collection;
 use Unico\Core\Models\EmployeeType as CoreEmployeeType;
 
@@ -26,13 +27,13 @@ class EmployeeType extends CoreEmployeeType
         'IT' => 'it',
         'BUS-BO' => 'back office',
         'CTRL-AML' => 'antiriciclaggio',
-        'BUS-RETE-EXT' => 'rete agenti esterna',
+        'BUS-RETE-EXT' => 'rete collaboratori',
         'CTRL-COMPL' => 'controllo compliance',
         'COGE-CONTABILE' => 'contabile',
         'COGE-CONTABILE-RESP' => 'contabile responsabile',
         'COGE-CONSULENTE' => 'consulente coge',
         'COGE-AMMINISTRATORE' => 'amministratore',
-        'SEGRETERIA' => 'segretaria',
+        'SEGRETERIA' => 'segreteria amministrativa',
         'WHISTLEBLOWING' => 'responsabile whistleblowing',
         'WHISTLEBLOWING-SUPPLENTI' => 'supplente whistleblowing',
         'CDA' => 'cda',
@@ -145,6 +146,61 @@ class EmployeeType extends CoreEmployeeType
             ->values();
 
         return $emails->isNotEmpty() || ! filter_var($this->email, FILTER_VALIDATE_EMAIL) ? $emails : collect([$this->email]);
+    }
+
+    /** Rinomina il ruolo anche in `employee_roles` di chi lo ricopre (lì è scritto per nome). */
+    public function renameTo(string $name): void
+    {
+        if ($this->name === $name) {
+            return;
+        }
+
+        self::replaceHolderRole($this->name, $name);
+        $this->update(['name' => $name]);
+    }
+
+    /**
+     * Unisce questo ruolo a un altro (stesso ufficio con due nomi): chi lo ricopre passa all'altro, la matrice RACI e i passi
+     * puntano all'altro, i dati d'ufficio mancanti passano all'altro, poi questo ruolo si toglie.
+     */
+    public function mergeInto(self $target): void
+    {
+        if ($target->is($this)) {
+            return;
+        }
+
+        self::replaceHolderRole($this->name, $target->name);
+        ProcessTaskRaci::query()->where('employee_type_id', $this->id)->get()->each(function (ProcessTaskRaci $assignment) use ($target): void {
+            $duplicate = ProcessTaskRaci::query()->where('process_task_id', $assignment->process_task_id)->where('employee_type_id', $target->id)->exists();
+            $duplicate ? $assignment->delete() : $assignment->update(['employee_type_id' => $target->id]);
+        });
+        ProcessTask::query()->where('employee_type_id', $this->id)->update(['employee_type_id' => $target->id]);
+
+        foreach ([$this->permissions(), $this->resourcePresets()] as $relation) {
+            $relation->get()->each(function ($row) use ($target): void {
+                try {
+                    $row->update(['employee_type_id' => $target->id]);
+                } catch (UniqueConstraintViolationException) {
+                    $row->delete();
+                }
+            });
+        }
+
+        foreach (['macro_area', 'type', 'description', 'managed_by_code', 'mission', 'responsibility', 'email', 'manager_type', 'manager_id'] as $field) {
+            $target->{$field} ??= $this->{$field};
+        }
+
+        $target->save();
+        $this->delete();
+    }
+
+    private static function replaceHolderRole(string $from, string $to): void
+    {
+        foreach ([Employee::class, Client::class] as $model) {
+            $model::query()->whereJsonContains('employee_roles', $from)->get()->each(fn ($holder) => $holder->update([
+                'employee_roles' => collect($holder->employee_roles)->map(fn (string $role): string => $role === $from ? $to : $role)->unique()->values()->all(),
+            ]));
+        }
     }
 
     public function raciRoles(): HasMany

@@ -90,7 +90,7 @@ class CreditBrokerProcessesSeeder extends Seeder
 
         $ctrlCompl = EmployeeType::where('code', 'CTRL-COMPL')->first();
         $busBo = EmployeeType::where('code', 'BUS-BO')->first();
-        $hr = EmployeeType::where('code', 'HR')->first();
+        $hr = EmployeeType::where('code', 'ORG-RU')->first();
         $polizza = DocumentType::where('code', 'POLIZZA_RC_PROFESSIONALE')->first();
         $attestato = DocumentType::where('code', 'ATTESTATO_FORMAZIONE')->first();
 

@@ -12,7 +12,7 @@ class OfficeRoleSeeder extends Seeder
     {
         $functions = [
             ['name' => 'Ufficio Compliance', 'code' => 'COMPLIANCE'],
-            ['name' => 'Risorse Umane', 'code' => 'HR'],
+            ['name' => 'Organizzazione e Risorse umane', 'code' => 'ORG-RU'],
             ['name' => 'Ufficio Legale', 'code' => 'LEGAL'],
             ['name' => 'Dipartimento IT', 'code' => 'IT'],
             // Ruoli referenziati dalla demo RACI su "Verifica Completezza Documentale AML"
@@ -20,7 +20,7 @@ class OfficeRoleSeeder extends Seeder
             // perché rappresentano un secondo esempio di matrice RACI più articolato.
             ['name' => 'Back Office', 'code' => 'BUS-BO'],
             ['name' => 'Controllo Antiriciclaggio', 'code' => 'CTRL-AML'],
-            ['name' => 'Rete Agenti Esterna', 'code' => 'BUS-RETE-EXT'],
+            ['name' => 'Rete Collaboratori', 'code' => 'BUS-RETE-EXT'],
             ['name' => 'Controllo Compliance', 'code' => 'CTRL-COMPL'],
         ];
 
