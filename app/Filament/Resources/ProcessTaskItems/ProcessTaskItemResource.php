@@ -21,7 +21,7 @@ class ProcessTaskItemResource extends Resource
 
     protected static ?string $model = ProcessTaskItem::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedQueueList;
 
     protected static bool $shouldRegisterNavigation = false;
 

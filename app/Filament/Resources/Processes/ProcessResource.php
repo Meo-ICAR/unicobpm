@@ -20,7 +20,7 @@ class ProcessResource extends Resource
 
     protected static ?string $model = Process::class;
 
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-cog-6-tooth';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-arrow-path-rounded-square';
 
     protected static string|\UnitEnum|null $navigationGroup = 'BPM';
 

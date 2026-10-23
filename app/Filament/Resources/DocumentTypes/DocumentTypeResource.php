@@ -24,7 +24,7 @@ class DocumentTypeResource extends Resource
 
     protected static ?string $model = DocumentType::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentText;
 
     protected static ?string $recordTitleAttribute = 'name';
 

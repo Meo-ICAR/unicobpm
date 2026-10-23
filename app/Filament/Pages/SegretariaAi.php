@@ -30,7 +30,7 @@ use Throwable;
  */
 class SegretariaAi extends Page
 {
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-user-circle';
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-sparkles';
 
     protected string $view = 'filament.pages.segretaria-ai';
 

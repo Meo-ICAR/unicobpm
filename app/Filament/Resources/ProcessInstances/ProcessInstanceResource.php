@@ -21,7 +21,7 @@ class ProcessInstanceResource extends Resource
 
     protected static ?string $model = ProcessInstance::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedFolderOpen;
 
     protected static ?string $recordTitleAttribute = 'name';
 

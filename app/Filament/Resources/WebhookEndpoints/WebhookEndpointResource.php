@@ -22,7 +22,7 @@ class WebhookEndpointResource extends Resource
 
     protected static ?string $model = WebhookEndpoint::class;
 
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-bell-alert';
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-link';
 
     protected static ?string $recordTitleAttribute = 'name';
 
