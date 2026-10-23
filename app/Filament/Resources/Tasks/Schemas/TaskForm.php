@@ -3,8 +3,7 @@
 namespace App\Filament\Resources\Tasks\Schemas;
 
 use App\Filament\Utils\FormHelper;
-use Filament\Facades\Filament;
-use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\TextInput;
@@ -56,37 +55,39 @@ class TaskForm
                             ->searchable()
                             ->helperText('Seleziona un task padre se questa attività deve attivarsi solo al completamento di quella precedente.'),
 
-                        // Gestione multi-applicazione e task comuni
+                        Select::make('company_id')
+                            ->label('Company')
+                            ->relationship('company', 'name')
+                            ->placeholder('Tutte le company')
+                            ->searchable()
+                            ->preload()
+                            ->helperText('Se valorizzata, il plico vale solo per questa company.'),
 
                         Select::make('app_identifier')
-                            ->label('Applicazione di Origine')
-
-    // 1. Imposta le opzioni selezionabili dall'utente
+                            ->label('Applicazione di pertinenza')
                             ->options([
                                 'UnicoOAM' => 'UnicoOAM (Pannello Amministrazione)',
                                 'UnicoFin' => 'UnicoFin (Pannello Finanziario)',
                             ])
+                            ->placeholder('Tutte le applicazioni'),
 
-    // 2. Imposta il valore di default dinamico in base al panel corrente
-                            ->default(function () {
-                                $currentPanelId = Filament::getCurrentPanel()?->getId();
-
-                                return ($currentPanelId === 'admin') ? 'UnicoOAM' : 'UnicoFin';
-                            }),
+                        Toggle::make('is_active')
+                            ->label('Attivo')
+                            ->default(true),
 
                         // ==========================================
                         // SEZIONE: FILTRI DI ATTIVAZIONE
                         // ==========================================
                         Section::make('Regole di Attivazione Dinamica')
-                            ->description('Configura le condizioni per cui questo task deve attivarsi in base ai dati del record.')
+                            ->description('Il plico si applica ai record del modello collegato che soddisfano entrambe le condizioni (se valorizzate).')
                             ->collapsed()
                             ->schema([
                                 TextInput::make('trigger_field')
-                                    ->label('Nome colonna del Database')
-                                    ->placeholder('es. data_dimissione, tipo_fornitore')
-                                    ->helperText("Inserisci il nome esatto del campo sulla tabella dell'entità."),
+                                    ->label('Condizione 1 · campo')
+                                    ->placeholder('es. tipo_prodotto')
+                                    ->helperText('Nome esatto del campo sul modello collegato.'),
                                 Select::make('trigger_state')
-                                    ->label('Condizione del campo')
+                                    ->label('Condizione 1 · stato')
                                     ->options([
                                         'empty' => 'Deve essere VUOTO (Null / Vuoto)',
                                         'filled' => 'Deve essere COMPILATO (Contiene un valore)',
@@ -94,10 +95,26 @@ class TaskForm
                                     ])
                                     ->live(),
                                 TextInput::make('trigger_value')
-                                    ->label('Valore specifico richiesto')
+                                    ->label('Condizione 1 · valore')
                                     ->placeholder('es. esterno, attivo')
                                     ->visible(fn (Get $get) => $get('trigger_state') === 'equals')
                                     ->required(fn (Get $get) => $get('trigger_state') === 'equals'),
+                                Select::make('tipoprodotto_id')
+                                    ->label('Tipo prodotto')
+                                    ->relationship('tipoprodotto', 'name')
+                                    ->placeholder('Nessuno')
+                                    ->searchable()
+                                    ->preload()
+                                    ->helperText('Per i trigger su tipo_prodotto: lega il plico al prodotto per riferimento.'),
+                                TextInput::make('trigger_subfield')
+                                    ->label('Condizione 2 · campo')
+                                    ->placeholder('es. stato_pratica')
+                                    ->live(onBlur: true),
+                                TextInput::make('trigger_subvalue')
+                                    ->label('Condizione 2 · deve essere uguale a')
+                                    ->placeholder('es. PERFEZIONATA')
+                                    ->required(fn (Get $get) => filled($get('trigger_subfield')))
+                                    ->visible(fn (Get $get) => filled($get('trigger_subfield'))),
                             ])
                             ->columns(3),
 
@@ -143,32 +160,48 @@ class TaskForm
                         // SEZIONE DOCUMENTI (Esistente)
                         // ==========================================
                         Section::make('Associazione documenti')
-                            ->description("Seleziona i tipi documento da associare all'attività.")
+                            ->description("Documenti richiesti dall'attività. Il task figlio eredita quelli del padre, salvo stesso tipo.")
                             ->schema([
-                                Toggle::make('show_only_checked_documents')
-                                    ->label('Mostra solo i documenti selezionati')
-                                    ->live()
+                                Repeater::make('documentRequirements')
+                                    ->label('Documenti richiesti')
+                                    ->relationship('documentRequirements')
+                                    ->orderColumn('sort_order')
+                                    ->defaultItems(0)
+                                    ->schema([
+                                        Select::make('document_type_id')
+                                            ->label('Tipo documento')
+                                            ->relationship('documentType', 'name')
+                                            ->searchable()
+                                            ->preload()
+                                            ->required()
+                                            ->distinct()
+                                            ->columnSpan(2),
+                                        Select::make('documentable')
+                                            ->label('Documento su')
+                                            ->options(['client' => 'Cliente della pratica'])
+                                            ->placeholder('Il modello del plico')
+                                            ->live(),
+                                        Select::make('client_roles')
+                                            ->label('Ruoli nella pratica')
+                                            ->options(['richiedente' => 'Richiedente', 'coobbligato' => 'Coobbligato', 'garante' => 'Garante', 'amministratore' => 'Amministratore'])
+                                            ->multiple()
+                                            ->placeholder('Tutti')
+                                            ->helperText('Persona fisica o giuridica: lo decide il tipo documento.')
+                                            ->visible(fn (Get $get) => $get('documentable') === 'client'),
+                                        Select::make('signer_model')
+                                            ->label('Chi firma')
+                                            ->options(['client' => 'Cliente', 'fornitore' => 'Agente / produttore', 'employee' => 'Dipendente', 'company' => 'Azienda'])
+                                            ->placeholder('Come il tipo documento')
+                                            ->helperText('Es. l\'agente nell\'onboarding.'),
+                                        Toggle::make('is_required')
+                                            ->label('Obbligatorio')
+                                            ->default(true)
+                                            ->inline(false),
+                                    ])
+                                    ->columns(6)
+                                    ->addActionLabel('Aggiungi documento')
+                                    ->collapsible()
                                     ->columnSpanFull(),
-
-                                CheckboxList::make('documentTypes')
-                                    ->label('Tipi documento')
-                                    ->relationship(
-                                        name: 'documentTypes',
-                                        titleAttribute: 'name',
-                                        modifyQueryUsing: function (Builder $query, Get $get) {
-                                            if ($get('show_only_checked_documents')) {
-                                                $selectedIds = $get('documentTypes') ?? [];
-
-                                                return $query->whereIn($query->qualifyColumn('id'), $selectedIds);
-                                            }
-
-                                            return $query;
-                                        }
-                                    )
-                                    ->searchable()
-                                    ->bulkToggleable()
-                                    ->columns(3)
-                                    ->gridDirection('row'),
                             ])
                             ->columnSpanFull(),
                     ]),

@@ -4,13 +4,14 @@ namespace App\Filament\Resources\Tasks\Tables;
 
 use App\Filament\Utils\ColumnFilters;
 use App\Models\Company;
-use App\Models\PROFORMA\Fornitore;
+use App\Models\Fornitore;
 use App\Models\Task;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Notifications\Notification;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
@@ -21,9 +22,7 @@ class TasksTable
     public static function configure(Table $table): Table
     {
         $table = $table
-            ->query(function () {
-                return Task::query()->where('is_active', true);
-            })
+            ->modifyQueryUsing(fn ($query) => $query->with('company'))
             ->columns([
                 TextColumn::make('name')
                     ->label('Nome attività')
@@ -53,6 +52,10 @@ class TasksTable
                 // ==========================================
                 // NUOVE COLONNE PER LE REGOLE DI ATTIVAZIONE
                 // ==========================================
+                TextColumn::make('company.name')
+                    ->label('Company')
+                    ->placeholder('Tutte')
+                    ->toggleable(),
                 TextColumn::make('trigger_field')
                     ->label('Campo di Controllo')
                     ->placeholder('Nessuno (Sempre attivo)')  // Se è null mostra questo testo grigio
@@ -77,8 +80,20 @@ class TasksTable
                     ->label('Valore Richiesto')
                     ->placeholder('-')
                     ->badge()
+                    ->color('gray'),
+                TextColumn::make('trigger_subfield')
+                    ->label('Campo 2')
+                    ->placeholder('-')
+                    ->toggleable(),
+                TextColumn::make('trigger_subvalue')
+                    ->label('Valore 2')
+                    ->placeholder('-')
+                    ->badge()
                     ->color('gray')
-                    ->visible(fn ($record) => $record?->trigger_state === 'equals'),  // Nasconde la cella se non serve
+                    ->toggleable(),
+                IconColumn::make('is_active')
+                    ->label('Attivo')
+                    ->boolean(),
                 // ==========================================
                 // NUOVE COLONNE PER LE REGOLE DI ESCLUSIONE
                 // ==========================================
@@ -120,6 +135,9 @@ class TasksTable
                         'clienti' => 'Mandante',
                         'audit' => 'Audit',
                     ]),
+                TernaryFilter::make('is_active')
+                    ->label('Attivo')
+                    ->default(true),
                 // 2. Filtro rapido: Task standard VS Task con regole dinamiche
                 TernaryFilter::make('has_rules')
                     ->label('Regole di attivazione')
@@ -149,20 +167,13 @@ class TasksTable
                         $clonedTask->name = $clonedTask->name.' (Copia)';
                         $clonedTask->save();
 
-                        // 2. Clona i DocumentType associati
-                        // Se hai una relazione BelongsToMany (Many-to-Many)
-                        if (method_exists($record, 'documentTypes')) {
-                            $clonedTask->documentTypes()->attach($record->documentTypes->pluck('id')->toArray());
+                        foreach ($record->documentRequirements as $requirement) {
+                            $clonedTask->documentRequirements()->create($requirement->only(['document_type_id', 'is_required', 'sort_order', 'documentable', 'client_roles', 'signer_model', 'phase']));
                         }
 
-                        /*
-                         * Se invece i documenti appartengono solo a questo task (HasMany / One-to-Many), usa questo:
-                         * foreach ($record->documentTypes as $documentType) {
-                         *     $clonedDoc = $documentType->replicate();
-                         *     $clonedDoc->task_id = $clonedTask->id;
-                         *     $clonedDoc->save();
-                         * }
-                         */
+                        foreach ($record->getMedia('documents') as $media) {
+                            $media->copy($clonedTask, 'documents');
+                        }
 
                         Notification::make()
                             ->title('Task clonato con successo!')
@@ -187,47 +198,19 @@ class TasksTable
                         $fornitori = Fornitore::all();
 
                         // Manteniamo l'Eager Loading per le performance
-                        $tasks = Task::with('documentTypes')->get();
+                        $tasks = Task::where('is_active', true)->with('documentTypes')->get();
                         $createdCount = 0;
 
                         foreach ($tasks as $task) {
-                            // Caso AZIENDA: il record id coincide con il $company_id
-                            if ($task->taskable === 'company') {
-                                // Verifica se il task ha un filtro sul campo del modello
-                                if (! empty($task->trigger_field)) {
-                                    $fieldValue = $company->{$task->trigger_field};
-
-                                    // Centralizziamo i controlli
-                                    $shouldSkip =
-                                        ($task->trigger_state === 'filled' && empty($fieldValue)) ||
-                                        ($task->trigger_state === 'empty' && ! empty($fieldValue)) ||
-                                        ($task->trigger_state === 'equals' && $fieldValue != $task->trigger_value);
-
-                                    if ($shouldSkip) {
-                                        continue;
-                                    }
-                                }
+                            if ($task->taskable === 'company' && $task->matchesConditions($company)) {
                                 $createdCount += $task->createDocumentation($company_id, $company_id);
                             }
 
-                            // Caso FORNITORE: cicliamo sui fornitori e passiamo l'id del singolo fornitore
                             if ($task->taskable === 'fornitore') {
                                 foreach ($fornitori as $fornitore) {
-                                    // Verifica il filtro dinamico sul SINGOLO fornitore corrente
-                                    if (! empty($task->trigger_field)) {
-                                        $fieldValue = $fornitore->{$task->trigger_field};
-
-                                        // Controlliamo lo stato del singolo fornitore
-                                        $shouldSkip =
-                                            ($task->trigger_state === 'filled' && empty($fieldValue)) ||
-                                            ($task->trigger_state === 'empty' && ! empty($fieldValue)) ||
-                                            ($task->trigger_state === 'equals' && $fieldValue != $task->trigger_value);  // <-- Controllo del valore esatto
-
-                                        if ($shouldSkip) {
-                                            continue;
-                                        }
+                                    if ($task->matchesConditions($fornitore)) {
+                                        $createdCount += $task->createDocumentation($company_id, $fornitore->id);
                                     }
-                                    $createdCount += $task->createDocumentation($company_id, $fornitore->id);
                                 }
                             }
                         }

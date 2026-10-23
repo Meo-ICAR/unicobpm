@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\EmailTemplates\Tables;
 
+use App\Filament\Resources\EmailTemplates\Schemas\EmailTemplateForm;
 use App\Filament\Utils\ColumnFilters;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -28,6 +29,18 @@ class EmailTemplatesTable
                 TextColumn::make('subject')
                     ->label('Oggetto')
                     ->searchable(),
+                TextColumn::make('app_identifier')
+                    ->label('Applicazione')
+                    ->placeholder('Tutte')
+                    ->formatStateUsing(fn (?string $state): string => EmailTemplateForm::APPS[strtolower((string) $state)] ?? (string) $state),
+                TextColumn::make('type')
+                    ->label('Tipo')
+                    ->badge()
+                    ->placeholder('Qualsiasi'),
+                TextColumn::make('company.name')
+                    ->label('Company')
+                    ->placeholder('Tutte')
+                    ->toggleable(),
                 TextColumn::make('severity')
                     ->label('Severity')
                     ->badge()

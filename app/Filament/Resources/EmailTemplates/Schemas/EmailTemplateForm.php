@@ -3,15 +3,28 @@
 namespace App\Filament\Resources\EmailTemplates\Schemas;
 
 use App\Enums\Severity;
-use Filament\Facades\Filament;
+use App\Models\Company;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Schema;
+use Unico\Core\Enums\MailType;
 
 class EmailTemplateForm
 {
+    /**
+     * Identificativi delle app (email_templates.app_identifier): sono quelli con cui ogni app cerca i suoi template.
+     *
+     * @var array<string, string>
+     */
+    public const APPS = [
+        'unicobpm' => 'UnicoBPM',
+        'unicooam' => 'UnicoOAM',
+        'unicofinance' => 'UnicoFinance',
+        'unicocoge' => 'UnicoCoge',
+    ];
+
     public static function configure(Schema $schema): Schema
     {
         return $schema
@@ -39,21 +52,21 @@ class EmailTemplateForm
                 Toggle::make('is_active')
                     ->label('Attivo')
                     ->required(),
-                Select::make('source_app') // Assicurati che il nome mappi la colonna del DB (es. 'source_app')
-                    ->label('Applicazione di Origine')
-
-    // 1. Imposta le opzioni selezionabili dall'utente
-                    ->options([
-                        'UnicoOAM' => 'UnicoOAM (Pannello Amministrazione)',
-                        'UnicoFin' => 'UnicoFin (Pannello Finanziario)',
-                    ])
-
-    // 2. Imposta il valore di default dinamico in base al panel corrente
-                    ->default(function () {
-                        $currentPanelId = Filament::getCurrentPanel()?->getId();
-
-                        return ($currentPanelId === 'admin') ? 'UnicoOAM' : 'UnicoFin';
-                    }),
+                Select::make('company_id')
+                    ->label('Company')
+                    ->options(fn (): array => Company::query()->orderBy('name')->pluck('name', 'id')->all())
+                    ->placeholder('Tutte le company')
+                    ->helperText('Con una company il template vale solo per le sue pratiche e vince su quello comune.'),
+                Select::make('app_identifier')
+                    ->label('Applicazione')
+                    ->options(self::APPS)
+                    ->placeholder('Tutte le applicazioni')
+                    ->helperText('Con un\'applicazione il template è riservato a lei e vince su quello comune.'),
+                Select::make('type')
+                    ->label('Tipo di email')
+                    ->options(collect(MailType::cases())->mapWithKeys(fn (MailType $type): array => [$type->value => ucfirst($type->value)])->all())
+                    ->placeholder('Qualsiasi')
+                    ->helperText('Sceglie anche la casella mittente della company (processo, sollecito, generale).'),
             ]);
     }
 }
