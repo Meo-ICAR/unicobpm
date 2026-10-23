@@ -4,16 +4,17 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Collection;
 use Unico\Core\Models\User as CoreUser;
 
 #[Hidden(['password', 'remember_token'])]
-class User extends CoreUser
+class User extends CoreUser implements FilamentUser
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
@@ -29,6 +30,18 @@ class User extends CoreUser
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ]);
+    }
+
+    /**
+     * Ruoli che accedono al pannello: fuori dall'ambiente locale Filament nega l'accesso a chi non lo dichiara.
+     *
+     * @var list<string>
+     */
+    public const STAFF_ROLES = ['admin', 'super_admin', 'employee', 'inspector', 'user'];
+
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return in_array($this->role, self::STAFF_ROLES, true);
     }
 
     public function profile(): MorphTo
