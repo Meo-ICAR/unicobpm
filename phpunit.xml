@@ -28,6 +28,14 @@
         <env name="DB_UNICOOAM" value="unicosuite_test"/>
         <env name="CORE_DB_DATABASE" value="unicosuite_test"/>
         <env name="UNICO_CORE_DB_CONNECTION" value="mysql"/>
+        <!-- Indirizzi finti delle app esterne: i test non dipendono dal .env e non chiamano le app vere -->
+        <env name="UNICOFINANCE_API_URL" value="https://unicofinance.test"/>
+        <env name="UNICOOAM_API_URL" value="https://unicooam.test"/>
+        <env name="PROFORMA_API_URL" value="https://proforma.test"/>
+        <env name="UNICOGDPR_API_URL" value="https://unicogdpr.test"/>
+        <env name="DAISHBOARD_API_URL" value="https://daishboard.test"/>
+        <env name="WHISTLE_API_URL" value="https://whistle.test"/>
+        <env name="UNICOAIACT_API_URL" value="https://unicoaiact.test"/>
         <env name="DB_URL" value=""/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>

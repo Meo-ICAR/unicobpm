@@ -39,20 +39,20 @@ class ReplaceUnicoloanWithUnicofinanceTest extends TestCase
 
         $this->assertSame('unicofinance', $process->fresh()->completion_write_app);
         $this->assertSame('unicooam', $other->fresh()->completion_write_app);
-        $this->assertSame(['pratica_id_field' => 'subject_id', 'app' => 'unicofinance'], $blacklist->fresh()->config);
-        $this->assertSame(['note' => 'scritto da unicoloan'], $email->fresh()->config);
+        $this->assertEquals(['pratica_id_field' => 'subject_id', 'app' => 'unicofinance'], $blacklist->fresh()->config);
+        $this->assertEquals(['note' => 'scritto da unicoloan'], $email->fresh()->config);
         $this->assertSame('unicofinance', $failed->fresh()->app);
         $this->assertSame('unicofinance', $pending->fresh()->app);
-        $this->assertSame(['app' => 'unicofinance', 'field' => 'stipulated_at'], $pending->fresh()->meta);
+        $this->assertEquals(['app' => 'unicofinance', 'field' => 'stipulated_at'], $pending->fresh()->meta);
         $this->assertSame('unicoloan', $sent->fresh()->app);
 
         $migration->down();
 
         $this->assertSame('unicoloan', $process->fresh()->completion_write_app);
         $this->assertSame('unicooam', $other->fresh()->completion_write_app);
-        $this->assertSame(['pratica_id_field' => 'subject_id', 'app' => 'unicoloan'], $blacklist->fresh()->config);
+        $this->assertEquals(['pratica_id_field' => 'subject_id', 'app' => 'unicoloan'], $blacklist->fresh()->config);
         $this->assertSame('unicoloan', $failed->fresh()->app);
-        $this->assertSame(['app' => 'unicoloan', 'field' => 'stipulated_at'], $pending->fresh()->meta);
+        $this->assertEquals(['app' => 'unicoloan', 'field' => 'stipulated_at'], $pending->fresh()->meta);
         $this->assertSame('unicoloan', $sent->fresh()->app);
     }
 }

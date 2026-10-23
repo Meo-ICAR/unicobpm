@@ -14,6 +14,7 @@ class ManualAssistantAgentTest extends TestCase
         $this->assertSame([
             base_path('CLAUDE.md'),
             base_path('BPM-DOMAIN-SPEC.md'),
+            base_path('resources/manuals/manuale-operativo-bpm.html'),
         ], $sources);
 
         foreach ($sources as $source) {
