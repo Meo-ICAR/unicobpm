@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\ProcessTaskItems\Tables;
 
+use App\Filament\Utils\ColumnFilters;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -13,7 +14,7 @@ class ProcessTaskItemsTable
 {
     public static function configure(Table $table): Table
     {
-        return $table
+        $table = $table
             ->columns([
                 TextColumn::make('task.name')
                     ->label('Task')
@@ -66,5 +67,7 @@ class ProcessTaskItemsTable
                     DeleteBulkAction::make(),
                 ]),
             ]);
+
+        return ColumnFilters::apply($table);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\WebhookEndpoints\Tables;
 
+use App\Filament\Utils\ColumnFilters;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
@@ -11,7 +12,7 @@ class WebhookEndpointsTable
 {
     public static function configure(Table $table): Table
     {
-        return $table
+        $table = $table
             ->columns([
                 TextColumn::make('name')->label('Nome')->searchable()->sortable(),
                 TextColumn::make('url')->label('Indirizzo')->limit(60),
@@ -19,5 +20,7 @@ class WebhookEndpointsTable
                 ToggleColumn::make('is_active')->label('Attivo'),
             ])
             ->recordActions([EditAction::make()]);
+
+        return ColumnFilters::apply($table, except: ['events']);
     }
 }

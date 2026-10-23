@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\BusinessFunctions\Tables;
 
+use App\Filament\Utils\ColumnFilters;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -14,7 +15,7 @@ class BusinessFunctionsTable
 {
     public static function configure(Table $table): Table
     {
-        return $table
+        $table = $table
             ->columns([
                 TextColumn::make('code')
                     ->label('Codice')
@@ -103,5 +104,7 @@ class BusinessFunctionsTable
                     DeleteBulkAction::make(),
                 ]),
             ]);
+
+        return ColumnFilters::apply($table);
     }
 }

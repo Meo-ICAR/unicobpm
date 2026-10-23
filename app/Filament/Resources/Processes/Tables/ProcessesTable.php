@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Processes\Tables;
 
+use App\Filament\Utils\ColumnFilters;
 use App\Models\Process;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -17,7 +18,7 @@ class ProcessesTable
 {
     public static function configure(Table $table): Table
     {
-        return $table
+        $table = $table
             ->columns([
                 TextColumn::make('code')
                     ->label('Codice')
@@ -77,5 +78,7 @@ class ProcessesTable
                     DeleteBulkAction::make(),
                 ]),
             ]);
+
+        return ColumnFilters::apply($table);
     }
 }

@@ -33,9 +33,7 @@ class AdminPanelProvider extends PanelProvider
             ->navigationGroups([
                 NavigationGroup::make()->label('BPM'),
                 NavigationGroup::make()->label('Sistema'),
-                NavigationGroup::make()->label('System')->collapsed(),
-                NavigationGroup::make()->label('Configurazioni')->collapsed(),
-                NavigationGroup::make()->label('Documentazione')->collapsed(),
+                NavigationGroup::make()->label('Settings')->collapsed(),
                 NavigationGroup::make()->label('Manuali')->collapsed(),
             ])
             ->brandLogo(asset('brand/logos/unico-bpm.jpg'))

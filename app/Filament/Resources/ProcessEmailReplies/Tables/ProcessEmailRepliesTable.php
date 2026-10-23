@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\ProcessEmailReplies\Tables;
 
+use App\Filament\Utils\ColumnFilters;
 use App\Models\ProcessEmailReply;
 use App\Services\Replies\Interpretation;
 use App\Services\Replies\ProcessReplyApplier;
@@ -19,7 +20,7 @@ class ProcessEmailRepliesTable
 {
     public static function configure(Table $table): Table
     {
-        return $table
+        $table = $table
             ->defaultSort('id', 'desc')
             ->columns([
                 TextColumn::make('created_at')->label('Ricevuta')->dateTime('d/m/Y H:i')->sortable(),
@@ -126,5 +127,7 @@ class ProcessEmailRepliesTable
                         Notification::make()->title('Risposta ignorata')->send();
                     }),
             ]);
+
+        return ColumnFilters::apply($table);
     }
 }

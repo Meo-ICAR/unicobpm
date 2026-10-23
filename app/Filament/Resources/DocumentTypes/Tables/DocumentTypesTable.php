@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\DocumentTypes\Tables;
 
+use App\Filament\Utils\ColumnFilters;
 use App\Models\DocumentType;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -17,7 +18,7 @@ class DocumentTypesTable
 {
     public static function configure(Table $table): Table
     {
-        return $table
+        $table = $table
             ->columns([
                 // ==========================================
                 // COLONNE DELLA TABELLA
@@ -130,5 +131,7 @@ class DocumentTypesTable
                     DeleteBulkAction::make(),
                 ]),
             ]);
+
+        return ColumnFilters::apply($table);
     }
 }

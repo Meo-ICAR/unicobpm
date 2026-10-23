@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\ApiLogs\Tables;
 
+use App\Filament\Utils\ColumnFilters;
 use App\Models\ApiLog;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
@@ -17,7 +18,7 @@ class ApiLogsTable
 {
     public static function configure(Table $table): Table
     {
-        return $table
+        $table = $table
             ->defaultSort('id', 'desc')
             ->columns([
                 TextColumn::make('created_at')->label('Quando')->dateTime('d/m/Y H:i:s')->sortable(),
@@ -58,5 +59,7 @@ class ApiLogsTable
                 ExportAction::make()->label('Esporta Excel'),
             ])
             ->recordActions([ViewAction::make()->label('Dettaglio')]);
+
+        return ColumnFilters::apply($table);
     }
 }

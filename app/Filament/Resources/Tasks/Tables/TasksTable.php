@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Tasks\Tables;
 
+use App\Filament\Utils\ColumnFilters;
 use App\Models\Company;
 use App\Models\PROFORMA\Fornitore;
 use App\Models\Task;
@@ -19,7 +20,7 @@ class TasksTable
 {
     public static function configure(Table $table): Table
     {
-        return $table
+        $table = $table
             ->query(function () {
                 return Task::query()->where('is_active', true);
             })
@@ -252,5 +253,7 @@ class TasksTable
                     DeleteBulkAction::make(),
                 ]),
             ]);
+
+        return ColumnFilters::apply($table);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\OutboundCalls\Tables;
 
+use App\Filament\Utils\ColumnFilters;
 use App\Models\OutboundCall;
 use App\Services\OutboundCallService;
 use Filament\Actions\Action;
@@ -14,7 +15,7 @@ class OutboundCallsTable
 {
     public static function configure(Table $table): Table
     {
-        return $table
+        $table = $table
             ->defaultSort('id', 'desc')
             ->columns([
                 TextColumn::make('id')->label('#')->sortable(),
@@ -56,5 +57,7 @@ class OutboundCallsTable
                         Notification::make()->title('Chiamata rimessa in coda')->success()->send();
                     }),
             ]);
+
+        return ColumnFilters::apply($table);
     }
 }

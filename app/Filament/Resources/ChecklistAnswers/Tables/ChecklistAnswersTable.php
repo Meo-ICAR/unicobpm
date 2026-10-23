@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\ChecklistAnswers\Tables;
 
+use App\Filament\Utils\ColumnFilters;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -13,7 +14,7 @@ class ChecklistAnswersTable
 {
     public static function configure(Table $table): Table
     {
-        return $table
+        $table = $table
             ->columns([
                 TextColumn::make('processInstance.id')
                     ->label('Istanza di Processo')
@@ -50,5 +51,7 @@ class ChecklistAnswersTable
                     DeleteBulkAction::make(),
                 ]),
             ]);
+
+        return ColumnFilters::apply($table, except: ['checklistItem.display_label']);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\ExternalEvents\Tables;
 
+use App\Filament\Utils\ColumnFilters;
 use App\Models\ExternalEvent;
 use Filament\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
@@ -13,7 +14,7 @@ class ExternalEventsTable
 {
     public static function configure(Table $table): Table
     {
-        return $table
+        $table = $table
             ->defaultSort('id', 'desc')
             ->columns([
                 TextColumn::make('created_at')->label('Ricevuto')->dateTime('d/m/Y H:i')->sortable(),
@@ -53,6 +54,8 @@ class ExternalEventsTable
                     ->modalCancelActionLabel('Chiudi')
                     ->modalContent(fn (ExternalEvent $record): HtmlString => new HtmlString('<pre style="white-space:pre-wrap;font-size:.8rem">'.e(json_encode($record->data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)).'</pre>')),
             ]);
+
+        return ColumnFilters::apply($table, except: ['summary']);
     }
 
     /** Riga di sintesi: per l'esito del backup notturno ok/fallito con i database non salvati, per gli altri nulla. */

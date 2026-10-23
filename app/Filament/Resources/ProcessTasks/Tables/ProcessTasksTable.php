@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\ProcessTasks\Tables;
 
+use App\Filament\Utils\ColumnFilters;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -16,7 +17,7 @@ class ProcessTasksTable
 {
     public static function configure(Table $table): Table
     {
-        return $table
+        $table = $table
             ->modifyQueryUsing(fn ($query) => $query->with(['process', 'businessFunction', 'raciAssignments.businessFunction']))
             ->columns([
                 TextColumn::make('process.name')
@@ -110,5 +111,7 @@ class ProcessTasksTable
                     DeleteBulkAction::make(),
                 ]),
             ]);
+
+        return ColumnFilters::apply($table, except: ['raci_r', 'raci_a', 'raci_c', 'raci_i']);
     }
 }

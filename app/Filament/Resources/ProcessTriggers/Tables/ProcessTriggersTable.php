@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\ProcessTriggers\Tables;
 
+use App\Filament\Utils\ColumnFilters;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -17,7 +18,7 @@ class ProcessTriggersTable
 {
     public static function configure(Table $table): Table
     {
-        return $table
+        $table = $table
             ->columns([
                 // 1. Il Workflow agganciato
                 TextColumn::make('process.name')
@@ -114,5 +115,7 @@ class ProcessTriggersTable
                     DeleteBulkAction::make(),
                 ]),
             ]);
+
+        return ColumnFilters::apply($table, except: ['conditions']);
     }
 }

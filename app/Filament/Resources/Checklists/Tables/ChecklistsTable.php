@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Checklists\Tables;
 
+use App\Filament\Utils\ColumnFilters;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -13,7 +14,7 @@ class ChecklistsTable
 {
     public static function configure(Table $table): Table
     {
-        return $table
+        $table = $table
             ->modifyQueryUsing(fn ($query) => $query->withCount('items'))
             ->columns([
                 TextColumn::make('name')
@@ -53,5 +54,7 @@ class ChecklistsTable
                     DeleteBulkAction::make(),
                 ]),
             ]);
+
+        return ColumnFilters::apply($table);
     }
 }

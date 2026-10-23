@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Clients\Tables;
 
+use App\Filament\Utils\ColumnFilters;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -12,7 +13,7 @@ class ClientsTable
 {
     public static function configure(Table $table): Table
     {
-        return $table
+        $table = $table
             ->columns([
                 TextColumn::make('name')
                     ->label('Nominativo')
@@ -38,5 +39,7 @@ class ClientsTable
                     DeleteBulkAction::make(),
                 ]),
             ]);
+
+        return ColumnFilters::apply($table, except: ['employee_roles']);
     }
 }

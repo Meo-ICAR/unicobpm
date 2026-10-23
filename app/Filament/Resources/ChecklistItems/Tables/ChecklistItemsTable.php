@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\ChecklistItems\Tables;
 
+use App\Filament\Utils\ColumnFilters;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -16,7 +17,7 @@ class ChecklistItemsTable
 {
     public static function configure(Table $table): Table
     {
-        return $table
+        $table = $table
             ->columns([
                 TextColumn::make('checklist.name')
                     ->label('Checklist')
@@ -37,13 +38,13 @@ class ChecklistItemsTable
                     ->label('Tipo')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'boolean'     => 'gray',
-                        'text'        => 'info',
-                        'number'      => 'warning',
-                        'date'        => 'success',
-                        'select'      => 'primary',
+                        'boolean' => 'gray',
+                        'text' => 'info',
+                        'number' => 'warning',
+                        'date' => 'success',
+                        'select' => 'primary',
                         'multiselect' => 'danger',
-                        default       => 'gray',
+                        default => 'gray',
                     }),
                 IconColumn::make('is_required')
                     ->label('Obbl.')
@@ -75,11 +76,11 @@ class ChecklistItemsTable
                 SelectFilter::make('type')
                     ->label('Tipo')
                     ->options([
-                        'boolean'     => 'Sì / No',
-                        'text'        => 'Testo libero',
-                        'number'      => 'Numero',
-                        'date'        => 'Data',
-                        'select'      => 'Selezione singola',
+                        'boolean' => 'Sì / No',
+                        'text' => 'Testo libero',
+                        'number' => 'Numero',
+                        'date' => 'Data',
+                        'select' => 'Selezione singola',
                         'multiselect' => 'Selezione multipla',
                     ]),
                 TernaryFilter::make('is_knockout')
@@ -96,5 +97,7 @@ class ChecklistItemsTable
                     DeleteBulkAction::make(),
                 ]),
             ]);
+
+        return ColumnFilters::apply($table);
     }
 }

@@ -26,7 +26,7 @@ class OutboundCallResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Chiamate in uscita';
 
-    protected static UnitEnum|string|null $navigationGroup = 'System';
+    protected static UnitEnum|string|null $navigationGroup = 'Settings';
 
     public static function table(Table $table): Table
     {

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\EmployeeTypes\Tables;
 
+use App\Filament\Utils\ColumnFilters;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -14,7 +15,7 @@ class EmployeeTypesTable
 {
     public static function configure(Table $table): Table
     {
-        return $table
+        $table = $table
             ->columns([
                 TextColumn::make('name')
                     ->label('Nome')
@@ -51,5 +52,7 @@ class EmployeeTypesTable
                     DeleteBulkAction::make(),
                 ]),
             ]);
+
+        return ColumnFilters::apply($table);
     }
 }

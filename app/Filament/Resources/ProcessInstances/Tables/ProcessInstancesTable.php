@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\ProcessInstances\Tables;
 
+use App\Filament\Utils\ColumnFilters;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -15,7 +16,7 @@ class ProcessInstancesTable
 {
     public static function configure(Table $table): Table
     {
-        return $table
+        $table = $table
             ->columns([
                 // 1. PROCESSO & STEP ATTUALE
                 TextColumn::make('process.name')
@@ -151,5 +152,7 @@ class ProcessInstancesTable
                     DeleteBulkAction::make(),
                 ]),
             ]);
+
+        return ColumnFilters::apply($table, except: ['subject', 'currentAssignee']);
     }
 }

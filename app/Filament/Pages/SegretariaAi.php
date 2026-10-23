@@ -36,7 +36,7 @@ class SegretariaAi extends Page
 
     protected static ?string $navigationLabel = 'Segretaria AI';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Documentazione';
+    protected static string|\UnitEnum|null $navigationGroup = 'Manuali';
 
     protected static ?string $title = 'Segretaria AI';
 

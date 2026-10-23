@@ -18,9 +18,9 @@
                         <form method="POST" action="{{ route('sso.passa', $app['key']) }}">
                             @csrf
                             <x-filament::button type="submit" color="gray" icon="heroicon-o-arrow-top-right-on-square">
-                                <span class="flex items-center gap-2">
+                                <span style="display:flex;align-items:center;gap:0.5rem">
                                     @if ($app['logo'])
-                                        <img src="{{ $app['logo'] }}" alt="" class="h-5 w-5 rounded-sm object-contain" />
+                                        <img src="{{ $app['logo'] }}" alt="" style="width:1.25rem;height:1.25rem;object-fit:contain;border-radius:0.125rem" />
                                     @endif
                                     {{ $app['label'] }}
                                 </span>
@@ -32,9 +32,9 @@
                             icon="heroicon-o-arrow-top-right-on-square"
                             wire:click="switchTo('{{ $app['key'] }}')"
                         >
-                            <span class="flex items-center gap-2">
+                            <span style="display:flex;align-items:center;gap:0.5rem">
                                 @if ($app['logo'])
-                                    <img src="{{ $app['logo'] }}" alt="" class="h-5 w-5 rounded-sm object-contain" />
+                                    <img src="{{ $app['logo'] }}" alt="" style="width:1.25rem;height:1.25rem;object-fit:contain;border-radius:0.125rem" />
                                 @endif
                                 {{ $app['label'] }}
                             </span>
