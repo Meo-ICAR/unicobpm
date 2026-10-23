@@ -29,7 +29,7 @@ class ProcessRaciMatrix extends Component implements HasActions, HasSchemas, Has
             ->query(
                 ProcessTask::query()
                     ->where('process_id', $this->process->id)
-                    ->with('raciAssignments.businessFunction')
+                    ->with('raciAssignments.employeeType')
             )
             ->defaultSort('ordine')
             ->paginated(false)
@@ -73,7 +73,7 @@ class ProcessRaciMatrix extends Component implements HasActions, HasSchemas, Has
     {
         return $task->raciAssignments
             ->where('raci_role', $role)
-            ->map(fn ($assignment) => $assignment->businessFunction?->name)
+            ->map(fn ($assignment) => $assignment->employeeType?->name)
             ->filter()
             ->values()
             ->toArray();

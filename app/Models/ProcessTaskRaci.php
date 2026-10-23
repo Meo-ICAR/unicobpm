@@ -23,7 +23,7 @@ class ProcessTaskRaci extends Model
 
     protected $fillable = [
         'process_task_id',
-        'business_function_id',
+        'employee_type_id',
         'raci_role',
     ];
 
@@ -32,8 +32,9 @@ class ProcessTaskRaci extends Model
         return $this->belongsTo(ProcessTask::class, 'process_task_id');
     }
 
-    public function businessFunction(): BelongsTo
+    /** Ruolo (ufficio) responsabile. */
+    public function employeeType(): BelongsTo
     {
-        return $this->belongsTo(BusinessFunction::class);
+        return $this->belongsTo(EmployeeType::class);
     }
 }

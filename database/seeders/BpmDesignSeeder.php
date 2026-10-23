@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
-use App\Models\BusinessFunction;
 use App\Models\Checklist;
 use App\Models\DocumentType;
+use App\Models\EmployeeType;
 use App\Models\Process;
 use Illuminate\Database\Seeder;
 
@@ -13,8 +13,8 @@ class BpmDesignSeeder extends Seeder
     public function run(): void
     {
         // 1. Recupero riferimenti utili
-        $complianceDept = BusinessFunction::where('code', 'COMPLIANCE')->first();
-        $itDept = BusinessFunction::where('code', 'IT')->first();
+        $complianceDept = EmployeeType::where('code', 'COMPLIANCE')->first();
+        $itDept = EmployeeType::where('code', 'IT')->first();
 
         $ciType = DocumentType::where('code', 'CARTA_IDENTITA')->first();
         $visuraType = DocumentType::where('code', 'VISURA_CAMERALE')->first();
@@ -71,7 +71,7 @@ class BpmDesignSeeder extends Seeder
         // RACI per Task 1 (La Compliance supervisiona, non ci lavora attivamente)
         if ($complianceDept) {
             $task1->raciAssignments()->updateOrCreate(
-                ['business_function_id' => $complianceDept->id],
+                ['employee_type_id' => $complianceDept->id],
                 ['raci_role' => 'A'] // Accountable
             );
         }
@@ -108,7 +108,7 @@ class BpmDesignSeeder extends Seeder
         // RACI per Task 2 (L'Ufficio Compliance DEVE lavorarlo)
         if ($complianceDept) {
             $task2->raciAssignments()->updateOrCreate(
-                ['business_function_id' => $complianceDept->id],
+                ['employee_type_id' => $complianceDept->id],
                 ['raci_role' => 'R'] // Responsible
             );
         }
@@ -141,7 +141,7 @@ class BpmDesignSeeder extends Seeder
         // RACI per Task 3 (Dipartimento IT è responsabile, ma è un'azione automatica)
         if ($itDept) {
             $task3->raciAssignments()->updateOrCreate(
-                ['business_function_id' => $itDept->id],
+                ['employee_type_id' => $itDept->id],
                 ['raci_role' => 'R']
             );
         }
@@ -164,7 +164,7 @@ class BpmDesignSeeder extends Seeder
      * (stipulated_at valorizzato, dismissed_at ancora vuoto) può essere
      * offboardato; al completamento, valorizziamo dismissed_at.
      */
-    private function seedAgentOffboarding(?BusinessFunction $complianceDept, ?BusinessFunction $itDept): void
+    private function seedAgentOffboarding(?EmployeeType $complianceDept, ?EmployeeType $itDept): void
     {
         $process = Process::firstOrCreate(
             ['code' => 'AGENT_OFFBOARDING', 'version' => 1],
@@ -189,14 +189,14 @@ class BpmDesignSeeder extends Seeder
 
         if ($complianceDept) {
             $task1->raciAssignments()->updateOrCreate(
-                ['business_function_id' => $complianceDept->id],
+                ['employee_type_id' => $complianceDept->id],
                 ['raci_role' => 'A']
             );
         }
 
         if ($itDept) {
             $task1->raciAssignments()->updateOrCreate(
-                ['business_function_id' => $itDept->id],
+                ['employee_type_id' => $itDept->id],
                 ['raci_role' => 'R']
             );
         }

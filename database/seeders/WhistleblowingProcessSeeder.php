@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\BusinessFunction;
 use App\Models\EmailTemplate;
 use App\Models\EmployeeType;
 use App\Models\Process;
@@ -12,12 +11,11 @@ use Illuminate\Database\Seeder;
 /**
  * Gestione delle segnalazioni di UnicoWhistle (D.Lgs. 24/2023). Whistle comunica `segnalazione.ricevuta` (solo riferimento e scadenze,
  * mai il contenuto) e qui nasce un processo che:
- *  1. avvisa subito per email i membri della funzione «Whistleblowing» col ruolo «responsabile whistleblowing»;
- *  2. sollecita finché nessuno prende in carico la pratica (24 h al responsabile, 72 h e 120 h alla funzione supplente);
+ *  1. avvisa subito per email chi ha il ruolo «responsabile whistleblowing» (ufficio WHISTLEBLOWING);
+ *  2. sollecita finché nessuno prende in carico la pratica (24 h al responsabile, 72 h e 120 h al ruolo «supplente whistleblowing»);
  *  3. porta la data tassativa al termine di riscontro di 3 mesi indicato da Whistle.
  *
- * Il ruolo (EmployeeType) e le funzioni vanno popolati da pannello: si assegna il ruolo ai membri della funzione «Whistleblowing»
- * (Funzioni aziendali) e, volendo, i supplenti alla funzione «Whistleblowing – supplenti». Il seeder è idempotente.
+ * I ruoli si assegnano da pannello nella scheda di dipendenti ed esterni (campo Ruoli). Il seeder è idempotente.
  */
 class WhistleblowingProcessSeeder extends Seeder
 {
@@ -27,11 +25,11 @@ class WhistleblowingProcessSeeder extends Seeder
     {
         EmployeeType::firstOrCreate(['name' => self::ROLE], ['companytype' => 'COMPLIANCE', 'is_external' => false]);
 
-        $responsible = BusinessFunction::updateOrCreate(['code' => 'WHISTLEBLOWING'], [
+        $responsible = EmployeeType::office('WHISTLEBLOWING', [
             'name' => 'Whistleblowing',
-            'description' => 'Gestione delle segnalazioni: i membri col ruolo «'.self::ROLE.'» ricevono l\'avviso di ogni nuova segnalazione.',
+            'description' => 'Gestione delle segnalazioni: chi ha questo ruolo riceve l\'avviso di ogni nuova segnalazione.',
         ]);
-        $deputy = BusinessFunction::updateOrCreate(['code' => 'WHISTLEBLOWING-SUPPLENTI'], [
+        $deputy = EmployeeType::office('WHISTLEBLOWING-SUPPLENTI', [
             'name' => 'Whistleblowing – supplenti',
             'description' => 'Ricevono i solleciti se la segnalazione non viene presa in carico.',
         ]);
@@ -68,8 +66,8 @@ class WhistleblowingProcessSeeder extends Seeder
         ]);
 
         foreach ([$take, $feedback] as $task) {
-            $task->raciAssignments()->updateOrCreate(['business_function_id' => $responsible->id], ['raci_role' => 'R']);
-            $task->raciAssignments()->updateOrCreate(['business_function_id' => $deputy->id], ['raci_role' => 'A']);
+            $task->raciAssignments()->updateOrCreate(['employee_type_id' => $responsible->id], ['raci_role' => 'R']);
+            $task->raciAssignments()->updateOrCreate(['employee_type_id' => $deputy->id], ['raci_role' => 'A']);
         }
 
         $take->processTaskItems()->updateOrCreate(['process_task_id' => $take->id, 'ordine' => 10], [

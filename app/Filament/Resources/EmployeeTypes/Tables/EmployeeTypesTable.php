@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\EmployeeTypes\Tables;
 
 use App\Filament\Utils\ColumnFilters;
+use App\Models\EmployeeType;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -20,6 +21,21 @@ class EmployeeTypesTable
                 TextColumn::make('name')
                     ->label('Nome')
                     ->searchable(),
+                TextColumn::make('code')
+                    ->label('Codice ufficio')
+                    ->searchable(),
+                TextColumn::make('macro_area')
+                    ->label('Macro area')
+                    ->badge()
+                    ->toggleable(),
+                TextColumn::make('outsourcable_status')
+                    ->label('Esternalizzabile')
+                    ->badge()
+                    ->formatStateUsing(fn (?string $state): string => EmployeeType::OUTSOURCABLE[$state] ?? (string) $state),
+                TextColumn::make('email')
+                    ->label('Email ufficio')
+                    ->searchable()
+                    ->toggleable(),
                 TextColumn::make('icon')
                     ->label('Icona')
                     ->searchable(),

@@ -54,7 +54,7 @@ class User extends CoreUser implements FilamentUser
      */
     public static function getResponsibleUsersForInstance(ProcessTask $task, ProcessInstance $instance): Collection
     {
-        // 1. Recuperiamo la funzione aziendale "Responsible" dal task
+        // 1. Recuperiamo il ruolo "Responsible" dal task
         $responsibleAssignment = $task->raciAssignments()
             ->where('raci_role', 'R')
             ->first();
@@ -63,9 +63,9 @@ class User extends CoreUser implements FilamentUser
             return collect();
         }
 
-        // STEP 1: Recuperiamo TUTTI gli utenti della funzione aziendale (il reparto)
-        $businessFunction = BusinessFunction::find($responsibleAssignment->business_function_id);
-        $utentiReparto = $businessFunction?->loginUsers() ?? collect();
+        // STEP 1: Recuperiamo TUTTI gli utenti che ricoprono il ruolo (il reparto)
+        $role = EmployeeType::find($responsibleAssignment->employee_type_id);
+        $utentiReparto = $role?->loginUsers() ?? collect();
 
         // SE NEL REPARTO C'È UNA SOLA PERSONA IN TOTALE -> La priorità va a lei (Ignora specializzazione)
         if ($utentiReparto->count() === 1) {

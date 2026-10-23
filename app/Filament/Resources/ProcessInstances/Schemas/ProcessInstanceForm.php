@@ -4,6 +4,7 @@ namespace App\Filament\Resources\ProcessInstances\Schemas;
 
 use App\Models\Client;
 use App\Models\Employee;
+use App\Models\EmployeeType;
 use App\Models\ProcessTask;
 use App\Models\User;
 use Filament\Forms\Components\DatePicker;
@@ -102,13 +103,9 @@ class ProcessInstanceForm
                                                         }
 
                                                         // Filtriamo i dipendenti in base alla RACI e alla specializzazione della pratica
-                                                        return $query->whereHas('businessFunctions', function ($q) use ($task) {
-                                                            $q->whereIn('business_functions.id', function ($sub) use ($task) {
-                                                                $sub->select('business_function_id')
-                                                                    ->from(\App\Models\ProcessTaskRaci::qualifiedTable())
-                                                                    ->where('process_task_id', $task->id)
-                                                                    ->where('raci_role', 'R');
-                                                            });
+                                                        return $query->where(function ($q) use ($task) {
+                                                            $roles = EmployeeType::query()->whereIn('id', $task->raciAssignments()->where('raci_role', 'R')->select('employee_type_id'))->pluck('name');
+                                                            $roles->isEmpty() ? $q->whereRaw('1 = 0') : $roles->each(fn (string $role) => $q->orWhereJsonContains('employee_roles', $role));
                                                         })
                                                             ->when(! empty($record?->type), function ($q) use ($record) {
                                                                 $q->where(fn ($sub) => $sub->where('specialization', $record->type)->orWhereNull('specialization'));
@@ -131,13 +128,9 @@ class ProcessInstanceForm
                                                         }
 
                                                         // Stessa logica di filtro applicata ai Clienti/Mediatori
-                                                        return $query->whereHas('businessFunctions', function ($q) use ($task) {
-                                                            $q->whereIn('business_functions.id', function ($sub) use ($task) {
-                                                                $sub->select('business_function_id')
-                                                                    ->from(\App\Models\ProcessTaskRaci::qualifiedTable())
-                                                                    ->where('process_task_id', $task->id)
-                                                                    ->where('raci_role', 'R');
-                                                            });
+                                                        return $query->where(function ($q) use ($task) {
+                                                            $roles = EmployeeType::query()->whereIn('id', $task->raciAssignments()->where('raci_role', 'R')->select('employee_type_id'))->pluck('name');
+                                                            $roles->isEmpty() ? $q->whereRaw('1 = 0') : $roles->each(fn (string $role) => $q->orWhereJsonContains('employee_roles', $role));
                                                         })
                                                             ->when(! empty($record?->type), function ($q) use ($record) {
                                                                 $q->where(fn ($sub) => $sub->where('specialization', $record->type)->orWhereNull('specialization'));

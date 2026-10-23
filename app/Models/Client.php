@@ -2,10 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Arr;
 use Unico\Core\Models\Client as CoreClient;
 
@@ -53,15 +51,13 @@ class Client extends CoreClient
     }
 
     /**
-     * Funzioni aziendali per cui questo cliente opera come consulente esterno,
-     * ossia ricopre un ruolo (EmployeeType) normalmente svolto da un dipendente.
+     * Id dei ruoli che l'esterno ricopre (ruoli esternalizzati, es. un consulente), dai nomi in `employee_roles`.
+     *
+     * @return list<int>
      */
-    public function businessFunctions(): MorphToMany
+    public function employeeTypeIds(): array
     {
-        return $this->morphToMany(BusinessFunction::class, 'member', \App\Models\BusinessFunctionMember::qualifiedTable())
-            ->using(BusinessFunctionMember::class)
-            ->withPivot('employee_type_id', 'is_manager')
-            ->withTimestamps();
+        return EmployeeType::query()->whereIn('name', Arr::wrap($this->employee_roles))->pluck('id')->all();
     }
 
     public function profile(): MorphTo

@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
-use App\Models\BusinessFunction;
 use App\Models\Checklist;
 use App\Models\DocumentType;
+use App\Models\EmployeeType;
 use App\Models\Process;
 use App\Models\ProcessTask;
 use Illuminate\Database\Seeder;
@@ -20,7 +20,7 @@ use Illuminate\Database\Seeder;
  * - PRC-ISTRUTTORIA: istruttoria della pratica di finanziamento, dalla raccolta
  *   documenti all'esito della delibera dell'istituto convenzionato.
  *
- * Richiede ProcessSeeder, BusinessFunctionSeeder e DocumentTypeSeeder già eseguiti.
+ * Richiede ProcessSeeder, OfficeRoleSeeder e DocumentTypeSeeder già eseguiti.
  * Scritto per essere idempotente: rieseguirlo non duplica task/RACI/azioni.
  */
 class CreditBrokerProcessesSeeder extends Seeder
@@ -47,7 +47,7 @@ class CreditBrokerProcessesSeeder extends Seeder
             return;
         }
 
-        $ctrlCompl = BusinessFunction::where('code', 'CTRL-COMPL')->first();
+        $ctrlCompl = EmployeeType::where('code', 'CTRL-COMPL')->first();
 
         $task3 = $this->upsertTask($process, 30, 'Monitoraggio Continuativo', $ctrlCompl);
         $this->upsertItem($task3, 1, 'Esito monitoraggio periodico', 'text_input', null, true);
@@ -62,9 +62,9 @@ class CreditBrokerProcessesSeeder extends Seeder
             return;
         }
 
-        $reteEsterna = BusinessFunction::where('code', 'BUS-RETE-EXT')->first();
-        $ctrlCompl = BusinessFunction::where('code', 'CTRL-COMPL')->first();
-        $busBo = BusinessFunction::where('code', 'BUS-BO')->first();
+        $reteEsterna = EmployeeType::where('code', 'BUS-RETE-EXT')->first();
+        $ctrlCompl = EmployeeType::where('code', 'CTRL-COMPL')->first();
+        $busBo = EmployeeType::where('code', 'BUS-BO')->first();
         $contratto = DocumentType::where('code', 'CONTRATTO_FIRMATO')->first();
 
         $task1 = $this->upsertTask($process, 10, 'Consegna Documentazione Precontrattuale', $reteEsterna);
@@ -88,9 +88,9 @@ class CreditBrokerProcessesSeeder extends Seeder
             return;
         }
 
-        $ctrlCompl = BusinessFunction::where('code', 'CTRL-COMPL')->first();
-        $busBo = BusinessFunction::where('code', 'BUS-BO')->first();
-        $hr = BusinessFunction::where('code', 'HR')->first();
+        $ctrlCompl = EmployeeType::where('code', 'CTRL-COMPL')->first();
+        $busBo = EmployeeType::where('code', 'BUS-BO')->first();
+        $hr = EmployeeType::where('code', 'HR')->first();
         $polizza = DocumentType::where('code', 'POLIZZA_RC_PROFESSIONALE')->first();
         $attestato = DocumentType::where('code', 'ATTESTATO_FORMAZIONE')->first();
 
@@ -118,8 +118,8 @@ class CreditBrokerProcessesSeeder extends Seeder
             ]
         );
 
-        $reteEsterna = BusinessFunction::where('code', 'BUS-RETE-EXT')->first();
-        $busBo = BusinessFunction::where('code', 'BUS-BO')->first();
+        $reteEsterna = EmployeeType::where('code', 'BUS-RETE-EXT')->first();
+        $busBo = EmployeeType::where('code', 'BUS-BO')->first();
         $bustaPaga = DocumentType::where('code', 'BUSTA_PAGA')->first();
         $estrattoConto = DocumentType::where('code', 'ESTRATTO_CONTO')->first();
         $delibera = DocumentType::where('code', 'DELIBERA_ISTITUTO')->first();
@@ -156,7 +156,7 @@ class CreditBrokerProcessesSeeder extends Seeder
      *
      * @param  array<string, mixed>  $extra
      */
-    private function upsertTask(Process $process, int $ordine, string $name, ?BusinessFunction $responsible, array $extra = []): ProcessTask
+    private function upsertTask(Process $process, int $ordine, string $name, ?EmployeeType $responsible, array $extra = []): ProcessTask
     {
         $task = $process->tasks()->updateOrCreate(
             ['process_id' => $process->id, 'ordine' => $ordine],
@@ -165,7 +165,7 @@ class CreditBrokerProcessesSeeder extends Seeder
 
         if ($responsible) {
             $task->raciAssignments()->updateOrCreate(
-                ['business_function_id' => $responsible->id],
+                ['employee_type_id' => $responsible->id],
                 ['raci_role' => 'R']
             );
         }

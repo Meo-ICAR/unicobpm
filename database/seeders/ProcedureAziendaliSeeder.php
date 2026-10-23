@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\BusinessFunction;
+use App\Models\EmployeeType;
 use App\Models\Process;
 use Illuminate\Database\Seeder;
 
@@ -204,7 +204,7 @@ class ProcedureAziendaliSeeder extends Seeder
         $funzioni = [];
 
         foreach (self::FUNZIONI as $codice => [$nome, $macroArea, $tipo, $esternalizzabile]) {
-            $funzioni[$codice] = BusinessFunction::updateOrCreate(['code' => $codice], [
+            $funzioni[$codice] = EmployeeType::office($codice, [
                 'name' => $nome, 'macro_area' => $macroArea, 'type' => $tipo, 'outsourcable_status' => $esternalizzabile,
             ]);
         }
@@ -232,10 +232,10 @@ class ProcedureAziendaliSeeder extends Seeder
                 }
 
                 foreach ($raci as $funzione => $ruolo) {
-                    $passo->raciAssignments()->updateOrCreate(['business_function_id' => $funzioni[$funzione]->id], ['raci_role' => $ruolo]);
+                    $passo->raciAssignments()->updateOrCreate(['employee_type_id' => $funzioni[$funzione]->id], ['raci_role' => $ruolo]);
                 }
 
-                $passo->raciAssignments()->whereNotIn('business_function_id', collect(array_keys($raci))->map(fn (string $f): int => $funzioni[$f]->id))->delete();
+                $passo->raciAssignments()->whereNotIn('employee_type_id', collect(array_keys($raci))->map(fn (string $f): int => $funzioni[$f]->id))->delete();
             }
 
             $processo->tasks()->where('ordine', '>', count($passi) * 10)->delete();

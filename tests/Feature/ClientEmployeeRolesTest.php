@@ -4,8 +4,6 @@ namespace Tests\Feature;
 
 use App\Filament\Resources\Clients\Pages\CreateClient;
 use App\Filament\Resources\Clients\Pages\EditClient;
-use App\Models\BusinessFunction;
-use App\Models\BusinessFunctionMember;
 use App\Models\Client;
 use App\Models\EmployeeType;
 use App\Models\User;
@@ -43,26 +41,5 @@ class ClientEmployeeRolesTest extends TestCase
 
         Livewire::test(EditClient::class, ['record' => $client->getRouteKey()])
             ->assertFormSet(['employee_roles' => [$role->name]]);
-    }
-
-    public function test_attaching_client_to_business_function_syncs_employee_role(): void
-    {
-        $role = EmployeeType::create(['name' => 'responsabile whistleblowing', 'is_external' => true]);
-        $client = Client::create(['name' => 'Consulente Rossi', 'email' => 'rossi@example.com']);
-        $function = BusinessFunction::create(['name' => 'Compliance', 'code' => 'CMP-'.uniqid()]);
-
-        $member = BusinessFunctionMember::create([
-            'business_function_id' => $function->id,
-            'member_type' => $client->getMorphClass(),
-            'member_id' => $client->id,
-            'employee_type_id' => $role->id,
-        ]);
-
-        $this->assertSame([$role->name], $client->fresh()->employee_roles);
-
-        $other = EmployeeType::create(['name' => 'audit', 'is_external' => true]);
-        $member->update(['employee_type_id' => $other->id]);
-
-        $this->assertEqualsCanonicalizing([$role->name, $other->name], $client->fresh()->employee_roles);
     }
 }

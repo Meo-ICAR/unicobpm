@@ -67,16 +67,16 @@ class DatabaseSeeder extends Seeder
             DocumentTypeSeeder::class,
             TaskSeeder::class,
             TaskDocumentTypeSeeder::class, // Dipende da DocumentTypeSeeder e TaskSeeder
-            BusinessFunctionSeeder::class,
+            OfficeRoleSeeder::class,
             ChecklistSeeder::class,
             ProcessSeeder::class,
 
             // 2. Dipendenze di primo livello
-            ProcessTaskSeeder::class, // Necessita di Process e BusinessFunction
+            ProcessTaskSeeder::class, // Necessita di Process e dei ruoli (uffici)
             ChecklistItemSeeder::class, // Necessita di Checklist
 
             // 3. Dipendenze di secondo livello
-            ProcessTaskRaciSeeder::class, // Necessita di ProcessTask e BusinessFunction
+            ProcessTaskRaciSeeder::class, // Necessita di ProcessTask e dei ruoli (uffici)
 
             // 4. Processi completi (task + RACI + azioni) tipici di un mediatore creditizio
             BpmDesignSeeder::class, // Onboarding Nuovo Agente

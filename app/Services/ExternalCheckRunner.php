@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Enums\Severity;
-use App\Models\BusinessFunction;
+use App\Models\EmployeeType;
 use App\Models\ProcessInstance;
 use App\Models\ProcessTask;
 use App\Models\ProcessTaskItem;
@@ -144,9 +144,9 @@ class ExternalCheckRunner
 
         return $task->raciAssignments()
             ->whereIn('raci_role', $roles)
-            ->with('businessFunction')
+            ->with('employeeType')
             ->get()
-            ->flatMap(fn ($assignment) => $this->emailsOf($assignment->businessFunction))
+            ->flatMap(fn ($assignment) => $this->emailsOf($assignment->employeeType))
             ->filter()
             ->unique()
             ->values();
@@ -155,15 +155,15 @@ class ExternalCheckRunner
     /**
      * @return Collection<int, string>
      */
-    private function emailsOf(?BusinessFunction $function): Collection
+    private function emailsOf(?EmployeeType $role): Collection
     {
-        if (! $function) {
+        if (! $role) {
             return collect();
         }
 
-        return filled($function->email)
-            ? collect([$function->email])
-            : $function->loginUsers()->pluck('email');
+        return filled($role->email)
+            ? collect([$role->email])
+            : $role->loginUsers()->pluck('email');
     }
 
     /**

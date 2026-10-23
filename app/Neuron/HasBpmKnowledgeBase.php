@@ -31,9 +31,8 @@ trait HasBpmKnowledgeBase
      * @var array<int, string>
      */
     protected const QUERYABLE_TABLES = [
-        'business_function_members', 'business_functions',
         'checklist_answers', 'checklist_items', 'checklist_submissions', 'checklists',
-        'companies',
+        'companies', 'employee_types',
         'process_instances', 'process_task_executions', 'process_task_item_answers',
         'process_task_items', 'process_task_raci', 'process_tasks', 'process_triggers', 'processes',
     ];

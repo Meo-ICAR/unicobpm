@@ -18,7 +18,7 @@ class ProcessTasksTable
     public static function configure(Table $table): Table
     {
         $table = $table
-            ->modifyQueryUsing(fn ($query) => $query->with(['process', 'businessFunction', 'raciAssignments.businessFunction']))
+            ->modifyQueryUsing(fn ($query) => $query->with(['process', 'employeeType', 'raciAssignments.employeeType']))
             ->columns([
                 TextColumn::make('process.name')
                     ->label('Processo')
@@ -35,7 +35,7 @@ class ProcessTasksTable
                     ->label('Codice')
                     ->searchable()
                     ->placeholder('—'),
-                TextColumn::make('businessFunction.name')
+                TextColumn::make('employeeType.name')
                     ->label('Funzione di Business')
                     ->placeholder('—'),
                 // Colonne RACI aggregate
@@ -45,7 +45,7 @@ class ProcessTasksTable
                     ->color('info')
                     ->state(fn (Model $record) => $record->raciAssignments
                         ->where('raci_role', 'R')
-                        ->map(fn ($a) => $a->businessFunction?->name)
+                        ->map(fn ($a) => $a->employeeType?->name)
                         ->filter()->values()->toArray()
                     )
                     ->placeholder('—'),
@@ -55,7 +55,7 @@ class ProcessTasksTable
                     ->color('danger')
                     ->state(fn (Model $record) => $record->raciAssignments
                         ->where('raci_role', 'A')
-                        ->map(fn ($a) => $a->businessFunction?->name)
+                        ->map(fn ($a) => $a->employeeType?->name)
                         ->filter()->values()->toArray()
                     )
                     ->placeholder('—'),
@@ -65,7 +65,7 @@ class ProcessTasksTable
                     ->color('warning')
                     ->state(fn (Model $record) => $record->raciAssignments
                         ->where('raci_role', 'C')
-                        ->map(fn ($a) => $a->businessFunction?->name)
+                        ->map(fn ($a) => $a->employeeType?->name)
                         ->filter()->values()->toArray()
                     )
                     ->placeholder('—'),
@@ -75,7 +75,7 @@ class ProcessTasksTable
                     ->color('gray')
                     ->state(fn (Model $record) => $record->raciAssignments
                         ->where('raci_role', 'I')
-                        ->map(fn ($a) => $a->businessFunction?->name)
+                        ->map(fn ($a) => $a->employeeType?->name)
                         ->filter()->values()->toArray()
                     )
                     ->placeholder('—'),

@@ -4,8 +4,8 @@ namespace Tests\Feature;
 
 use App\Filament\Actions\StartProcessAction;
 use App\Jobs\TaskEscalationWatchdogJob;
-use App\Models\BusinessFunction;
 use App\Models\Employee;
+use App\Models\EmployeeType;
 use App\Models\ExternalEvent;
 use App\Models\Process;
 use App\Models\ProcessInstance;
@@ -116,21 +116,20 @@ class ExternalEventTest extends TestCase
 
     // --- Solleciti finché nessuno prende in carico ---
 
-    private function functionWithMember(string $email): BusinessFunction
+    private function roleWithMember(string $email): EmployeeType
     {
-        $function = BusinessFunction::create(['name' => 'Istruttoria '.uniqid(), 'code' => 'IST-'.uniqid()]);
-        $employee = Employee::create(['name' => 'Istruttore '.uniqid(), 'email' => $email]);
+        $role = EmployeeType::create(['name' => 'istruttoria '.uniqid(), 'code' => 'IST-'.uniqid()]);
+        $employee = Employee::create(['name' => 'Istruttore '.uniqid(), 'email' => $email, 'employee_roles' => [$role->name]]);
         User::factory()->create(['email' => $email, 'profile_type' => 'employee', 'profile_id' => $employee->id]);
-        $function->employees()->attach($employee->id, ['employee_type_id' => null]);
 
-        return $function;
+        return $role;
     }
 
     private function startUnclaimed(array $rules): ProcessInstance
     {
         $this->task->update(['escalation_rules' => $rules]);
-        ProcessTaskRaci::create(['process_task_id' => $this->task->id, 'business_function_id' => $this->functionWithMember('istruttore1@example.com')->id, 'raci_role' => 'R']);
-        ProcessTaskRaci::create(['process_task_id' => $this->task->id, 'business_function_id' => $this->functionWithMember('responsabile@example.com')->id, 'raci_role' => 'A']);
+        ProcessTaskRaci::create(['process_task_id' => $this->task->id, 'employee_type_id' => $this->roleWithMember('istruttore1@example.com')->id, 'raci_role' => 'R']);
+        ProcessTaskRaci::create(['process_task_id' => $this->task->id, 'employee_type_id' => $this->roleWithMember('responsabile@example.com')->id, 'raci_role' => 'A']);
         $this->trigger();
         $this->postJson('/api/events', $this->event(), self::KEY)->assertStatus(202);
         $instance = ProcessInstance::sole();

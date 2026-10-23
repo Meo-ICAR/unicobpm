@@ -2,7 +2,7 @@
 
 namespace App\Jobs;
 
-use App\Models\BusinessFunction;
+use App\Models\EmployeeType;
 use App\Models\ProcessInstance;
 use App\Models\ProcessTaskExecution;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -84,7 +84,7 @@ class MandatoryDeadlineWatchdogJob implements ShouldQueue
             $responsible = $task->raciAssignments()->where('raci_role', 'R')->first();
 
             if ($responsible) {
-                $recipients = BusinessFunction::find($responsible->business_function_id)?->loginUsers() ?? collect();
+                $recipients = EmployeeType::find($responsible->employee_type_id)?->loginUsers() ?? collect();
             }
         }
 

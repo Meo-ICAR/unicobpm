@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\BusinessFunction;
+use App\Models\EmployeeType;
 use App\Models\ProcessTaskExecution;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
@@ -14,7 +14,7 @@ use Unico\Core\Mail\EmailTemplateResolver;
  * Le email dell'escalation di un task. Chi avvisa dipende dall'azione della regola:
  *  - `notify_assignee`: chi ha in carico la pratica, o, se nessuno l'ha presa, le funzioni Responsible (R) del task;
  *  - `notify_manager`: `manager_email` della regola o le funzioni Accountable (A);
- *  - `reassign`: la funzione `target_business_function` (id) a cui passa il task.
+ *  - `reassign`: il ruolo `target_business_function` (id di employee_types) a cui passa il task.
  * Testo dal template `email_template_code` della regola (default TASK_ESCALATION) per company, app unicobpm, tipo «processo» e grado
  * (livello 1 regular, 2 warning, dal 3 alert); senza template un testo semplice. Segnaposto: {pratica}, {riferimento}, {task}, {ore}, {livello}.
  */
@@ -59,10 +59,10 @@ class EscalationNotifier
         $emails = match ($rule['action'] ?? null) {
             'notify_assignee' => $instance->currentAssignee?->email
                 ? collect([$instance->currentAssignee->email])
-                : $this->functionEmails($task->raciAssignments()->where('raci_role', 'R')->pluck('business_function_id')),
+                : $this->functionEmails($task->raciAssignments()->where('raci_role', 'R')->pluck('employee_type_id')),
             'notify_manager' => filled($rule['manager_email'] ?? null)
                 ? collect([$rule['manager_email']])
-                : $this->functionEmails($task->raciAssignments()->where('raci_role', 'A')->pluck('business_function_id')),
+                : $this->functionEmails($task->raciAssignments()->where('raci_role', 'A')->pluck('employee_type_id')),
             'reassign' => $this->functionEmails(collect([$rule['target_business_function'] ?? null])->filter()),
             default => collect(),
         };
@@ -70,11 +70,11 @@ class EscalationNotifier
         return $emails->filter(fn ($email) => filter_var($email, FILTER_VALIDATE_EMAIL))->unique()->values();
     }
 
-    /** @param Collection<int, int|string> $functionIds @return Collection<int, string> */
-    private function functionEmails(Collection $functionIds): Collection
+    /** @param Collection<int, int|string> $roleIds @return Collection<int, string> */
+    private function functionEmails(Collection $roleIds): Collection
     {
-        return BusinessFunction::query()->whereIn('id', $functionIds)->get()
-            ->flatMap(fn (BusinessFunction $function) => $function->loginUsers()->pluck('email'))
+        return EmployeeType::query()->whereIn('id', $roleIds)->get()
+            ->flatMap(fn (EmployeeType $role) => $role->loginUsers()->pluck('email'))
             ->filter();
     }
 

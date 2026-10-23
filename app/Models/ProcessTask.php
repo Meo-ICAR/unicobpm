@@ -16,7 +16,7 @@ class ProcessTask extends Model
         'code',
         'description',
         'ordine',
-        'business_function_id',
+        'employee_type_id',
         'trigger_field',
         'trigger_state',
         'trigger_value',
@@ -48,9 +48,10 @@ class ProcessTask extends Model
         return $this->belongsTo(Process::class);
     }
 
-    public function businessFunction(): BelongsTo
+    /** Ruolo (ufficio) responsabile. */
+    public function employeeType(): BelongsTo
     {
-        return $this->belongsTo(BusinessFunction::class);
+        return $this->belongsTo(EmployeeType::class);
     }
 
     public function processTaskItems(): HasMany

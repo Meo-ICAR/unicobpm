@@ -114,29 +114,29 @@ class ProcessInstance extends Model
      */
     public function scopeWhereCanBeClaimedBy(Builder $query, Model $user): Builder
     {
-        // Recuperiamo gli ID delle Business Function a cui l'utente appartiene tramite la pivot polimorfica
-        $userBusinessFunctionIds = $user->businessFunctions()->pluck('business_functions.id')->toArray();
+        // Ruoli (uffici) che l'utente ricopre, da employee_roles di dipendente o esterno.
+        $userRoleIds = $user->employeeTypeIds();
 
         return $query->where('status', 'in_progress')
             ->whereNull('current_assignee_id') // Libera, non ancora reclamata
-            ->whereHas('currentTask.raciAssignments', function (Builder $subQuery) use ($userBusinessFunctionIds) {
+            ->whereHas('currentTask.raciAssignments', function (Builder $subQuery) use ($userRoleIds) {
                 $subQuery->where('raci_role', 'R') // Ruolo: Responsible
-                    ->whereIn('business_function_id', $userBusinessFunctionIds);
+                    ->whereIn('employee_type_id', $userRoleIds);
             });
     }
 
     /**
-     * Scope: Filtra le pratiche in cui l'utente (o meglio, la sua Business Function)
+     * Scope: Filtra le pratiche in cui l'utente (o meglio, il suo ruolo)
      * ha il ruolo di supervisione/approvazione 'A' (Accountable) per lo step corrente.
      */
     public function scopeWhereUserIsAccountable(Builder $query, Model $user): Builder
     {
-        $userBusinessFunctionIds = $user->businessFunctions()->pluck('business_functions.id')->toArray();
+        $userRoleIds = $user->employeeTypeIds();
 
         return $query->where('status', 'in_progress')
-            ->whereHas('currentTask.raciAssignments', function (Builder $subQuery) use ($userBusinessFunctionIds) {
+            ->whereHas('currentTask.raciAssignments', function (Builder $subQuery) use ($userRoleIds) {
                 $subQuery->where('raci_role', 'A') // Ruolo: Accountable
-                    ->whereIn('business_function_id', $userBusinessFunctionIds);
+                    ->whereIn('employee_type_id', $userRoleIds);
             });
     }
 
@@ -146,11 +146,11 @@ class ProcessInstance extends Model
      */
     public function scopeWhereUserIsInformed(Builder $query, Model $user): Builder
     {
-        $userBusinessFunctionIds = $user->businessFunctions()->pluck('business_functions.id')->toArray();
+        $userRoleIds = $user->employeeTypeIds();
 
-        return $query->whereHas('currentTask.raciAssignments', function (Builder $subQuery) use ($userBusinessFunctionIds) {
+        return $query->whereHas('currentTask.raciAssignments', function (Builder $subQuery) use ($userRoleIds) {
             $subQuery->where('raci_role', 'I') // Ruolo: Informed
-                ->whereIn('business_function_id', $userBusinessFunctionIds);
+                ->whereIn('employee_type_id', $userRoleIds);
         });
     }
 
@@ -235,11 +235,11 @@ class ProcessInstance extends Model
             return false;
         }
 
-        $userBusinessFunctionIds = $user->businessFunctions()->pluck('business_functions.id');
+        $userRoleIds = $user->employeeTypeIds();
 
         return $this->currentTask?->raciAssignments()
             ->where('raci_role', 'R')
-            ->whereIn('business_function_id', $userBusinessFunctionIds)
+            ->whereIn('employee_type_id', $userRoleIds)
             ->exists() ?? false;
     }
 }

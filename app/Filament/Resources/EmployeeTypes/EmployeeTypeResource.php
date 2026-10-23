@@ -28,9 +28,9 @@ class EmployeeTypeResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
-    protected static UnitEnum|string|null $navigationGroup = 'Settings';
+    protected static UnitEnum|string|null $navigationGroup = 'BPM';
 
-    protected static ?string $navigationLabel = 'Ruoli';
+    protected static ?string $navigationLabel = 'Ruoli e uffici';
 
     protected static ?string $modelLabel = 'Ruolo';
 

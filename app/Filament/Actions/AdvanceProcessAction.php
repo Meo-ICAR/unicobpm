@@ -2,7 +2,7 @@
 
 namespace App\Filament\Actions;
 
-use App\Models\BusinessFunction;
+use App\Models\EmployeeType;
 use App\Models\ProcessInstance;
 use App\Models\ProcessTask;
 use App\Models\ProcessTaskExecution;
@@ -48,7 +48,7 @@ class AdvanceProcessAction
                     ->first();
 
                 if ($responsibleAssignment) {
-                    $usersInFunction = BusinessFunction::find($responsibleAssignment->business_function_id)
+                    $usersInFunction = EmployeeType::find($responsibleAssignment->employee_type_id)
                         ?->loginUsers() ?? collect();
 
                     // Se c'è una sola persona in quel reparto, assegnazione istantanea

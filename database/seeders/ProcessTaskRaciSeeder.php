@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\BusinessFunction;
+use App\Models\EmployeeType;
 use App\Models\ProcessTask;
 use Illuminate\Database\Seeder;
 
@@ -30,14 +30,14 @@ class ProcessTaskRaciSeeder extends Seeder
         ];
 
         foreach ($assignments as $assignment) {
-            $businessFunction = BusinessFunction::where('code', $assignment['code'])->first();
+            $businessFunction = EmployeeType::where('code', $assignment['code'])->first();
 
             if (! $businessFunction) {
                 continue;
             }
 
             $task->raciAssignments()->updateOrCreate(
-                ['business_function_id' => $businessFunction->id],
+                ['employee_type_id' => $businessFunction->id],
                 ['raci_role' => $assignment['raci_role'], 'notes' => $assignment['notes']]
             );
         }

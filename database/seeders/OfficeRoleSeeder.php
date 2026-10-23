@@ -2,10 +2,11 @@
 
 namespace Database\Seeders;
 
-use App\Models\BusinessFunction;
+use App\Models\EmployeeType;
 use Illuminate\Database\Seeder;
 
-class BusinessFunctionSeeder extends Seeder
+/** Ruoli (uffici) usati dalle matrici RACI dimostrative. */
+class OfficeRoleSeeder extends Seeder
 {
     public function run(): void
     {
@@ -14,7 +15,7 @@ class BusinessFunctionSeeder extends Seeder
             ['name' => 'Risorse Umane', 'code' => 'HR'],
             ['name' => 'Ufficio Legale', 'code' => 'LEGAL'],
             ['name' => 'Dipartimento IT', 'code' => 'IT'],
-            // Funzioni referenziate dalla demo RACI su "Verifica Completezza Documentale AML"
+            // Ruoli referenziati dalla demo RACI su "Verifica Completezza Documentale AML"
             // (ProcessTaskSeeder / ProcessTaskRaciSeeder). Codici distinti da COMPLIANCE/IT sopra
             // perché rappresentano un secondo esempio di matrice RACI più articolato.
             ['name' => 'Back Office', 'code' => 'BUS-BO'],
@@ -24,7 +25,7 @@ class BusinessFunctionSeeder extends Seeder
         ];
 
         foreach ($functions as $function) {
-            BusinessFunction::updateOrCreate(['code' => $function['code']], $function);
+            EmployeeType::office($function['code'], ['name' => $function['name']]);
         }
     }
 }

@@ -2,7 +2,7 @@
 
 namespace App\Filament\Actions;
 
-use App\Models\BusinessFunction;
+use App\Models\EmployeeType;
 use App\Models\Process;
 use App\Models\ProcessInstance;
 use App\Models\ProcessTask;
@@ -32,14 +32,14 @@ class StartProcessAction
             $claimedAt = null;
 
             if ($firstTask) {
-                // Recuperiamo la funzione aziendale "Responsible (R)" impostata per questo task
+                // Recuperiamo il ruolo "Responsible (R)" impostata per questo task
                 $responsibleAssignment = $firstTask->raciAssignments()
                     ->where('raci_role', 'R')
                     ->first();
 
                 if ($responsibleAssignment) {
-                    // Cerchiamo quanti utenti appartengono a questa specifica funzione aziendale
-                    $usersInFunction = BusinessFunction::find($responsibleAssignment->business_function_id)
+                    // Cerchiamo quanti utenti ricoprono questo ruolo
+                    $usersInFunction = EmployeeType::find($responsibleAssignment->employee_type_id)
                         ?->loginUsers() ?? collect();
 
                     // SE C'È UN SOLO UTENTE, LO ASSEGNIAMO DIRETTAMENTE

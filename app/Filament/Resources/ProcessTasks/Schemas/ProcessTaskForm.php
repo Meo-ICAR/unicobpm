@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\ProcessTasks\Schemas;
 
-use App\Models\BusinessFunction;
+use App\Models\EmployeeType;
 use App\Models\Process;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -41,9 +41,9 @@ class ProcessTaskForm
                         ->numeric()
                         ->required()
                         ->default(0),
-                    Select::make('business_function_id')
-                        ->label('Funzione Aziendale')
-                        ->relationship('businessFunction', 'name')
+                    Select::make('employee_type_id')
+                        ->label('Ruolo (ufficio)')
+                        ->relationship('employeeType', 'name')
                         ->nullable()
                         ->searchable()
                         ->preload(),
@@ -54,7 +54,7 @@ class ProcessTaskForm
                 ]),
 
             Section::make('Matrice RACI')
-                ->description('Funzioni aziendali coinvolte: Responsible, Accountable, Consulted, Informed')
+                ->description('Ruoli (uffici) coinvolti: Responsible, Accountable, Consulted, Informed')
                 ->collapsible()
                 ->schema([
                     Repeater::make('raciAssignments')
@@ -63,9 +63,9 @@ class ProcessTaskForm
                         ->addActionLabel('Aggiungi riga RACI')
                         ->columns(2)
                         ->schema([
-                            Select::make('business_function_id')
-                                ->label('Funzione di Business')
-                                ->relationship('businessFunction', 'name')
+                            Select::make('employee_type_id')
+                                ->label('Ruolo (ufficio)')
+                                ->relationship('employeeType', 'name')
                                 ->required()
                                 ->searchable()
                                 ->preload(),
@@ -191,7 +191,7 @@ class ProcessTaskForm
                                 ->visible(fn (Get $get) => $get('action') === 'notify_manager'),
                             Select::make('target_business_function')
                                 ->label('Nuovo Ufficio Assegnatario')
-                                ->options(fn () => BusinessFunction::pluck('name', 'name'))
+                                ->options(fn () => EmployeeType::orderBy('name')->pluck('name', 'id'))
                                 ->searchable()
                                 ->columnSpanFull()
                                 ->visible(fn (Get $get) => $get('action') === 'reassign')

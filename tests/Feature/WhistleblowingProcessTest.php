@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\BusinessFunction;
 use App\Models\Employee;
 use App\Models\EmployeeType;
 use App\Models\Process;
@@ -30,12 +29,7 @@ class WhistleblowingProcessTest extends TestCase
 
     private function member(string $email, ?string $role): Employee
     {
-        $employee = Employee::create(['name' => 'Persona '.uniqid(), 'email' => $email]);
-        BusinessFunction::where('code', 'WHISTLEBLOWING')->firstOrFail()->employees()->attach($employee->id, [
-            'employee_type_id' => $role ? EmployeeType::where('name', $role)->value('id') : null,
-        ]);
-
-        return $employee;
+        return Employee::create(['name' => 'Persona '.uniqid(), 'email' => $email, 'employee_roles' => $role ? [$role] : []]);
     }
 
     private function event(): array
@@ -56,7 +50,8 @@ class WhistleblowingProcessTest extends TestCase
         $this->seed(WhistleblowingProcessSeeder::class);
 
         $this->assertSame(1, EmployeeType::where('name', 'responsabile whistleblowing')->count());
-        $this->assertSame(1, BusinessFunction::where('code', 'WHISTLEBLOWING')->count());
+        $this->assertSame(1, EmployeeType::where('code', 'WHISTLEBLOWING')->count());
+        $this->assertSame('responsabile whistleblowing', EmployeeType::where('code', 'WHISTLEBLOWING')->value('name'));
         $this->assertSame(1, ProcessTrigger::where('external_event', 'segnalazione.ricevuta')->count());
         $this->assertSame(2, Process::where('code', 'PRC-WHISTLE')->firstOrFail()->tasks()->count());
     }
@@ -91,8 +86,8 @@ class WhistleblowingProcessTest extends TestCase
         $this->assertEqualsCanonicalizing(['uno@example.com', 'due@example.com'], $this->sentTo());
 
         Mail::mailer('array')->getSymfonyTransport()->flush();
-        Employee::query()->whereIn('email', ['uno@example.com', 'due@example.com'])->get()->each(fn ($e) => BusinessFunction::where('code', 'WHISTLEBLOWING')->first()->employees()->detach($e->id));
-        BusinessFunction::where('code', 'WHISTLEBLOWING')->update(['email' => 'whistle@example.com']);
+        Employee::query()->whereIn('email', ['uno@example.com', 'due@example.com'])->get()->each(fn (Employee $e) => $e->update(['employee_roles' => []]));
+        EmployeeType::where('code', 'WHISTLEBLOWING')->update(['email' => 'whistle@example.com']);
         $second = $this->event();
         $second['event_id'] = 'segnalazione.ricevuta:8';
 

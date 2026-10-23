@@ -3,8 +3,8 @@
 namespace Database\Seeders;
 
 use App\Enums\Severity;
-use App\Models\BusinessFunction;
 use App\Models\EmailTemplate;
+use App\Models\EmployeeType;
 use App\Models\Process;
 use Illuminate\Database\Seeder;
 
@@ -24,9 +24,9 @@ class ComplianceDocumentazioneProcessSeeder extends Seeder
     public function run(): void
     {
         $functions = [
-            'R' => BusinessFunction::updateOrCreate(['code' => 'SEGRETERIA'], ['name' => 'Segreteria']),
-            'A' => BusinessFunction::updateOrCreate(['code' => 'COMPLIANCE'], ['name' => 'Ufficio Compliance']),
-            'I' => BusinessFunction::updateOrCreate(['code' => 'COGE-AMMINISTRATORE'], ['name' => 'Amministratore']),
+            'R' => EmployeeType::office('SEGRETERIA', ['name' => 'Segreteria']),
+            'A' => EmployeeType::office('COMPLIANCE', ['name' => 'Ufficio Compliance']),
+            'I' => EmployeeType::office('COGE-AMMINISTRATORE', ['name' => 'Amministratore']),
         ];
 
         $process = Process::updateOrCreate(['code' => 'PRC-COMPLIANCE'], [
@@ -44,12 +44,12 @@ class ComplianceDocumentazioneProcessSeeder extends Seeder
 
         foreach ($functions as $role => $function) {
             $task->raciAssignments()->updateOrCreate(
-                ['business_function_id' => $function->id],
+                ['employee_type_id' => $function->id],
                 ['raci_role' => $role]
             );
         }
 
-        $task->raciAssignments()->whereNotIn('business_function_id', collect($functions)->pluck('id'))->delete();
+        $task->raciAssignments()->whereNotIn('employee_type_id', collect($functions)->pluck('id'))->delete();
 
         $task->processTaskItems()->updateOrCreate(
             ['process_task_id' => $task->id, 'ordine' => 10],

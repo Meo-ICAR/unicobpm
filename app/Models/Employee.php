@@ -8,8 +8,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Arr;
 use Unico\Core\Models\Employee as CoreEmployee;
 
 class Employee extends CoreEmployee
@@ -81,10 +81,13 @@ class Employee extends CoreEmployee
         return $this->morphMany(Document::class, 'documentable');
     }
 
-    public function businessFunctions(): MorphToMany
+    /**
+     * Id dei ruoli (uffici) che il dipendente ricopre, dai nomi in `employee_roles`.
+     *
+     * @return list<int>
+     */
+    public function employeeTypeIds(): array
     {
-        return $this->morphToMany(BusinessFunction::class, 'member', \App\Models\BusinessFunctionMember::qualifiedTable())
-            ->withPivot('is_manager')
-            ->withTimestamps();
+        return EmployeeType::query()->whereIn('name', Arr::wrap($this->employee_roles))->pluck('id')->all();
     }
 }

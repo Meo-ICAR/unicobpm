@@ -45,9 +45,9 @@ class ProcessTasksRelationManager extends RelationManager
                         ->numeric()
                         ->required()
                         ->default(0),
-                    Select::make('business_function_id')
-                        ->label('Funzione Aziendale')
-                        ->relationship('businessFunction', 'name')
+                    Select::make('employee_type_id')
+                        ->label('Ruolo (ufficio)')
+                        ->relationship('employeeType', 'name')
                         ->nullable()
                         ->searchable()
                         ->preload()
@@ -68,9 +68,9 @@ class ProcessTasksRelationManager extends RelationManager
                         ->addActionLabel('Aggiungi riga RACI')
                         ->columns(2)
                         ->schema([
-                            Select::make('business_function_id')
-                                ->label('Funzione di Business')
-                                ->relationship('businessFunction', 'name')
+                            Select::make('employee_type_id')
+                                ->label('Ruolo (ufficio)')
+                                ->relationship('employeeType', 'name')
                                 ->required()
                                 ->searchable()
                                 ->preload(),
@@ -145,19 +145,19 @@ class ProcessTasksRelationManager extends RelationManager
                 TextColumn::make('ordine')->label('#')->sortable(),
                 TextColumn::make('name')->label('Nome')->searchable(),
                 TextColumn::make('code')->label('Codice')->placeholder('—'),
-                TextColumn::make('businessFunction.name')->label('Funzione di Business')->placeholder('—'),
+                TextColumn::make('employeeType.name')->label('Ruolo (ufficio)')->placeholder('—'),
                 TextColumn::make('raci_r')
                     ->label('R')->badge()->color('info')
                     ->state(fn (Model $record) => $record->raciAssignments
                         ->where('raci_role', 'R')
-                        ->map(fn ($a) => $a->businessFunction?->name)
+                        ->map(fn ($a) => $a->employeeType?->name)
                         ->filter()->values()->toArray()
                     )->placeholder('—'),
                 TextColumn::make('raci_a')
                     ->label('A')->badge()->color('danger')
                     ->state(fn (Model $record) => $record->raciAssignments
                         ->where('raci_role', 'A')
-                        ->map(fn ($a) => $a->businessFunction?->name)
+                        ->map(fn ($a) => $a->employeeType?->name)
                         ->filter()->values()->toArray()
                     )->placeholder('—'),
                 IconColumn::make('has_reminders')->label('Solleciti')->boolean(),

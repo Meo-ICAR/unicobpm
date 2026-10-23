@@ -2,8 +2,8 @@
 
 namespace App\Observers;
 
-use App\Models\BusinessFunction;
 use App\Models\Document;
+use App\Models\EmployeeType;
 use App\Models\ProcessTaskExecution;
 use App\Models\ProcessTaskItemAnswer;
 use App\Services\EmailSendingService;
@@ -25,7 +25,7 @@ use Illuminate\Support\Facades\Storage;
  * Invia un'email compilando le variabili e allegando file misti.
  * JSON config:
  * {
- * "target_business_function": "IT Support",          // Codice della funzione aziendale destinataria
+ * "target_business_function": "IT",                  // Codice del ruolo (ufficio) destinatario
  * "to_email": "it-support@tuazienda.com", // Supporta variabili es: {subject.email}
  * "email_template_id": 1,                 // L'ID della tabella email_templates
  * "attach_document_types": [              // (Opzionale) Codici dei documenti caricati nella pratica da allegare
@@ -127,23 +127,22 @@ class ProcessTaskExecutionObserver
 
                     $recipients = [];
 
-                    // --- Risoluzione dinamica della Business Function ---
+                    // --- Ruolo (ufficio) destinatario, per codice ---
                     if (! empty($config['target_business_function'])) {
-                        // Cerchiamo l'ufficio tramite il suo codice (es. 'it')
-                        $department = BusinessFunction::where('code', $config['target_business_function'])->first();
+                        $office = EmployeeType::where('code', $config['target_business_function'])->first();
 
-                        // Con `to_role` (nome di un EmployeeType) scrive ai membri della funzione che ricoprono quel ruolo
-                        // (es. il responsabile whistleblowing); se non ce n'è nessuno, all'indirizzo della funzione.
-                        if ($department && ! empty($config['to_role'])) {
-                            $recipients = $department->emailsForRole($config['to_role'])->all();
-                        }
+                        // Scrive a chi ricopre il ruolo; con `to_role` (nome di un altro ruolo, es. il responsabile whistleblowing)
+                        // a chi ricopre quello. Se nessuno, all'email dell'ufficio.
+                        $holders = ! empty($config['to_role']) ? EmployeeType::where('name', $config['to_role'])->first() : $office;
+                        $recipients = $holders?->employees()->pluck('email')->merge($holders->clients()->pluck('email'))
+                            ->filter(fn ($email) => filter_var($email, FILTER_VALIDATE_EMAIL))->unique()->values()->all() ?? [];
 
-                        if ($recipients === [] && $department && $department->email) {
-                            $recipients = [$department->email];
+                        if ($recipients === [] && $office?->email) {
+                            $recipients = [$office->email];
                         }
                     }
 
-                    // --- FALLBACK: Se non è una funzione aziendale, usiamo la mail diretta (es. per il cliente) ---
+                    // --- FALLBACK: Se non è un ufficio, usiamo la mail diretta (es. per il cliente) ---
                     if ($recipients === [] && ! empty($config['to_email'])) {
                         $recipients = [$item->compileTemplate($config['to_email'], $instance)];
                     }

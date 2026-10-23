@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Enums\Severity;
-use App\Models\BusinessFunction;
 use App\Models\EmailTemplate;
 use App\Models\EmployeeType;
 use App\Models\Process;
@@ -75,13 +74,13 @@ class ScadenziarioCogeProcessSeeder extends Seeder
 
         foreach (['R', 'A', 'C', 'I'] as $role) {
             $task->raciAssignments()->updateOrCreate(
-                ['business_function_id' => $functions[$role]->id],
+                ['employee_type_id' => $functions[$role]->id],
                 ['raci_role' => $role]
             );
         }
 
         // Se un ruolo cambia funzione, le assegnazioni non più previste vengono rimosse.
-        $task->raciAssignments()->whereNotIn('business_function_id', collect($functions)->pluck('id'))->delete();
+        $task->raciAssignments()->whereNotIn('employee_type_id', collect($functions)->pluck('id'))->delete();
 
         foreach (self::CHECKS as $index => $check) {
             $task->processTaskItems()->updateOrCreate(
@@ -103,7 +102,7 @@ class ScadenziarioCogeProcessSeeder extends Seeder
     }
 
     /**
-     * @return array<string, BusinessFunction> Funzione aziendale per ruolo RACI.
+     * @return array<string, EmployeeType> Ruolo (ufficio) per lettera RACI.
      */
     private function seedRaciFunctions(): array
     {
@@ -122,10 +121,10 @@ class ScadenziarioCogeProcessSeeder extends Seeder
                 ['companytype' => 'FINANCE', 'is_external' => $definition['is_external']]
             );
 
-            $functions[$role] = BusinessFunction::updateOrCreate(
-                ['code' => $definition['code']],
-                ['name' => $definition['name'], 'description' => "Funzione RACI ({$role}) dello Scadenziario COGE: tipo dipendente \"{$definition['type']}\"."]
-            );
+            $functions[$role] = EmployeeType::office($definition['code'], [
+                'name' => $definition['name'],
+                'description' => "Ruolo RACI ({$role}) dello Scadenziario COGE.",
+            ]);
         }
 
         return $functions;
