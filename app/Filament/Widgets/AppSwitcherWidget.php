@@ -2,11 +2,11 @@
 
 namespace App\Filament\Widgets;
 
+use App\Services\ExternalAppClient;
 use App\Services\ExternalAppResolver;
 use App\Services\SsoTokenBroker;
 use Filament\Widgets\Widget;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -60,12 +60,12 @@ class AppSwitcherWidget extends Widget
     private function lookupAvailableApps(string $email): array
     {
         $resolver = app(ExternalAppResolver::class);
+        $client = app(ExternalAppClient::class);
         $apps = [];
 
         foreach ($resolver->allApps() as $app) {
             try {
-                $response = Http::timeout(4)->connectTimeout(2)
-                    ->get("{$resolver->urlFor($app)}/api/users/lookup", ['email' => $email]);
+                $response = $client->for($app, 4)->get($client->url($app, 'api/users/lookup'), ['email' => $email]);
 
                 if ($response->successful() && $response->json('exists') === true) {
                     $apps[] = [
