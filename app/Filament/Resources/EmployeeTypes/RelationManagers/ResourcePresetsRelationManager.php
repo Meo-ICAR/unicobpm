@@ -20,6 +20,12 @@ use Illuminate\Database\Eloquent\Model;
  */
 class ResourcePresetsRelationManager extends RelationManager
 {
+    /** La scheda del ruolo è in sola lettura, ma i permessi del BPM si gestiscono qui. */
+    public function isReadOnly(): bool
+    {
+        return false;
+    }
+
     protected static string $relationship = 'resourcePresets';
 
     protected static ?string $title = 'Preset Procedure';

@@ -3,7 +3,7 @@
 namespace App\Filament\Resources\EmployeeTypes\Pages;
 
 use App\Filament\Resources\EmployeeTypes\EmployeeTypeResource;
-use Filament\Actions\EditAction;
+use Filament\Actions\Action;
 use Filament\Resources\Pages\ViewRecord;
 
 class ViewEmployeeType extends ViewRecord
@@ -13,7 +13,12 @@ class ViewEmployeeType extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            EditAction::make(),
+            Action::make('modificaInUnicooam')
+                ->label('Modifica in UnicoOAM')
+                ->icon('heroicon-o-arrow-top-right-on-square')
+                ->url(fn (): ?string => EmployeeTypeResource::unicooamUrl($this->getRecord()))
+                ->openUrlInNewTab()
+                ->visible(fn (): bool => EmployeeTypeResource::unicooamUrl() !== null),
         ];
     }
 }

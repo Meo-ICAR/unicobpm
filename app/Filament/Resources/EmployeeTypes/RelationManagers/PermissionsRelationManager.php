@@ -13,6 +13,12 @@ use Filament\Tables\Table;
 
 class PermissionsRelationManager extends RelationManager
 {
+    /** La scheda del ruolo è in sola lettura, ma i permessi del BPM si gestiscono qui. */
+    public function isReadOnly(): bool
+    {
+        return false;
+    }
+
     use HasRelationPlanAccess;
 
     protected static string $relationship = 'permissions';

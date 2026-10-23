@@ -3,7 +3,7 @@
 namespace App\Filament\Resources\EmployeeTypes\Pages;
 
 use App\Filament\Resources\EmployeeTypes\EmployeeTypeResource;
-use Filament\Actions\CreateAction;
+use Filament\Actions\Action;
 use Filament\Resources\Pages\ListRecords;
 
 class ListEmployeeTypes extends ListRecords
@@ -13,7 +13,12 @@ class ListEmployeeTypes extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            CreateAction::make(),
+            Action::make('gestisciInUnicooam')
+                ->label('Gestisci l\'organigramma in UnicoOAM')
+                ->icon('heroicon-o-arrow-top-right-on-square')
+                ->url(fn (): ?string => EmployeeTypeResource::unicooamUrl())
+                ->openUrlInNewTab()
+                ->visible(fn (): bool => EmployeeTypeResource::unicooamUrl() !== null),
         ];
     }
 }

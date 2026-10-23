@@ -15,73 +15,6 @@ use Unico\Core\Models\EmployeeType as CoreEmployeeType;
 class EmployeeType extends CoreEmployeeType
 {
     /**
-     * Codice della vecchia funzione aziendale e nome del ruolo che la sostituisce. Le funzioni senza un ruolo corrispondente
-     * hanno ricevuto un ruolo nuovo con questo nome.
-     *
-     * @var array<string, string>
-     */
-    public const OFFICE_ROLES = [
-        'COMPLIANCE' => 'compliance',
-        'HR' => 'risorse umane',
-        'LEGAL' => 'legale',
-        'IT' => 'it',
-        'BUS-BO' => 'back office',
-        'CTRL-AML' => 'antiriciclaggio',
-        'BUS-RETE-EXT' => 'rete collaboratori',
-        'CTRL-COMPL' => 'controllo compliance',
-        'COGE-CONTABILE' => 'contabile',
-        'COGE-CONTABILE-RESP' => 'contabile responsabile',
-        'COGE-CONSULENTE' => 'consulente coge',
-        'COGE-AMMINISTRATORE' => 'amministratore',
-        'SEGRETERIA' => 'segreteria amministrativa',
-        'WHISTLEBLOWING' => 'responsabile whistleblowing',
-        'WHISTLEBLOWING-SUPPLENTI' => 'supplente whistleblowing',
-        'CDA' => 'cda',
-        'AD' => 'amministratore delegato',
-        'AFFARI' => 'affari societari e contabilità',
-        'ORG-RU' => 'organizzazione e risorse umane',
-        'COMMERCIALE' => 'commerciale',
-        'SEGR-RETE' => 'segreteria di rete',
-        'INT-AUDIT' => 'audit',
-        'DPO' => 'dpo',
-    ];
-
-    /**
-     * Valori di `outsourcable_status`: «yes» e «partial» permettono di assegnare il ruolo anche a un esterno (client).
-     *
-     * @var array<string, string>
-     */
-    public const OUTSOURCABLE = [
-        'no' => 'No',
-        'partial' => 'Parziale',
-        'yes' => 'Sì',
-    ];
-
-    /**
-     * Ruolo dell'ufficio con questo codice: lo crea se manca (nome da OFFICE_ROLES, altrimenti il nome dell'ufficio in minuscolo)
-     * e dà il codice a un ruolo che esisteva già con quel nome. Il nome dell'ufficio (es. «Ufficio Compliance») diventa la
-     * descrizione se non ce n'è una; gli altri attributi aggiornano il ruolo.
-     *
-     * @param  array<string, mixed>  $attributes
-     */
-    public static function office(string $code, array $attributes = []): self
-    {
-        $officeName = (string) ($attributes['name'] ?? $code);
-        $roleName = self::OFFICE_ROLES[$code] ?? mb_strtolower($officeName);
-        unset($attributes['name']);
-
-        $role = static::query()->where('code', $code)->first()
-            ?? static::query()->where('name', $roleName)->first()
-            ?? new static(['name' => $roleName]);
-
-        $role->fill(['code' => $code] + $attributes);
-        $role->description ??= $officeName;
-        $role->save();
-
-        return $role;
-    }
-
-    /**
      * Casting dei tipi di attributi (Sintassi moderna Laravel).
      *
      * @return array<string, string>
@@ -91,12 +24,6 @@ class EmployeeType extends CoreEmployeeType
         return array_merge(parent::casts(), [
             'is_external' => 'boolean',
         ]);
-    }
-
-    /** Il ruolo può essere ricoperto anche da un esterno (client). */
-    public function isOutsourcable(): bool
-    {
-        return in_array($this->outsourcable_status, ['yes', 'partial'], true);
     }
 
     /* =========================================================================
@@ -148,17 +75,6 @@ class EmployeeType extends CoreEmployeeType
         return $emails->isNotEmpty() || ! filter_var($this->email, FILTER_VALIDATE_EMAIL) ? $emails : collect([$this->email]);
     }
 
-    /** Rinomina il ruolo anche in `employee_roles` di chi lo ricopre (lì è scritto per nome). */
-    public function renameTo(string $name): void
-    {
-        if ($this->name === $name) {
-            return;
-        }
-
-        self::replaceHolderRole($this->name, $name);
-        $this->update(['name' => $name]);
-    }
-
     /**
      * Unisce questo ruolo a un altro (stesso ufficio con due nomi): chi lo ricopre passa all'altro, la matrice RACI e i passi
      * puntano all'altro, i dati d'ufficio mancanti passano all'altro, poi questo ruolo si toglie.
@@ -192,15 +108,6 @@ class EmployeeType extends CoreEmployeeType
 
         $target->save();
         $this->delete();
-    }
-
-    private static function replaceHolderRole(string $from, string $to): void
-    {
-        foreach ([Employee::class, Client::class] as $model) {
-            $model::query()->whereJsonContains('employee_roles', $from)->get()->each(fn ($holder) => $holder->update([
-                'employee_roles' => collect($holder->employee_roles)->map(fn (string $role): string => $role === $from ? $to : $role)->unique()->values()->all(),
-            ]));
-        }
     }
 
     public function raciRoles(): HasMany

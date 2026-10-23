@@ -2,13 +2,10 @@
 
 namespace App\Filament\Resources\EmployeeTypes;
 
-use App\Filament\Resources\EmployeeTypes\Pages\CreateEmployeeType;
-use App\Filament\Resources\EmployeeTypes\Pages\EditEmployeeType;
 use App\Filament\Resources\EmployeeTypes\Pages\ListEmployeeTypes;
 use App\Filament\Resources\EmployeeTypes\Pages\ViewEmployeeType;
 use App\Filament\Resources\EmployeeTypes\RelationManagers\PermissionsRelationManager;
 use App\Filament\Resources\EmployeeTypes\RelationManagers\ResourcePresetsRelationManager;
-use App\Filament\Resources\EmployeeTypes\Schemas\EmployeeTypeForm;
 use App\Filament\Resources\EmployeeTypes\Schemas\EmployeeTypeInfolist;
 use App\Filament\Resources\EmployeeTypes\Tables\EmployeeTypesTable;
 use App\Filament\Traits\HasPlanAccess;
@@ -18,8 +15,13 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
 
+/**
+ * Ruoli e uffici in sola lettura: l'organigramma (dati d'ufficio, responsabile, chi ricopre il ruolo) si gestisce in UnicoOAM.
+ * Qui si modificano solo i permessi del ruolo sulle schermate del BPM.
+ */
 class EmployeeTypeResource extends Resource
 {
     use HasPlanAccess;
@@ -40,11 +42,6 @@ class EmployeeTypeResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
-    public static function form(Schema $schema): Schema
-    {
-        return EmployeeTypeForm::configure($schema);
-    }
-
     public static function infolist(Schema $schema): Schema
     {
         return EmployeeTypeInfolist::configure($schema);
@@ -64,13 +61,23 @@ class EmployeeTypeResource extends Resource
         ];
     }
 
+    /** Indirizzo della scheda del ruolo in UnicoOAM (null se l'app non è configurata). */
+    public static function unicooamUrl(?Model $record = null): ?string
+    {
+        $base = config('services.apps.unicooam.url');
+
+        if (blank($base)) {
+            return null;
+        }
+
+        return rtrim((string) $base, '/').'/admin/employee-types'.($record ? '/'.$record->getKey().'/edit' : '');
+    }
+
     public static function getPages(): array
     {
         return [
             'index' => ListEmployeeTypes::route('/'),
-            'create' => CreateEmployeeType::route('/create'),
             'view' => ViewEmployeeType::route('/{record}'),
-            'edit' => EditEmployeeType::route('/{record}/edit'),
         ];
     }
 }

@@ -26,6 +26,12 @@ class EmployeeTypeInfolist
                     ->label('Ruolo Esternalizzabile')
                     ->boolean()
                     ->placeholder('-'),
+                TextEntry::make('description')
+                    ->label('Ufficio')
+                    ->placeholder('-'),
+                TextEntry::make('managed_by_code')
+                    ->label('Supervisionato da')
+                    ->placeholder('-'),
                 TextEntry::make('code')
                     ->label('Codice ufficio')
                     ->placeholder('-'),
