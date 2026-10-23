@@ -22,6 +22,21 @@ class AppSwitcherWidget extends Widget
     protected int|string|array $columnSpan = 'full';
 
     /**
+     * Nome dell'icona di ogni app nella cartella dei marchi condivisi.
+     *
+     * @var array<string, string>
+     */
+    private const BRAND_ICONS = [
+        'unicofinance' => 'unico-finance',
+        'unicooam' => 'unico-oam',
+        'unicocoge' => 'unico-coge',
+        'unicogdpr' => 'unico-gdpr',
+        'daishboard' => 'dai-shboard',
+        'whistle' => 'unico-whistle',
+        'unicoaiact' => 'unico-aiact',
+    ];
+
+    /**
      * @return array<int, array{key: string, label: string, url: string, logo: ?string, post: bool}>
      */
     public function getAvailableApps(): array
@@ -70,14 +85,15 @@ class AppSwitcherWidget extends Widget
     }
 
     /**
-     * Se esiste un logo public/images/{app}.png con lo stesso nome della app,
-     * ritorna il suo URL per mostrarlo al posto dell'etichetta testuale.
+     * Icona attuale dell'app (public/brand/icons), se ne esiste una per quella app.
      */
     private function logoFor(string $app): ?string
     {
-        $path = public_path("images/{$app}.png");
+        $icon = self::BRAND_ICONS[$app] ?? null;
 
-        return is_file($path) ? asset("images/{$app}.png") : null;
+        return $icon !== null && is_file(public_path("brand/icons/{$icon}-64.png"))
+            ? asset("brand/icons/{$icon}-64.png")
+            : null;
     }
 
     public function switchTo(string $app)

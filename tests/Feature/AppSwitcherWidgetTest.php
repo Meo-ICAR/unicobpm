@@ -34,6 +34,28 @@ class AppSwitcherWidgetTest extends TestCase
             ->assertDontSee('UnicoOAM');
     }
 
+    public function test_each_app_shows_its_current_brand_icon_next_to_the_name(): void
+    {
+        $this->actingAs(User::factory()->create(['email' => 'agente@example.com']));
+
+        $apps = ['unicofinance' => 'unico-finance', 'unicooam' => 'unico-oam', 'unicocoge' => 'unico-coge', 'unicogdpr' => 'unico-gdpr', 'daishboard' => 'dai-shboard', 'whistle' => 'unico-whistle', 'unicoaiact' => 'unico-aiact'];
+        $fakes = [];
+
+        foreach ($apps as $key => $icon) {
+            config()->set("services.apps.{$key}", ['url' => "https://{$key}.test", 'label' => "App {$key}"]);
+            $fakes["https://{$key}.test/api/users/lookup*"] = Http::response(['exists' => true]);
+        }
+
+        Http::fake($fakes);
+
+        $widget = Livewire::test(AppSwitcherWidget::class);
+
+        foreach ($apps as $key => $icon) {
+            $widget->assertSee("App {$key}")->assertSeeHtml("brand/icons/{$icon}-64.png");
+            $this->assertFileExists(public_path("brand/icons/{$icon}-64.png"));
+        }
+    }
+
     public function test_shows_an_empty_state_when_no_other_app_has_a_matching_account(): void
     {
         $user = User::factory()->create(['email' => 'agente@example.com']);
