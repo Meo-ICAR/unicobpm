@@ -43,6 +43,7 @@ trait HasBpmKnowledgeBase
             base_path('CLAUDE.md'),
             base_path('BPM-DOMAIN-SPEC.md'),
             resource_path('manuals/manuale-operativo-bpm.html'),
+            resource_path('manuals/manuale-tecnico.html'),
         ];
     }
 

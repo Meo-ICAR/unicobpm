@@ -1,3 +1,35 @@
+<!-- suite-unico:start -->
+## La suite Unico (mediatori creditizi)
+
+Questa app fa parte di una suite che condivide il database `core` e la libreria `meo-icar/unico-core`:
+
+- **unicoagent**: preventivi e perfezionamento delle pratiche. App separata che parla con i vari CRM solo via API (gateway in `app/Services/Crm`: unicofinance, Mediafacile, REST generico).
+- **unicofinance**: CRM e istruttoria (pratiche, clienti, documenti, agenti, istruttori; pannelli admin e agenti). Espone le API per unicoagent (`/api/agente/v1`, token e firma) e per unicobpm (`/api`, chiave `X-Api-Key`).
+- **unicocoge** (ex Proforma): interfaccia COGE e contributi: provvigioni, proforma, fatture, prima nota.
+- **unicooam**: compliance e organigramma (Dipendenti con i ruoli in `employee_roles`, documenti e scadenziario, OAM/IVASS, audit). I ruoli della suite si definiscono qui.
+- **unicobpm**: BPM e coordinatore. Processi con RACI che chiamano via API le altre app (`config/services.php`, `apps`) e reagiscono a eventi esterni.
+- **unico-core**: libreria comune per schema condiviso, documenti, email, firma, accesso e bridge `/api/commands`.
+- Fuori da questo contesto, da non toccare: unicogdpr, ShareSync, backups3.
+
+Regole valide in tutte le app:
+- Lo schema condiviso si cambia solo in unico-core (migration con `unico-core:migrate`, protette da `hasTable`/`hasColumn`); le app non alterano a mano le tabelle del core. Id sempre interi.
+- Istruttore = dipendente con il ruolo `istruttore` in `employee_roles`, come nell'organigramma di unicooam (in unicofinance: `App\Support\Istruttori`).
+- Gli stati delle pratiche stanno in `pratica_stati` (flag `is_working`, `is_approved`, `is_rejected`, `is_suspended`...). La vecchia `pratiches_statos` non si usa più.
+- Le app si parlano via API: chiavi solo nel `.env` (mai nel codice, nei log o nei commit) e nessuna lettura diretta delle tabelle di un'altra app se esiste un'API. Niente dati personali nei log.
+- I database sono di sviluppo. Rispondi e scrivi i testi per gli utenti in italiano.
+- Se esiste `graphify-out/GRAPH_REPORT.md`, consultalo prima di cercare nel codice; si aggiorna con `graphify update .`. Per l'estrazione semantica (documenti, PDF, immagini) graphify usa `GEMINI_API_KEY` dal `.env`: non stamparla né committarla.
+
+## Questa app: unicobpm (BPM e coordinatore)
+- Processi, task e RACI (`EmployeeType`): le azioni `external_check` (`GET /api/checks/{comando}`) e `external_command` chiamano le altre app via `ExternalAppClient`; gli indirizzi sono in `config/services.php` (`apps`).
+- Chi riceve un avviso lo decide la RACI del passo; le app esterne forniscono solo dati e controlli, non inviano email.
+- Non esegue le migration del core e i suoi seeder non vanno lanciati sul database condiviso. Specifiche in `BPM-DOMAIN-SPEC.md`.
+
+### Manuali (consultali prima di rispondere)
+- Manuale utente: `resources/manuals/manuale-operativo-bpm.html` (più `BPM-DOMAIN-SPEC.md`). Manuale tecnico: `resources/manuals/manuale-tecnico.html`.
+- Ogni sezione ha un `id`: `grep -n 'id="' <file>` dà l'indice, poi leggi la sezione che serve. L'appendice «Fatti dal codice» del manuale tecnico (rotte, comandi, modelli, variabili `.env`) è generata: si rigenera con `python3 /var/www/html/unico-core/tools/manuals/gen_facts.py /var/www/html/unicobpm`; il resto è scritto a mano e va aggiornato quando cambia il comportamento.
+- L'assistente (`App\Neuron\ManualAssistantAgent`) li indicizza con `php artisan manual:sync`: da rilanciare dopo ogni modifica.
+<!-- suite-unico:end -->
+
 <laravel-boost-guidelines>
 === foundation rules ===
 

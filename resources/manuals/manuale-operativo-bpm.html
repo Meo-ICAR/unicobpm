@@ -17,7 +17,7 @@ sistemi esterni. È scritto per essere consultato sia da un operatore umano sia
 dall'assistente AI del sistema (AssistenteAI), che risponde alle domande degli utenti
 usando questo testo come fonte.</p>
 
-<h2>1. Concetti di base e vocabolario</h2>
+<h2 id="1-concetti-di-base-e-vocabolario">1. Concetti di base e vocabolario</h2>
 
 <p><strong>Processo</strong> (tabella <code>processes</code>, modello <code>Process</code>) è il
 template che descrive un flusso di lavoro ripetibile: ad esempio "AML", "Trasparenza",
@@ -54,7 +54,7 @@ soggetto reale (un fornitore, un cliente, ecc.) oppure senza soggetto per i proc
 puramente interni o ricorrenti. È la "pratica" che un operatore vede, prende in carico e
 porta avanti fino alla conclusione.</p>
 
-<h2>2. Come è organizzato un processo: gerarchia delle tabelle</h2>
+<h2 id="2-come-e-organizzato-un-processo-gerarchia-delle-tabelle">2. Come è organizzato un processo: gerarchia delle tabelle</h2>
 
 <p>La gerarchia di configurazione (i "template", modificati solo dagli amministratori)
 è:</p>
@@ -81,22 +81,22 @@ sia <code>checklist_answers</code> mantengono anche un riferimento diretto a
 <code>process_instance_id</code>, oltre al percorso completo passando per
 l'esecuzione del task.</p>
 
-<h2>3. La matrice RACI</h2>
+<h2 id="3-la-matrice-raci">3. La matrice RACI</h2>
 
 <p>Ogni task (<code>process_tasks</code>) ha una o più righe nella tabella
-<code>process_task_raci</code>, che collega il task a una <strong>funzione aziendale</strong>
-(<code>business_functions</code>, es. "Ufficio Compliance", "Back Office") con un
+<code>process_task_raci</code>, che collega il task a un <strong>ruolo dell'organigramma</strong>
+(<code>employee_types</code>, es. "compliance", "back office", "contabile": i ruoli si definiscono in UnicoOAM, Dipendenti) con un
 ruolo RACI: <strong>R</strong> (Responsible, chi esegue materialmente il task),
 <strong>A</strong> (Accountable, chi ne risponde), <strong>C</strong> (Consulted, chi va
 consultato) o <strong>I</strong> (Informed, chi va solo informato). Una stessa funzione
 aziendale può avere un solo ruolo per task.</p>
 
-<p>Le funzioni aziendali sono composte da persone (dipendenti o clienti/consulenti
-esterni) tramite un'associazione di appartenenza; ogni persona può risultare
-"responsabile di login" per la funzione a cui appartiene.</p>
+<p>Un ruolo è ricoperto da chi lo ha nel campo <code>employee_roles</code> della propria scheda (dipendenti, e consulenti
+esterni per i ruoli esternalizzabili); le email dei processi vanno all'indirizzo della persona in anagrafica, anche se non ha un account di accesso, e se nessuno
+ricopre il ruolo a quello dell'ufficio. Se un passo non ha nessun destinatario scrive l'amministratore.</p>
 
 <p><strong>Assegnazione automatica delle pratiche</strong>: quando una pratica entra in un
-task, il sistema cerca la funzione aziendale con ruolo <strong>R</strong> su quel task.
+task, il sistema cerca il ruolo con responsabilità <strong>R</strong> su quel task.
 Se quella funzione ha una sola persona abilitata, la pratica le viene assegnata
 automaticamente e risulta già "presa in carico". Se la funzione ha più persone, la
 pratica resta senza assegnatario e compare nell'elenco "da prendere in carico" per
@@ -110,11 +110,11 @@ compaiono nella matrice RACI riepilogativa del processo.</p>
 l'instradamento e la visibilità delle pratiche nelle liste operative, non
 l'autorizzazione a usare le risorse Filament.</p>
 
-<h2>4. I trigger: quando un processo o un task si attiva</h2>
+<h2 id="4-i-trigger-quando-un-processo-o-un-task-si-attiva">4. I trigger: quando un processo o un task si attiva</h2>
 
 <p>Esistono tre livelli di trigger, da non confondere tra loro.</p>
 
-<h3>4.1 Trigger su un modello esterno (tabella <code>process_triggers</code>)</h3>
+<h3 id="4-1-trigger-su-un-modello-esterno-tabella-process-triggers">4.1 Trigger su un modello esterno (tabella <code>process_triggers</code>)</h3>
 
 <p>Un trigger di questo tipo osserva un modello esterno (ad esempio un fornitore) e
 avvia un processo quando si verifica un evento:</p>
@@ -134,7 +134,7 @@ giorni (<code>idle_days</code>) e soddisfacenti le condizioni, avviando una prat
 ciascuno (se non ne esiste già una in corso per lo stesso processo).</li>
 </ul>
 
-<h3>4.2 Filtri di ammissibilità del processo (campi su <code>processes</code>)</h3>
+<h3 id="4-2-filtri-di-ammissibilita-del-processo-campi-su-processes">4.2 Filtri di ammissibilità del processo (campi su <code>processes</code>)</h3>
 
 <p>Un processo può definire un campo target, uno stato atteso (valorizzato / vuoto /
 uguale a un valore) ed eventuali condizioni di esclusione: questi filtri servono a
@@ -143,7 +143,7 @@ usati sia per i processi periodici (per selezionare i soggetti su cui creare le
 pratiche) sia come indicatore informativo ("record eleggibili oggi") nella schermata di
 configurazione del processo.</p>
 
-<h3>4.3 Trigger/esclusione a livello di singolo task (campi su <code>process_tasks</code>)</h3>
+<h3 id="4-3-trigger-esclusione-a-livello-di-singolo-task-campi-su-pr">4.3 Trigger/esclusione a livello di singolo task (campi su <code>process_tasks</code>)</h3>
 
 <p>Un task può avere le proprie condizioni di applicabilità (stessi criteri
 valorizzato/vuoto/uguale a un valore, più eventuali esclusioni): se il soggetto della
@@ -151,7 +151,7 @@ pratica non soddisfa le condizioni del task, quel task viene <strong>saltato</st
 pratica passa automaticamente al task successivo applicabile. Questo permette di avere
 processi con rami condizionali senza dover duplicare l'intero processo.</p>
 
-<h3>4.4 Processi periodici/ricorrenti</h3>
+<h3 id="4-4-processi-periodici-ricorrenti">4.4 Processi periodici/ricorrenti</h3>
 
 <p>Un processo può essere marcato come periodico (<code>is_periodic</code>) in due modi
 complementari: una ricorrenza a calendario (giornaliera, settimanale, mensile —
@@ -162,7 +162,7 @@ programma la creazione automatica di pratiche per tutti i soggetti che soddisfan
 filtri di ammissibilità del processo, con o senza soggetto specifico a seconda del
 caso d'uso (es. adempimenti interni ricorrenti non legati a un singolo record).</p>
 
-<h2>5. Le azioni dentro un task (item)</h2>
+<h2 id="5-le-azioni-dentro-un-task-item">5. Le azioni dentro un task (item)</h2>
 
 <p>Ogni item di un task ha un tipo di azione che ne determina il comportamento:</p>
 
@@ -176,7 +176,7 @@ soggetto della pratica.</li>
 <li><strong>Testo libero</strong>: raccoglie una risposta testuale libera
 dall'operatore.</li>
 <li><strong>Email automatica</strong>: appena la pratica entra nel task, il sistema
-invia automaticamente un'email (al destinatario di una funzione aziendale o a un
+invia automaticamente un'email (al destinatario di un ruolo o a un
 indirizzo diretto, con testo basato su un modello con segnaposto sostituiti con i dati
 della pratica, ed eventuali documenti allegati) e registra da solo il completamento
 dell'item, senza intervento dell'operatore.</li>
@@ -201,7 +201,23 @@ ricevuto una risposta: a quel punto la pratica avanza automaticamente al task
 successivo applicabile (saltando quelli esclusi dal soggetto, vedi §4.3) oppure, se non
 ci sono altri task, la pratica risulta conclusa.</p>
 
-<h2>6. Le checklist e le regole di scarto (knock-out)</h2>
+<p>Oltre ai tipi appena descritti ci sono tre azioni che parlano con altre applicazioni o con le persone via email:</p>
+
+<ul>
+<li><strong>Check esterno</strong>: interroga un'altra app (UnicoOAM, UnicoCoge, UnicoFinance) che risponde solo con un valore e un grado
+(<em>ok, regular, warning, alert</em>). Se il grado non è <em>ok</em> parte un'email, con il testo scelto per quel grado, ai ruoli RACI del passo
+(secondo il grado, oppure a quelli indicati nell'azione); un eventuale allegato (per esempio un CSV) viaggia con l'email. Un'azione può girare solo in un
+giorno fisso del mese.</li>
+<li><strong>Comando su un'altra app</strong>: chiede a un'altra app di eseguire un'operazione autorizzata (per esempio l'invio dei proforma ai produttori). La
+richiesta resta in coda e viene ritentata se l'app non risponde; per ogni pratica e azione parte una sola volta. I ruoli RACI indicati possono essere messi in copia.</li>
+<li><strong>Attesa risposta email</strong>: il processo aspetta la risposta di una controparte. La risposta si collega al processo dall'identificativo della
+conversazione (o da «[ID: n]» nell'oggetto) e viene interpretata: le risposte brevi e chiare («Sì», «Confermo», «Non accetto») le capisce il sistema da solo, le altre
+l'assistente AI; sotto una certa sicurezza decide un operatore. Un rifiuto può far decidere un operatore, valere come risposta o sospendere il processo; una richiesta
+di rinvio può essere concessa in automatico entro i limiti (di default 30 giorni oltre il termine e 2 rinvii per step, mai oltre la data tassativa della pratica).
+Gli allegati ricevuti per email diventano documenti del processo.</li>
+</ul>
+
+<h2 id="6-le-checklist-e-le-regole-di-scarto-knock-out">6. Le checklist e le regole di scarto (knock-out)</h2>
 
 <p>Ogni domanda di una checklist può essere di tipo sì/no, testo, numero, data,
 selezione singola o multipla, ed essere obbligatoria o facoltativa. Una domanda può
@@ -219,7 +235,7 @@ verificato durante la pratica.</p>
 compare solo se una domanda precedente ha ricevuto una determinata risposta), per
 evitare di porre domande non pertinenti.</p>
 
-<h2>7. Ciclo di vita di una pratica</h2>
+<h2 id="7-ciclo-di-vita-di-una-pratica">7. Ciclo di vita di una pratica</h2>
 
 <p>Una pratica (<code>ProcessInstance</code>) attraversa questi stati:
 <strong>in attesa</strong>, <strong>in corso</strong>, e infine uno stato finale tra
@@ -245,13 +261,13 @@ esito sul sistema esterno del soggetto (ad esempio la data di stipula di un
 finanziamento), il sistema esegue automaticamente questa scrittura al momento della
 conclusione.</p>
 
-<h2>8. Promemoria e scadenze (SLA)</h2>
+<h2 id="8-promemoria-e-scadenze-sla">8. Promemoria e scadenze (SLA)</h2>
 
 <p>Un task può avere promemoria periodici abilitati, con un intervallo di giorni tra un
 sollecito e l'altro e un numero massimo di solleciti. Se i promemoria restano
 insoddisfatti oltre certe soglie, un task può definire regole di escalation su più
 livelli (ad esempio: dopo tot ore avvisa l'assegnatario, poi il responsabile, poi
-riassegna il task a un'altra funzione aziendale). Una pratica può inoltre avere una
+riassegna il task a un altro ruolo). Una pratica può inoltre avere una
 scadenza tassativa complessiva, indipendente dal singolo task, oltre la quale viene
 segnalata come fuori termine.</p>
 
@@ -262,7 +278,7 @@ attivo, questi controlli restano schedulati ma non vengono davvero eseguiti — 
 condizione da verificare con l'amministratore di sistema se un promemoria atteso non
 sembra essere mai stato inviato.</p>
 
-<h2>9. Dove si configura e si gestisce tutto: il pannello</h2>
+<h2 id="9-dove-si-configura-e-si-gestisce-tutto-il-pannello">9. Dove si configura e si gestisce tutto: il pannello</h2>
 
 <p>Tutta l'applicazione è gestita da un pannello Filament, organizzato in queste
 sezioni principali:</p>
@@ -296,7 +312,29 @@ ogni pratica.</li>
 intero processo, utile per avere una visione d'insieme di chi fa cosa in ogni suo
 task.</p>
 
-<h2>10. Limitazioni note (da non presentare come funzionanti all'utente)</h2>
+<h2 id="collegamento-con-le-altre-app">Collegamento con le altre app</h2>
+
+<p>UnicoBPM è il coordinatore della suite: le altre app non hanno processi propri, comunicano con questo motore.</p>
+<ul>
+<li><strong>Eventi esterni.</strong> Un'altra app può comunicare un evento (per esempio <em>pratica.perfezionata</em> da UnicoAgent). I processi con un trigger «evento esterno» con quel nome
+(e le condizioni rispettate sui dati dell'evento) partono da soli, senza un soggetto locale: la pratica porta il riferimento e i dati dell'evento. Lo stesso evento non avvia due processi.</li>
+<li><strong>Chiamate in uscita.</strong> Le richieste verso le altre app e i webhook passano da una coda con ritentativi, consultabile nel pannello (Chiamate in uscita), così non si perdono se l'app non risponde.</li>
+<li><strong>Webhook.</strong> Terzi iscritti (Webhook) vengono avvisati quando succede qualcosa nei processi; ogni chiamata è firmata con il segreto dell'iscritto.</li>
+<li><strong>Log API.</strong> Gli esiti delle chiamate API delle altre app compaiono nel trace «Log API» (solo metadati, mai contenuti).</li>
+<li><strong>Accesso unico.</strong> Dal pannello si passa a un'altra app con un accesso automatico (token monouso).</li>
+</ul>
+
+<h2 id="il-processo-compliance-giornaliero">Il processo Compliance giornaliero</h2>
+
+<p>Il processo <strong>Compliance</strong> (codice <code>PRC-COMPLIANCE</code>) è quotidiano: ogni mattina apre una pratica senza soggetto con tre passi, ognuno con la sua RACI.
+<strong>Documentazione</strong> (UnicoOAM): documenti scaduti (sempre un alert) e in scadenza (avviso entro 15 giorni, warning entro 7). <strong>Fatture di acquisto</strong> (UnicoCoge):
+avviso se l'ultima fattura caricata ha più di 25 giorni (regular), warning da 31, alert da 45. <strong>Provvigioni del mese</strong> (UnicoCoge), a date fisse: il 3 l'elenco delle provvigioni
+maturate (CSV allegato) a chi ha i ruoli A, C e I; il 5 il promemoria a R per rettificare o escludere; il 10 l'invio dei proforma ai produttori, con A e I in copia. I membri dei ruoli si assegnano
+nella scheda del dipendente (campo Ruoli); i testi delle email (template <code>COMPL_*</code>) si rifiniscono dal pannello.</p>
+
+<h2 id="10-limitazioni-note-da-non-presentare-come-funzionanti-all-u">10. Limitazioni note (da non presentare come funzionanti all'utente)</h2>
+
+<p><em>Questa sezione risale a una versione precedente del motore: se un punto non corrisponde al comportamento attuale, fa fede il manuale tecnico.</em></p>
 
 <p>Alcune funzionalità sono presenti nel codice ma non ancora pienamente operative:
 l'invio automatico di email di sollecito ha un difetto per cui il primissimo sollecito
