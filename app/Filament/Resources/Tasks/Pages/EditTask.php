@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Tasks\Pages;
 
 use App\Filament\Resources\Tasks\TaskResource;
+use App\Filament\Traits\HasResourceSubheading;
 use App\Models\Task;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
@@ -12,6 +13,8 @@ use Filament\Resources\Pages\EditRecord;
 
 class EditTask extends EditRecord
 {
+    use HasResourceSubheading;
+
     protected static string $resource = TaskResource::class;
 
     protected function getHeaderActions(): array

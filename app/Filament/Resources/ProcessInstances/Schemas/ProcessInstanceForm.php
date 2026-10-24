@@ -30,6 +30,7 @@ class ProcessInstanceForm
                             ->schema([
                                 Section::make('Informazioni Processo')
                                     ->description('Configurazione e step attivo del workflow.')
+                                    ->columnSpanFull()
                                     ->compact()
                                     ->schema([
                                         Select::make('process_id')
@@ -47,6 +48,7 @@ class ProcessInstanceForm
 
                                 Section::make('Anagrafica della Pratica')
                                     ->description('Associazione polimorfica del soggetto in lavorazione.')
+                                    ->columnSpanFull()
                                     ->compact()
                                     ->schema([
                                         // Risolve subject_type e subject_id in una select unica e intelligente

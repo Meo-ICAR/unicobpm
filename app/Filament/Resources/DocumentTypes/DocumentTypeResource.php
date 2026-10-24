@@ -7,6 +7,7 @@ use App\Filament\Resources\DocumentTypes\Pages\EditDocumentType;
 use App\Filament\Resources\DocumentTypes\Pages\ListDocumentTypes;
 use App\Filament\Resources\DocumentTypes\Schemas\DocumentTypeForm;
 use App\Filament\Resources\DocumentTypes\Tables\DocumentTypesTable;
+use App\Filament\Traits\HasFormSubheading;
 use App\Filament\Traits\HasPlanAccess;
 use App\Models\DocumentType;
 use BackedEnum;
@@ -20,6 +21,7 @@ use UnitEnum;
 
 class DocumentTypeResource extends Resource
 {
+    use HasFormSubheading;
     use HasPlanAccess;
 
     protected static ?string $model = DocumentType::class;
@@ -28,7 +30,7 @@ class DocumentTypeResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
-    protected static UnitEnum|string|null $navigationGroup = 'Sistema';
+    protected static UnitEnum|string|null $navigationGroup = 'Settings';
 
     protected static ?string $navigationLabel = 'Tipi Documento';
 
@@ -38,9 +40,14 @@ class DocumentTypeResource extends Resource
 
     protected static ?int $navigationSort = 4;
 
+    public static function getSubheading(): ?string
+    {
+        return 'Anagrafica delle tipologie documentali usate nei plichi e nei processi.';
+    }
+
     public static function form(Schema $schema): Schema
     {
-        return DocumentTypeForm::configure($schema);
+        return static::withFormSubheading(DocumentTypeForm::configure($schema));
     }
 
     public static function table(Table $table): Table

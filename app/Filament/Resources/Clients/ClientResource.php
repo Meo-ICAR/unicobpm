@@ -7,6 +7,7 @@ use App\Filament\Resources\Clients\Pages\EditClient;
 use App\Filament\Resources\Clients\Pages\ListClients;
 use App\Filament\Resources\Clients\Schemas\ClientForm;
 use App\Filament\Resources\Clients\Tables\ClientsTable;
+use App\Filament\Traits\HasFormSubheading;
 use App\Filament\Traits\HasPlanAccess;
 use App\Models\Client;
 use BackedEnum;
@@ -18,13 +19,14 @@ use UnitEnum;
 
 class ClientResource extends Resource
 {
+    use HasFormSubheading;
     use HasPlanAccess;
 
     protected static ?string $model = Client::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUsers;
 
-    protected static UnitEnum|string|null $navigationGroup = 'Sistema';
+    protected static UnitEnum|string|null $navigationGroup = 'Settings';
 
     protected static ?string $navigationLabel = 'Clienti / Consulenti';
 
@@ -36,9 +38,14 @@ class ClientResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
+    public static function getSubheading(): ?string
+    {
+        return 'Anagrafica clienti e consulenti (soggetti e ruoli esterni).';
+    }
+
     public static function form(Schema $schema): Schema
     {
-        return ClientForm::configure($schema);
+        return static::withFormSubheading(ClientForm::configure($schema));
     }
 
     public static function table(Table $table): Table

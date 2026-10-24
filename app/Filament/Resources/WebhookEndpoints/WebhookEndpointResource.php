@@ -7,6 +7,7 @@ use App\Filament\Resources\WebhookEndpoints\Pages\EditWebhookEndpoint;
 use App\Filament\Resources\WebhookEndpoints\Pages\ListWebhookEndpoints;
 use App\Filament\Resources\WebhookEndpoints\Schemas\WebhookEndpointForm;
 use App\Filament\Resources\WebhookEndpoints\Tables\WebhookEndpointsTable;
+use App\Filament\Traits\HasFormSubheading;
 use App\Filament\Traits\HasPlanAccess;
 use App\Models\WebhookEndpoint;
 use BackedEnum;
@@ -18,6 +19,7 @@ use UnitEnum;
 /** Terzi che ricevono gli eventi dei processi (firmati con il loro segreto). */
 class WebhookEndpointResource extends Resource
 {
+    use HasFormSubheading;
     use HasPlanAccess;
 
     protected static ?string $model = WebhookEndpoint::class;
@@ -34,9 +36,14 @@ class WebhookEndpointResource extends Resource
 
     protected static UnitEnum|string|null $navigationGroup = 'Settings';
 
+    public static function getSubheading(): ?string
+    {
+        return 'Notifica sistemi esterni al cambio di stato di una pratica BPM (POST firmato con X-Unico-Signature). Non è il canale verso le altre app della suite.';
+    }
+
     public static function form(Schema $schema): Schema
     {
-        return WebhookEndpointForm::configure($schema);
+        return static::withFormSubheading(WebhookEndpointForm::configure($schema));
     }
 
     public static function table(Table $table): Table

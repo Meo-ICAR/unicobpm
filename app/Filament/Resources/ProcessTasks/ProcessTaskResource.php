@@ -8,6 +8,7 @@ use App\Filament\Resources\ProcessTasks\Pages\ListProcessTasks;
 use App\Filament\Resources\ProcessTasks\RelationManagers\ProcessTaskItemsRelationManager;
 use App\Filament\Resources\ProcessTasks\Schemas\ProcessTaskForm;
 use App\Filament\Resources\ProcessTasks\Tables\ProcessTasksTable;
+use App\Filament\Traits\HasFormSubheading;
 use App\Filament\Traits\HasPlanAccess;
 use App\Models\ProcessTask;
 use Filament\Resources\Resource;
@@ -16,6 +17,7 @@ use Filament\Tables\Table;
 
 class ProcessTaskResource extends Resource
 {
+    use HasFormSubheading;
     use HasPlanAccess;
 
     protected static ?string $model = ProcessTask::class;
@@ -36,9 +38,14 @@ class ProcessTaskResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
+    public static function getSubheading(): ?string
+    {
+        return 'Step del processo: azioni, scadenze, solleciti e matrice RACI.';
+    }
+
     public static function form(Schema $schema): Schema
     {
-        return ProcessTaskForm::configure($schema);
+        return static::withFormSubheading(ProcessTaskForm::configure($schema));
     }
 
     public static function table(Table $table): Table

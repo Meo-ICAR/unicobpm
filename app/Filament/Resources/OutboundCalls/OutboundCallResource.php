@@ -26,7 +26,12 @@ class OutboundCallResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Chiamate in uscita';
 
-    protected static UnitEnum|string|null $navigationGroup = 'Settings';
+    protected static UnitEnum|string|null $navigationGroup = 'System';
+
+    public static function getSubheading(): ?string
+    {
+        return 'Coda delle scritture e dei webhook in uscita: stato, ritentativi e riprova manuale.';
+    }
 
     public static function table(Table $table): Table
     {

@@ -7,6 +7,7 @@ use App\Filament\Resources\ChecklistItems\Pages\EditChecklistItem;
 use App\Filament\Resources\ChecklistItems\Pages\ListChecklistItems;
 use App\Filament\Resources\ChecklistItems\Schemas\ChecklistItemForm;
 use App\Filament\Resources\ChecklistItems\Tables\ChecklistItemsTable;
+use App\Filament\Traits\HasFormSubheading;
 use App\Filament\Traits\HasPlanAccess;
 use App\Models\ChecklistItem;
 use Filament\Resources\Resource;
@@ -15,6 +16,7 @@ use Filament\Tables\Table;
 
 class ChecklistItemResource extends Resource
 {
+    use HasFormSubheading;
     use HasPlanAccess;
 
     protected static ?string $model = ChecklistItem::class;
@@ -27,15 +29,20 @@ class ChecklistItemResource extends Resource
 
     protected static ?int $navigationSort = 6;
 
-    protected static ?string $label = 'Voce Checklist';
+    protected static ?string $label = 'Voce questionario';
 
-    protected static ?string $pluralLabel = 'Voci Checklist';
+    protected static ?string $pluralLabel = 'Voci questionario';
 
     protected static ?string $recordTitleAttribute = 'label';
 
+    public static function getSubheading(): ?string
+    {
+        return 'Voci del questionario, con ordine e regole di scrittura sul soggetto.';
+    }
+
     public static function form(Schema $schema): Schema
     {
-        return ChecklistItemForm::configure($schema);
+        return static::withFormSubheading(ChecklistItemForm::configure($schema));
     }
 
     public static function table(Table $table): Table

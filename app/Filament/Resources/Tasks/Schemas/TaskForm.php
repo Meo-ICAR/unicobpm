@@ -36,6 +36,7 @@ class TaskForm
                 // ==========================================
                 Section::make('Inquadramento e Struttura')
                     ->description('Definisci a quale entità si riferisce il task, l\'applicazione di pertinenza e l\'eventuale dipendenza gerarchica.')
+                    ->columnSpanFull()
                     ->schema([
                         // 1. RICHIAMO DEL SELECT DINAMICO DAL MORPHMAP
                         FormHelper::polymorphicSelect(name: 'taskable', label: 'Collegata a'),
@@ -80,6 +81,7 @@ class TaskForm
                         // ==========================================
                         Section::make('Regole di Attivazione Dinamica')
                             ->description('Il plico si applica ai record del modello collegato che soddisfano entrambe le condizioni (se valorizzate).')
+                            ->columnSpanFull()
                             ->collapsed()
                             ->schema([
                                 TextInput::make('trigger_field')
@@ -123,6 +125,7 @@ class TaskForm
                         // ==========================================
                         Section::make('Regole di Esclusione Dinamica')
                             ->description('Configura le condizioni per cui questo task deve essere escluso in base ai dati del record.')
+                            ->columnSpanFull()
                             ->collapsed()
                             ->schema([
                                 TextInput::make('exclude_field')
@@ -161,6 +164,7 @@ class TaskForm
                         // ==========================================
                         Section::make('Associazione documenti')
                             ->description("Documenti richiesti dall'attività. Il task figlio eredita quelli del padre, salvo stesso tipo.")
+                            ->columnSpanFull()
                             ->schema([
                                 Repeater::make('documentRequirements')
                                     ->label('Documenti richiesti')

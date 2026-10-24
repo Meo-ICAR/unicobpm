@@ -20,7 +20,7 @@ class ChecklistAnswersTable
                     ->label('Istanza di Processo')
                     ->searchable(),
                 TextColumn::make('checklistItem.display_label')
-                    ->label('Voce Checklist')
+                    ->label('Voce questionario')
                     ->searchable(query: function ($query, string $search) {
                         $query->whereHas('checklistItem', fn ($q) => $q
                             ->where('label', 'like', "%{$search}%")

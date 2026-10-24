@@ -7,6 +7,7 @@ use App\Filament\Resources\ProcessTaskItems\Pages\EditProcessTaskItem;
 use App\Filament\Resources\ProcessTaskItems\Pages\ListProcessTaskItems;
 use App\Filament\Resources\ProcessTaskItems\Schemas\ProcessTaskItemForm;
 use App\Filament\Resources\ProcessTaskItems\Tables\ProcessTaskItemsTable;
+use App\Filament\Traits\HasFormSubheading;
 use App\Filament\Traits\HasPlanAccess;
 use App\Models\ProcessTaskItem;
 use BackedEnum;
@@ -17,6 +18,7 @@ use Filament\Tables\Table;
 
 class ProcessTaskItemResource extends Resource
 {
+    use HasFormSubheading;
     use HasPlanAccess;
 
     protected static ?string $model = ProcessTaskItem::class;
@@ -31,9 +33,14 @@ class ProcessTaskItemResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Voci Task di Processo';
 
+    public static function getSubheading(): ?string
+    {
+        return 'Azioni singole di uno step (upload, checklist, email, controlli esterni).';
+    }
+
     public static function form(Schema $schema): Schema
     {
-        return ProcessTaskItemForm::configure($schema);
+        return static::withFormSubheading(ProcessTaskItemForm::configure($schema));
     }
 
     public static function table(Table $table): Table

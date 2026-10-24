@@ -7,6 +7,7 @@ use App\Filament\Resources\Users\Pages\EditUser;
 use App\Filament\Resources\Users\Pages\ListUsers;
 use App\Filament\Resources\Users\Schemas\UserForm;
 use App\Filament\Resources\Users\Tables\UsersTable;
+use App\Filament\Traits\HasFormSubheading;
 use App\Filament\Traits\HasPlanAccess;
 use App\Models\User;
 use BackedEnum;
@@ -17,13 +18,14 @@ use Filament\Tables\Table;
 
 class UserResource extends Resource
 {
+    use HasFormSubheading;
     use HasPlanAccess;
 
     protected static ?string $model = User::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedIdentification;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Sistema';
+    protected static string|\UnitEnum|null $navigationGroup = 'Settings';
 
     protected static ?string $recordTitleAttribute = 'name';
 
@@ -31,9 +33,14 @@ class UserResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Utenti';
 
+    public static function getSubheading(): ?string
+    {
+        return 'Account di accesso al pannello UnicoBPM.';
+    }
+
     public static function form(Schema $schema): Schema
     {
-        return UserForm::configure($schema);
+        return static::withFormSubheading(UserForm::configure($schema));
     }
 
     public static function table(Table $table): Table

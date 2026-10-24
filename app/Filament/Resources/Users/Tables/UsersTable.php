@@ -22,11 +22,17 @@ class UsersTable
                     ->label('Email')
                     ->searchable(),
                 TextColumn::make('profile_type')
-                    ->label('Tipo Profilo')
+                    ->label('Tipo utente')
+                    ->formatStateUsing(fn (?string $state): string => match ($state) {
+                        'employee' => 'Dipendente',
+                        'client' => 'Consulente',
+                        'fornitore' => 'Produttore',
+                        default => $state ?: '—',
+                    })
                     ->searchable(),
-                TextColumn::make('profile_id')
-                    ->label('ID Profilo')
-                    ->searchable(),
+                TextColumn::make('profile.name')
+                    ->label('Anagrafica')
+                    ->placeholder('—'),
             ])
             ->filters([
                 //
@@ -40,6 +46,6 @@ class UsersTable
                 ]),
             ]);
 
-        return ColumnFilters::apply($table);
+        return ColumnFilters::apply($table, except: ['profile.name']);
     }
 }

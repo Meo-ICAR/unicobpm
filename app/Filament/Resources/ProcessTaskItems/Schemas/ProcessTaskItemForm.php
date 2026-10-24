@@ -127,6 +127,7 @@ class ProcessTaskItemForm
 
                 Section::make('Configurazione Azione')
                     ->description('I campi mostrati dipendono dal Tipo di Azione selezionato sopra.')
+                    ->columnSpanFull()
                     ->columns(2)
                     ->hidden(fn (Get $get) => blank($get('action_type')))
                     ->schema([

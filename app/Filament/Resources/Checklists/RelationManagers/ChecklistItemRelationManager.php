@@ -22,7 +22,7 @@ class ChecklistItemRelationManager extends RelationManager
 
     protected static string $relationship = 'items';
 
-    protected static ?string $title = 'Voci della Checklist';
+    protected static ?string $title = 'Voci del questionario';
 
     protected static bool $shouldRegisterNavigation = false;
 
@@ -47,6 +47,7 @@ class ChecklistItemRelationManager extends RelationManager
                 ->collapsible()
                 ->collapsed()
                 ->description('Quando l\'operatore risponde a questa domanda, scrivi il risultato direttamente sul record collegato alla pratica.')
+                ->columnSpanFull()
                 ->schema(ChecklistItemForm::writeBackFields()),
 
             Section::make('Regole di Knockout')
@@ -60,6 +61,7 @@ class ChecklistItemRelationManager extends RelationManager
                 ->collapsible()
                 ->collapsed()
                 ->description('Mostra questa voce solo se un\'altra domanda ha un certo valore')
+                ->columnSpanFull()
                 ->schema(ChecklistItemForm::dependencyFields()),
 
         ]);

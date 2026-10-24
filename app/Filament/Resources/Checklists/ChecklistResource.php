@@ -8,6 +8,7 @@ use App\Filament\Resources\Checklists\Pages\ListChecklists;
 use App\Filament\Resources\Checklists\RelationManagers\ChecklistItemRelationManager;
 use App\Filament\Resources\Checklists\Schemas\ChecklistForm;
 use App\Filament\Resources\Checklists\Tables\ChecklistsTable;
+use App\Filament\Traits\HasFormSubheading;
 use App\Filament\Traits\HasPlanAccess;
 use App\Models\Checklist;
 use Filament\Resources\Resource;
@@ -16,6 +17,7 @@ use Filament\Tables\Table;
 
 class ChecklistResource extends Resource
 {
+    use HasFormSubheading;
     use HasPlanAccess;
 
     protected static ?string $model = Checklist::class;
@@ -26,15 +28,26 @@ class ChecklistResource extends Resource
 
     protected static ?int $navigationSort = 5;
 
-    protected static ?string $label = 'Checklist';
+    protected static ?string $navigationLabel = 'Questionari';
 
-    protected static ?string $pluralLabel = 'Checklist';
+    protected static ?string $modelLabel = 'Questionario';
+
+    protected static ?string $pluralModelLabel = 'Questionari';
+
+    protected static ?string $label = 'Questionario';
+
+    protected static ?string $pluralLabel = 'Questionari';
 
     protected static ?string $recordTitleAttribute = 'name';
 
+    public static function getSubheading(): ?string
+    {
+        return 'Questionari compilabili nei passi di processo (AML, trasparenza, onboarding…).';
+    }
+
     public static function form(Schema $schema): Schema
     {
-        return ChecklistForm::configure($schema);
+        return static::withFormSubheading(ChecklistForm::configure($schema));
     }
 
     public static function table(Table $table): Table

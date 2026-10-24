@@ -24,7 +24,7 @@ class ChecklistItemForm
                 ->columns(2)
                 ->schema([
                     Select::make('checklist_id')
-                        ->label('Checklist')
+                        ->label('Questionario')
                         ->relationship('checklist', 'name')
                         ->required()
                         ->searchable()
@@ -42,6 +42,7 @@ class ChecklistItemForm
                 ->collapsible()
                 ->collapsed()
                 ->description('Quando l\'operatore risponde a questa domanda, scrivi il risultato direttamente sul record collegato alla pratica.')
+                ->columnSpanFull()
                 ->schema(self::writeBackFields()),
 
             Section::make('Esclusione Condizionale')
@@ -72,6 +73,7 @@ class ChecklistItemForm
                 ->collapsible()
                 ->collapsed()
                 ->description('Mostra questa voce solo se un\'altra domanda ha un certo valore')
+                ->columnSpanFull()
                 ->schema(self::dependencyFields()),
 
         ]);

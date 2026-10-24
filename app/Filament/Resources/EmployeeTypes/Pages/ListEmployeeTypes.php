@@ -3,11 +3,14 @@
 namespace App\Filament\Resources\EmployeeTypes\Pages;
 
 use App\Filament\Resources\EmployeeTypes\EmployeeTypeResource;
+use App\Filament\Traits\HasResourceSubheading;
 use Filament\Actions\Action;
 use Filament\Resources\Pages\ListRecords;
 
 class ListEmployeeTypes extends ListRecords
 {
+    use HasResourceSubheading;
+
     protected static string $resource = EmployeeTypeResource::class;
 
     protected function getHeaderActions(): array

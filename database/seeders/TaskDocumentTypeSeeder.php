@@ -90,7 +90,14 @@ class TaskDocumentTypeSeeder extends Seeder
             ['id' => 81, 'task_id' => 13, 'document_type_id' => 41, 'is_required' => 1, 'created_at' => now(), 'updated_at' => now()],
         ];
 
+        // Tipi documento creati fuori dal seeder (es. unione dei duplicati) esistono solo nei database già popolati.
+        $knownTypes = DB::table('document_types')->pluck('id')->all();
+
         foreach ($rows as $row) {
+            if (! in_array($row['document_type_id'], $knownTypes, true)) {
+                continue;
+            }
+
             DB::table('document_requirements')->updateOrInsert(
                 ['id' => $row['id']],
                 $row

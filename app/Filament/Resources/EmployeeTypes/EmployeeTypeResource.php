@@ -8,6 +8,7 @@ use App\Filament\Resources\EmployeeTypes\RelationManagers\PermissionsRelationMan
 use App\Filament\Resources\EmployeeTypes\RelationManagers\ResourcePresetsRelationManager;
 use App\Filament\Resources\EmployeeTypes\Schemas\EmployeeTypeInfolist;
 use App\Filament\Resources\EmployeeTypes\Tables\EmployeeTypesTable;
+use App\Filament\Traits\HasFormSubheading;
 use App\Filament\Traits\HasPlanAccess;
 use App\Models\EmployeeType;
 use BackedEnum;
@@ -24,6 +25,7 @@ use UnitEnum;
  */
 class EmployeeTypeResource extends Resource
 {
+    use HasFormSubheading;
     use HasPlanAccess;
 
     protected static ?string $model = EmployeeType::class;
@@ -44,7 +46,12 @@ class EmployeeTypeResource extends Resource
 
     public static function infolist(Schema $schema): Schema
     {
-        return EmployeeTypeInfolist::configure($schema);
+        return static::withFormSubheading(EmployeeTypeInfolist::configure($schema));
+    }
+
+    public static function getSubheading(): ?string
+    {
+        return 'Ruoli e uffici usati in RACI, assegnazioni e solleciti.';
     }
 
     public static function table(Table $table): Table

@@ -7,6 +7,7 @@ use App\Filament\Resources\Tasks\Pages\EditTask;
 use App\Filament\Resources\Tasks\Pages\ListTasks;
 use App\Filament\Resources\Tasks\Schemas\TaskForm;
 use App\Filament\Resources\Tasks\Tables\TasksTable;
+use App\Filament\Traits\HasFormSubheading;
 use App\Filament\Traits\HasPlanAccess;
 use App\Models\Task;
 use BackedEnum;
@@ -17,6 +18,7 @@ use UnitEnum;
 
 class TaskResource extends Resource
 {
+    use HasFormSubheading;
     use HasPlanAccess;
 
     protected static ?string $model = Task::class;
@@ -35,9 +37,14 @@ class TaskResource extends Resource
 
     protected static ?int $navigationSort = 5;
 
+    public static function getSubheading(): ?string
+    {
+        return 'Plico documentale: raccoglitore dei documenti richiesti per un’attività o un soggetto.';
+    }
+
     public static function form(Schema $schema): Schema
     {
-        return TaskForm::configure($schema);
+        return static::withFormSubheading(TaskForm::configure($schema));
     }
 
     public static function table(Table $table): Table

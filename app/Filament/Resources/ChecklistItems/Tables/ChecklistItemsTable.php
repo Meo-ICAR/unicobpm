@@ -20,7 +20,7 @@ class ChecklistItemsTable
         $table = $table
             ->columns([
                 TextColumn::make('checklist.name')
-                    ->label('Checklist')
+                    ->label('Questionario')
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('ordine')
@@ -69,7 +69,7 @@ class ChecklistItemsTable
             ->defaultSort('ordine')
             ->filters([
                 SelectFilter::make('checklist_id')
-                    ->label('Checklist')
+                    ->label('Questionario')
                     ->relationship('checklist', 'name')
                     ->searchable()
                     ->preload(),

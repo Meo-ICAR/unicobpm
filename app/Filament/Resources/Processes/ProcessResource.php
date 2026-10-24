@@ -8,6 +8,7 @@ use App\Filament\Resources\Processes\Pages\ListProcesses;
 use App\Filament\Resources\Processes\RelationManagers\ProcessTasksRelationManager;
 use App\Filament\Resources\Processes\Schemas\ProcessForm;
 use App\Filament\Resources\Processes\Tables\ProcessesTable;
+use App\Filament\Traits\HasFormSubheading;
 use App\Filament\Traits\HasPlanAccess;
 use App\Models\Process;
 use Filament\Resources\Resource;
@@ -16,6 +17,7 @@ use Filament\Tables\Table;
 
 class ProcessResource extends Resource
 {
+    use HasFormSubheading;
     use HasPlanAccess;
 
     protected static ?string $model = Process::class;
@@ -32,9 +34,14 @@ class ProcessResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
+    public static function getSubheading(): ?string
+    {
+        return 'Definizione dei processi: flusso degli step, RACI e write-back a fine pratica.';
+    }
+
     public static function form(Schema $schema): Schema
     {
-        return ProcessForm::configure($schema);
+        return static::withFormSubheading(ProcessForm::configure($schema));
     }
 
     public static function table(Table $table): Table

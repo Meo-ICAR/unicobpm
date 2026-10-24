@@ -7,6 +7,7 @@ use App\Filament\Resources\ProcessTriggers\Pages\EditProcessTrigger;
 use App\Filament\Resources\ProcessTriggers\Pages\ListProcessTriggers;
 use App\Filament\Resources\ProcessTriggers\Schemas\ProcessTriggerForm;
 use App\Filament\Resources\ProcessTriggers\Tables\ProcessTriggersTable;
+use App\Filament\Traits\HasFormSubheading;
 use App\Filament\Traits\HasPlanAccess;
 use App\Models\ProcessTrigger;
 use BackedEnum;
@@ -17,6 +18,7 @@ use Filament\Tables\Table;
 
 class ProcessTriggerResource extends Resource
 {
+    use HasFormSubheading;
     use HasPlanAccess;
 
     protected static ?string $model = ProcessTrigger::class;
@@ -29,9 +31,14 @@ class ProcessTriggerResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Trigger di Processo';
 
+    public static function getSubheading(): ?string
+    {
+        return 'Regole che avviano automaticamente un processo (evento, pianificazione, condizioni).';
+    }
+
     public static function form(Schema $schema): Schema
     {
-        return ProcessTriggerForm::configure($schema);
+        return static::withFormSubheading(ProcessTriggerForm::configure($schema));
     }
 
     public static function table(Table $table): Table

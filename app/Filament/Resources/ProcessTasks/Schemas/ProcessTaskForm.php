@@ -55,6 +55,7 @@ class ProcessTaskForm
 
             Section::make('Matrice RACI')
                 ->description('Ruoli (uffici) coinvolti: Responsible, Accountable, Consulted, Informed')
+                ->columnSpanFull()
                 ->collapsible()
                 ->schema([
                     Repeater::make('raciAssignments')
@@ -83,6 +84,7 @@ class ProcessTaskForm
 
             Section::make('Salta Task se...')
                 ->description('Condizioni per cui questo task non serve per un determinato record e va saltato automaticamente durante l\'avanzamento della pratica.')
+                ->columnSpanFull()
                 ->columns(3)
                 ->collapsible()
                 ->schema([
@@ -133,6 +135,7 @@ class ProcessTaskForm
 
             Section::make('Solleciti')
                 ->description('Promemoria automatici se la pratica resta ferma su questo task.')
+                ->columnSpanFull()
                 ->columns(2)
                 ->collapsible()
                 ->schema([
@@ -155,6 +158,7 @@ class ProcessTaskForm
 
             Section::make('Regole di Escalation')
                 ->description('Se il task resta pendente oltre le ore indicate, scatta l\'azione configurata (controllato ogni ora da TaskEscalationWatchdogJob).')
+                ->columnSpanFull()
                 ->collapsible()
                 ->schema([
                     Repeater::make('escalation_rules')

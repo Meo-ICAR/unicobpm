@@ -26,7 +26,12 @@ class ExternalEventResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Eventi ricevuti';
 
-    protected static UnitEnum|string|null $navigationGroup = 'BPM';
+    protected static UnitEnum|string|null $navigationGroup = 'System';
+
+    public static function getSubheading(): ?string
+    {
+        return 'Eventi arrivati dalle altre app della suite e processi eventualmente avviati.';
+    }
 
     public static function table(Table $table): Table
     {

@@ -7,6 +7,7 @@ use App\Filament\Resources\ChecklistAnswers\Pages\EditChecklistAnswer;
 use App\Filament\Resources\ChecklistAnswers\Pages\ListChecklistAnswers;
 use App\Filament\Resources\ChecklistAnswers\Schemas\ChecklistAnswerForm;
 use App\Filament\Resources\ChecklistAnswers\Tables\ChecklistAnswersTable;
+use App\Filament\Traits\HasFormSubheading;
 use App\Filament\Traits\HasPlanAccess;
 use App\Models\ChecklistAnswer;
 use BackedEnum;
@@ -17,6 +18,7 @@ use Filament\Tables\Table;
 
 class ChecklistAnswerResource extends Resource
 {
+    use HasFormSubheading;
     use HasPlanAccess;
 
     protected static ?string $model = ChecklistAnswer::class;
@@ -27,13 +29,18 @@ class ChecklistAnswerResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
-    protected static ?string $modelLabel = 'Risposta Checklist';
+    protected static ?string $modelLabel = 'Risposta questionario';
 
-    protected static ?string $pluralModelLabel = 'Risposte Checklist';
+    protected static ?string $pluralModelLabel = 'Risposte questionario';
+
+    public static function getSubheading(): ?string
+    {
+        return 'Risposte date alle voci dei questionari nelle pratiche.';
+    }
 
     public static function form(Schema $schema): Schema
     {
-        return ChecklistAnswerForm::configure($schema);
+        return static::withFormSubheading(ChecklistAnswerForm::configure($schema));
     }
 
     public static function table(Table $table): Table

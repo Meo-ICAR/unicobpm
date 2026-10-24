@@ -14,6 +14,7 @@ use Filament\Pages\Page;
 use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\Form;
 use Filament\Schemas\Schema;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use NeuronAI\Chat\Messages\UserMessage;
@@ -54,6 +55,11 @@ class SegretariaAi extends Page
     public ?string $error = null;
 
     public Collection $pendingDrafts;
+
+    public function getSubheading(): string|Htmlable|null
+    {
+        return 'Assistente operativo a più turni: propone bozze (es. solleciti) da confermare prima dell’invio.';
+    }
 
     public function mount(): void
     {

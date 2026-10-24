@@ -7,6 +7,7 @@ use App\Filament\Resources\ProcessTaskExecutions\Pages\EditProcessTaskExecution;
 use App\Filament\Resources\ProcessTaskExecutions\Pages\ListProcessTaskExecutions;
 use App\Filament\Resources\ProcessTaskExecutions\Schemas\ProcessTaskExecutionForm;
 use App\Filament\Resources\ProcessTaskExecutions\Tables\ProcessTaskExecutionsTable;
+use App\Filament\Traits\HasFormSubheading;
 use App\Filament\Traits\HasPlanAccess;
 use App\Models\ProcessTaskExecution;
 use BackedEnum;
@@ -17,6 +18,7 @@ use Filament\Tables\Table;
 
 class ProcessTaskExecutionResource extends Resource
 {
+    use HasFormSubheading;
     use HasPlanAccess;
 
     protected static ?string $model = ProcessTaskExecution::class;
@@ -29,9 +31,14 @@ class ProcessTaskExecutionResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Esecuzioni Task';
 
+    public static function getSubheading(): ?string
+    {
+        return 'Passi in corso o conclusi delle pratiche BPM (presa in carico, scadenze, solleciti).';
+    }
+
     public static function form(Schema $schema): Schema
     {
-        return ProcessTaskExecutionForm::configure($schema);
+        return static::withFormSubheading(ProcessTaskExecutionForm::configure($schema));
     }
 
     public static function table(Table $table): Table

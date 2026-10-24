@@ -6,6 +6,7 @@ use App\Filament\Resources\ApiLogs\Pages\ListApiLogs;
 use App\Filament\Resources\ApiLogs\Pages\ViewApiLog;
 use App\Filament\Resources\ApiLogs\Schemas\ApiLogInfolist;
 use App\Filament\Resources\ApiLogs\Tables\ApiLogsTable;
+use App\Filament\Traits\HasFormSubheading;
 use App\Filament\Traits\HasPlanAccess;
 use App\Models\ApiLog;
 use BackedEnum;
@@ -17,6 +18,7 @@ use UnitEnum;
 /** Traccia delle chiamate API con le altre app: richiesta, risposta, durata, costo AI e cosa hanno attivato. */
 class ApiLogResource extends Resource
 {
+    use HasFormSubheading;
     use HasPlanAccess;
 
     protected static ?string $model = ApiLog::class;
@@ -29,11 +31,16 @@ class ApiLogResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Log API';
 
-    protected static UnitEnum|string|null $navigationGroup = 'BPM';
+    protected static UnitEnum|string|null $navigationGroup = 'System';
 
     public static function infolist(Schema $schema): Schema
     {
-        return ApiLogInfolist::configure($schema);
+        return static::withFormSubheading(ApiLogInfolist::configure($schema));
+    }
+
+    public static function getSubheading(): ?string
+    {
+        return 'Registro delle chiamate API ricevute o effettuate (attivazioni e payload).';
     }
 
     public static function table(Table $table): Table

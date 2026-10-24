@@ -26,13 +26,18 @@ class ProcessEmailReplyResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Risposte email';
 
-    protected static UnitEnum|string|null $navigationGroup = 'BPM';
+    protected static UnitEnum|string|null $navigationGroup = 'System';
 
     public static function getNavigationBadge(): ?string
     {
         $count = ProcessEmailReply::query()->where('status', ProcessEmailReply::NEEDS_REVIEW)->count();
 
         return $count > 0 ? (string) $count : null;
+    }
+
+    public static function getSubheading(): ?string
+    {
+        return 'Risposte email ai processi in attesa di conferma, rifiuto o rinvio da parte dell’operatore.';
     }
 
     public static function table(Table $table): Table

@@ -7,6 +7,7 @@ use App\Filament\Resources\EmailTemplates\Pages\EditEmailTemplate;
 use App\Filament\Resources\EmailTemplates\Pages\ListEmailTemplates;
 use App\Filament\Resources\EmailTemplates\Schemas\EmailTemplateForm;
 use App\Filament\Resources\EmailTemplates\Tables\EmailTemplatesTable;
+use App\Filament\Traits\HasFormSubheading;
 use App\Filament\Traits\HasPlanAccess;
 use App\Models\EmailTemplate;
 use BackedEnum;
@@ -18,6 +19,7 @@ use UnitEnum;
 
 class EmailTemplateResource extends Resource
 {
+    use HasFormSubheading;
     use HasPlanAccess;
 
     protected static ?string $model = EmailTemplate::class;
@@ -38,9 +40,14 @@ class EmailTemplateResource extends Resource
 
     protected static UnitEnum|string|null $navigationGroup = 'Settings';
 
+    public static function getSubheading(): ?string
+    {
+        return 'Modelli email per processi e solleciti (per company, app e grado).';
+    }
+
     public static function form(Schema $schema): Schema
     {
-        return EmailTemplateForm::configure($schema);
+        return static::withFormSubheading(EmailTemplateForm::configure($schema));
     }
 
     public static function table(Table $table): Table

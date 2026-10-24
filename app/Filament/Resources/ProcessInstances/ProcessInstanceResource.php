@@ -7,6 +7,7 @@ use App\Filament\Resources\ProcessInstances\Pages\EditProcessInstance;
 use App\Filament\Resources\ProcessInstances\Pages\ListProcessInstances;
 use App\Filament\Resources\ProcessInstances\Schemas\ProcessInstanceForm;
 use App\Filament\Resources\ProcessInstances\Tables\ProcessInstancesTable;
+use App\Filament\Traits\HasFormSubheading;
 use App\Filament\Traits\HasPlanAccess;
 use App\Models\ProcessInstance;
 use BackedEnum;
@@ -17,6 +18,7 @@ use Filament\Tables\Table;
 
 class ProcessInstanceResource extends Resource
 {
+    use HasFormSubheading;
     use HasPlanAccess;
 
     protected static ?string $model = ProcessInstance::class;
@@ -29,9 +31,14 @@ class ProcessInstanceResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Istanze di Processo';
 
+    public static function getSubheading(): ?string
+    {
+        return 'Pratiche BPM avviate: stato, soggetto collegato e avanzamento degli step.';
+    }
+
     public static function form(Schema $schema): Schema
     {
-        return ProcessInstanceForm::configure($schema);
+        return static::withFormSubheading(ProcessInstanceForm::configure($schema));
     }
 
     public static function table(Table $table): Table

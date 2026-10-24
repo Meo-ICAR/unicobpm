@@ -30,6 +30,7 @@ class DocumentTypeForm
                     ->columnSpanFull(),
                 Section::make('Documento')
                     ->description('Nome e categoria. A chi va il documento lo decide il plico (task) in cui è richiesto.')
+                    ->columnSpanFull()
                     ->schema([
                         TextInput::make('name')
                             ->label('Nome Documento')

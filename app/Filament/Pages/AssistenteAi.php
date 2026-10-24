@@ -10,6 +10,7 @@ use Filament\Pages\Page;
 use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\Form;
 use Filament\Schemas\Schema;
+use Illuminate\Contracts\Support\Htmlable;
 use NeuronAI\Chat\Messages\Usage;
 use NeuronAI\Chat\Messages\UserMessage;
 use Throwable;
@@ -50,6 +51,11 @@ class AssistenteAi extends Page
     public ?int $outputTokens = null;
 
     public ?int $cachedInputTokens = null;
+
+    public function getSubheading(): string|Htmlable|null
+    {
+        return 'Consulta il manuale operativo: risposte sull’uso di UnicoBPM, senza azioni automatiche.';
+    }
 
     public function mount(): void
     {

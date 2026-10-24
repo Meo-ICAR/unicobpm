@@ -31,9 +31,10 @@ class AdminPanelProvider extends PanelProvider
     {
         return $panel
             ->navigationGroups([
-                NavigationGroup::make()->label('BPM'),
-                NavigationGroup::make()->label('Sistema'),
-                NavigationGroup::make()->label('Settings')->collapsed(),
+                // In testa restano le voci senza gruppo (istanze, trigger, esecuzioni).
+                NavigationGroup::make()->label('BPM'), // configurazione processi / plichi / checklist
+                NavigationGroup::make()->label('Settings')->collapsed(), // altre configurazioni
+                NavigationGroup::make()->label('System')->collapsed(), // ciò che accade (API, eventi, code)
                 NavigationGroup::make()->label('Manuali')->collapsed(),
             ])
             ->brandLogo(asset('brand/logos/unico-bpm.jpg'))

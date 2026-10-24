@@ -10,6 +10,7 @@ use App\Filament\Resources\Resources\RelationManagers\PermissionsRelationManager
 use App\Filament\Resources\Resources\Schemas\ResourceForm;
 use App\Filament\Resources\Resources\Schemas\ResourceInfolist;
 use App\Filament\Resources\Resources\Tables\ResourcesTable;
+use App\Filament\Traits\HasFormSubheading;
 use App\Filament\Traits\HasPlanAccess;
 use App\Models\Resource as ResourceModel;
 use BackedEnum;
@@ -21,6 +22,7 @@ use UnitEnum;
 
 class ResourceResource extends Resource
 {
+    use HasFormSubheading;
     use HasPlanAccess;
 
     protected static ?string $model = ResourceModel::class;
@@ -29,7 +31,7 @@ class ResourceResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
-    protected static UnitEnum|string|null $navigationGroup = 'Sistema';
+    protected static UnitEnum|string|null $navigationGroup = 'Settings';
 
     protected static ?string $navigationLabel = 'Abilitazioni';
 
@@ -39,9 +41,14 @@ class ResourceResource extends Resource
 
     protected static ?int $navigationSort = 3;
 
+    public static function getSubheading(): ?string
+    {
+        return 'Moduli e abilitazioni del piano applicativo.';
+    }
+
     public static function form(Schema $schema): Schema
     {
-        return ResourceForm::configure($schema);
+        return static::withFormSubheading(ResourceForm::configure($schema));
     }
 
     public static function infolist(Schema $schema): Schema
