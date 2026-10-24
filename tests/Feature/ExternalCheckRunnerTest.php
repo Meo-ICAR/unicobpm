@@ -137,8 +137,21 @@ class ExternalCheckRunnerTest extends TestCase
         $runner->run($this->item());
     }
 
-    public function test_sends_nothing_when_there_are_no_recipients(): void
+    public function test_without_recipients_the_email_goes_to_the_administrator(): void
     {
+        config(['services.fallback_recipient' => 'admin@x.it']);
+        Http::fake(['*/api/checks/*' => Http::response(['value' => 2, 'severity' => 'regular'])]);
+
+        $runner = $this->runnerNotifying([], function (MockInterface $mock) {
+            $mock->shouldReceive('send')->once()->with('admin@x.it', 'Subject regular: 2', 'Body regular Regular', [], null, null);
+        });
+
+        $this->assertStringContainsString('amministratore', $runner->run($this->item()));
+    }
+
+    public function test_sends_nothing_when_there_are_no_recipients_and_no_administrator(): void
+    {
+        config(['services.fallback_recipient' => null]);
         Http::fake(['*/api/checks/*' => Http::response(['value' => 2, 'severity' => 'regular'])]);
 
         $summary = $this->runnerNotifying([])->run($this->item());

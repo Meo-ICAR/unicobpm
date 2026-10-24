@@ -67,7 +67,12 @@ class EscalationNotifier
             default => collect(),
         };
 
-        return $emails->filter(fn ($email) => filter_var($email, FILTER_VALIDATE_EMAIL))->unique()->values();
+        $valid = $emails->filter(fn ($email) => filter_var($email, FILTER_VALIDATE_EMAIL))->unique()->values();
+
+        // Nessun destinatario con utente o email: l'avviso va all'amministratore, non si perde.
+        return $valid->isEmpty() && in_array($rule['action'] ?? null, ['notify_assignee', 'notify_manager', 'reassign'], true)
+            ? FallbackRecipient::emails()
+            : $valid;
     }
 
     /** @param Collection<int, int|string> $roleIds @return Collection<int, string> */

@@ -63,6 +63,8 @@ return [
     | created_at risale a più di 'max_age_days' giorni fa, invia un'email a 'recipient'.
     |
     */
+    'fallback_recipient' => env('BPM_FALLBACK_EMAIL', 'sergio.bracale@races.it'),
+
     'stale_record_reminders' => [
         [
             'app' => 'unicocoge',

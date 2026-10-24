@@ -13,6 +13,9 @@ use Filament\Schemas\Schema;
 
 class ProcessTaskItemForm
 {
+    /** @var array<string, string> */
+    private const RACI_ROLES = ['R' => 'R — chi esegue', 'A' => 'A — responsabile', 'C' => 'C — consultato', 'I' => 'I — informato'];
+
     /**
      * Tipi di azione realmente riconosciuti dal motore BPM (ProcessTaskExecutionObserver,
      * ProcessInstance::currentChecklistItems, ecc.). Unica fonte di verità: usato sia qui
@@ -31,6 +34,7 @@ class ProcessTaskItemForm
             'validation_rule' => 'Regola di Validazione',
             'system_task' => 'Task di Sistema (Job)',
             'external_check' => 'Check Esterno (severity + RACI)',
+            'external_command' => 'Comando su un\'altra app',
             'await_email_reply' => 'Attesa Risposta Email',
         ];
     }
@@ -86,6 +90,65 @@ class ProcessTaskItemForm
                 ->helperText('Si usa il template con questo codice e la severity restituita dal check; se la severity manca, quello con severity maggiore. Destinatari: RACI del task (regular: R; warning: R+A; alert: R+A+C).')
                 ->visible($isExternalCheck)
                 ->required($isExternalCheck),
+            Select::make('config.to_raci')
+                ->label('Scrivi a (ruoli della RACI)')
+                ->multiple()
+                ->options(self::RACI_ROLES)
+                ->helperText('Vuoto = i ruoli della RACI previsti dalla severity (regular: R; warning: R+A; alert: R+A+C). Con ruoli scelti scrivono sempre quelli.')
+                ->visible($isExternalCheck),
+            ...self::runOnDayFields(['external_check', 'external_command']),
+        ];
+    }
+
+    /**
+     * Campi di config per 'external_command', condivisi con il RelationManager nel ProcessTaskResource.
+     *
+     * @return array<int, Component>
+     */
+    public static function externalCommandFields(): array
+    {
+        $isCommand = fn (Get $get) => $get('action_type') === 'external_command';
+
+        return [
+            Select::make('config.app')
+                ->label('Applicativo')
+                ->options(fn () => collect((array) config('services.apps'))->map(fn ($app) => $app['label'] ?? null)->filter()->all())
+                ->visible($isCommand)
+                ->required($isCommand),
+            TextInput::make('config.command')
+                ->label('Comando')
+                ->placeholder('proformas:send-pending')
+                ->helperText('Deve essere nella whitelist dell\'applicativo (POST /api/commands/{comando}); parte dalla coda delle chiamate in uscita.')
+                ->visible($isCommand)
+                ->required($isCommand),
+            KeyValue::make('config.options')
+                ->label('Opzioni del comando')
+                ->keyLabel('Opzione')
+                ->valueLabel('Valore')
+                ->visible($isCommand),
+            Select::make('config.cc_raci')
+                ->label('Copia conoscenza (ruoli della RACI)')
+                ->multiple()
+                ->options(self::RACI_ROLES)
+                ->helperText('Le email di chi ha questi ruoli nella RACI del passo diventano l\'opzione cc del comando.')
+                ->visible($isCommand),
+        ];
+    }
+
+    /**
+     * @param  list<string>  $types  Tipi di azione a cui si applica.
+     * @return array<int, Component>
+     */
+    public static function runOnDayFields(array $types): array
+    {
+        return [
+            TextInput::make('config.run_on_day')
+                ->label('Solo il giorno del mese')
+                ->numeric()
+                ->minValue(1)
+                ->maxValue(31)
+                ->helperText('Vuoto = a ogni esecuzione. Per le azioni mensili di un processo giornaliero (es. 3 = il 3 di ogni mese).')
+                ->visible(fn (Get $get) => in_array($get('action_type'), $types, true)),
         ];
     }
 
@@ -154,6 +217,7 @@ class ProcessTaskItemForm
                             ->visible(fn (Get $get) => $get('action_type') === 'system_task')
                             ->helperText('Classe PHP eseguita in automatico quando la pratica raggiunge questo task (anche di un pacchetto/applicativo esterno installato via composer). Deve avere un costruttore (int $processInstanceId, array $config = []).'),
                         ...self::externalCheckFields(),
+                        ...self::externalCommandFields(),
                         ...self::awaitEmailReplyFields(),
                         KeyValue::make('config')
                             ->label('Configurazione')

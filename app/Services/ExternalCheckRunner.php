@@ -45,7 +45,7 @@ class ExternalCheckRunner
             return "Check {$app}/{$command} non disponibile: nessuna email inviata.";
         }
 
-        ['value' => $value, 'severity' => $severity, 'details' => $details] = $result;
+        ['value' => $value, 'severity' => $severity, 'details' => $details, 'attachment' => $attachment] = $result;
 
         if ($severity === Severity::Ok) {
             return "Check {$app}/{$command}: valore {$value}, severity ok — nessuna email da inviare.";
@@ -58,7 +58,13 @@ class ExternalCheckRunner
         }
 
         $effectiveSeverity = $severity ?? $template->severity;
-        $recipients = $this->recipientsFor($item->task, $effectiveSeverity);
+        // Con `to_raci` (es. ["A", "I"]) scrivono quei ruoli della RACI del passo, qualunque sia la severity; altrimenti quelli previsti dalla severity.
+        $toRaci = (array) ($item->config['to_raci'] ?? []);
+        $recipients = $toRaci !== []
+            ? $this->recipientsForRoles($item->task, $toRaci)
+            : $this->recipientsFor($item->task, $effectiveSeverity);
+        $isFallback = $recipients->isEmpty();
+        $recipients = $isFallback ? FallbackRecipient::emails() : $recipients;
 
         if ($recipients->isEmpty()) {
             return "Check {$app}/{$command}: valore {$value}, severity {$effectiveSeverity->value} — nessun destinatario da avvisare.";
@@ -70,9 +76,12 @@ class ExternalCheckRunner
         $sent = collect();
         $failed = collect();
 
+        $attachmentPath = $this->writeAttachment($attachment);
+        $files = $attachmentPath === null ? [] : [['path' => $attachmentPath, 'as' => $attachment['filename']]];
+
         foreach ($recipients as $email) {
             try {
-                $this->emailSender->send($email, $subject, $body, [], $instance?->company_id, $instance ? ['instance' => $instance->id] : null);
+                $this->emailSender->send($email, $subject, $body, $files, $instance?->company_id, $instance ? ['instance' => $instance->id] : null);
                 $sent->push($email);
             } catch (\Throwable $e) {
                 Log::error("Check {$app}/{$command}: invio email a {$email} fallito.", ['error' => $e->getMessage()]);
@@ -80,9 +89,13 @@ class ExternalCheckRunner
             }
         }
 
+        if ($attachmentPath !== null) {
+            @unlink($attachmentPath);
+        }
+
         $label = "Check {$app}/{$command}: valore {$value}, severity {$effectiveSeverity->value}";
 
-        $summary = $label.' — '.($sent->isEmpty() ? 'nessuna email inviata' : 'email inviata a '.$sent->implode(', ')).'.';
+        $summary = $label.' — '.($sent->isEmpty() ? 'nessuna email inviata' : 'email inviata a '.$sent->implode(', ').($isFallback ? ' (amministratore: nessun destinatario con utente o email)' : '')).'.';
 
         if ($failed->isNotEmpty()) {
             $summary .= ' Invio FALLITO per: '.$failed->map(fn (string $error, string $email) => "{$email} ({$error})")->implode('; ').'.';
@@ -163,7 +176,7 @@ class ExternalCheckRunner
     }
 
     /**
-     * @return array{value: string, severity: ?Severity, details: string}|null null se l'applicativo non risponde.
+     * @return array{value: string, severity: ?Severity, details: string, attachment: ?array{filename: string, content: string}}|null null se l'applicativo non risponde.
      */
     private function fetchStatus(string $app, string $command): ?array
     {
@@ -186,7 +199,36 @@ class ExternalCheckRunner
             'value' => (string) $response->json('value', ''),
             'severity' => Severity::tryFrom((string) $response->json('severity')),
             'details' => (string) $response->json('details', ''),
+            'attachment' => $this->attachmentFrom($response->json('attachment')),
         ];
+    }
+
+    /**
+     * @return array{filename: string, content: string}|null
+     */
+    private function attachmentFrom(mixed $attachment): ?array
+    {
+        if (! is_array($attachment) || blank($attachment['filename'] ?? null) || ! is_string($attachment['content'] ?? null)) {
+            return null;
+        }
+
+        return ['filename' => basename((string) $attachment['filename']), 'content' => $attachment['content']];
+    }
+
+    /**
+     * Scrive l'allegato del check in un file temporaneo (da cancellare dopo l'invio).
+     *
+     * @param  array{filename: string, content: string}|null  $attachment
+     */
+    private function writeAttachment(?array $attachment): ?string
+    {
+        if ($attachment === null) {
+            return null;
+        }
+
+        $path = tempnam(sys_get_temp_dir(), 'bpm-check-');
+
+        return $path !== false && file_put_contents($path, $attachment['content']) !== false ? $path : null;
     }
 
     /**

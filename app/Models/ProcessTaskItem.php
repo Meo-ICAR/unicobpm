@@ -3,10 +3,11 @@
 namespace App\Models;
 
 use App\Enums\Severity;
-use Unico\Core\Enums\MailType;
-use Unico\Core\Mail\EmailTemplateResolver;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
+use Unico\Core\Enums\MailType;
+use Unico\Core\Mail\EmailTemplateResolver;
 
 class ProcessTaskItem extends Model
 {
@@ -73,6 +74,16 @@ class ProcessTaskItem extends Model
      * app (unicobpm) e tipo «processo», del grado indicato o, se manca, del grado inferiore più vicino (Unico\Core\Mail\EmailTemplateResolver).
      * Se la severity è assente prende il template del grado più alto che esiste.
      */
+    /**
+     * Azioni mensili: con `config.run_on_day` (1-31) l'azione parte solo quel giorno del mese, negli altri la pratica giornaliera la salta.
+     */
+    public function isDueOn(Carbon $day): bool
+    {
+        $runOnDay = $this->config['run_on_day'] ?? null;
+
+        return blank($runOnDay) || (int) $runOnDay === $day->day;
+    }
+
     public function resolveCheckEmailTemplate(?Severity $severity, int|string|null $companyId = null): ?EmailTemplate
     {
         $code = $this->config['email_template_code'] ?? null;

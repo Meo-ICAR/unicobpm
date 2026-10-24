@@ -10,6 +10,8 @@ use App\Services\EmailSendingService;
 use App\Services\ExternalAppClient;
 use App\Services\ExternalAppResolver;
 use App\Services\ExternalCheckRunner;
+use App\Services\ExternalCommandRunner;
+use App\Services\FallbackRecipient;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -100,7 +102,7 @@ class ProcessTaskExecutionObserver
 
         // Recuperiamo tutte le azioni automatiche previste in questo task
         $automatedItems = $task->processTaskItems()
-            ->whereIn('action_type', ['automated_email', 'validation_rule', 'blacklist_check', 'system_task', 'external_check'])
+            ->whereIn('action_type', ['automated_email', 'validation_rule', 'blacklist_check', 'system_task', 'external_check', 'external_command'])
             ->get();
 
         foreach ($automatedItems as $item) {
@@ -112,6 +114,21 @@ class ProcessTaskExecutionObserver
             }
 
             $config = $item->config ?? [];
+
+            if (! $item->isDueOn(now())) {
+                ProcessTaskItemAnswer::create([
+                    'process_instance_id' => $instance->id,
+                    'process_task_execution_id' => $execution->id,
+                    'process_task_item_id' => $item->id,
+                    'user_id' => 0, // Bot
+                    'operator_type' => 'procedural',
+                    'operator_label' => $item->action_type,
+                    'value_text' => "Non previsto oggi: l'azione parte il giorno {$config['run_on_day']} del mese.",
+                    'completed_at' => now(),
+                ]);
+
+                continue;
+            }
 
             // Smistamento logica in base al tipo di azione automatica
             switch ($item->action_type) {
@@ -147,7 +164,12 @@ class ProcessTaskExecutionObserver
                         $recipients = [$item->compileTemplate($config['to_email'], $instance)];
                     }
 
-                    // Se dopo i tentativi non abbiamo un'email, interrompiamo l'azione
+                    // Nessun destinatario con email: l'email va all'amministratore, così non si perde
+                    if ($recipients === []) {
+                        $recipients = FallbackRecipient::emails()->all();
+                    }
+
+                    // Se nemmeno l'amministratore è configurato, interrompiamo l'azione
                     if ($recipients === []) {
                         Log::warning("Task ID {$item->id}: Nessuna email destinataria trovata.");
                         break;
@@ -346,6 +368,22 @@ class ProcessTaskExecutionObserver
                         'operator_type' => 'procedural',
                         'operator_label' => $item->action_type,
                         'value_text' => $summary,
+                        'completed_at' => now(),
+                    ]);
+                    break;
+
+                    // --------------------------------------------------------
+                    // CASO 6: COMANDO ESTERNO (si accoda sull'applicativo, con copia conoscenza per ruolo)
+                    // --------------------------------------------------------
+                case 'external_command':
+                    ProcessTaskItemAnswer::create([
+                        'process_instance_id' => $instance->id,
+                        'process_task_execution_id' => $execution->id,
+                        'process_task_item_id' => $item->id,
+                        'user_id' => 0, // Bot
+                        'operator_type' => 'procedural',
+                        'operator_label' => $item->action_type,
+                        'value_text' => app(ExternalCommandRunner::class)->run($item, $instance),
                         'completed_at' => now(),
                     ]);
                     break;

@@ -29,7 +29,8 @@ class ProcessesTable
                 TextColumn::make('name')
                     ->label('Nome')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->tooltip(fn (Process $record): ?string => $record->description),
 
                 TextColumn::make('tasks_count')
                     ->counts('tasks')
