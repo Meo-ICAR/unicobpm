@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Filament\Actions\ExcelExportAction;
 use App\Listeners\ResolveCompanyPlanTypeOnLogin;
 use App\Listeners\ResolveUserRoleOnLogin;
 use App\Models\Audit;
@@ -18,6 +19,7 @@ use App\Services\Replies\CompositeReplyInterpreter;
 use App\Services\Replies\NeuronReplyInterpreter;
 use App\Services\Replies\ReplyInterpreter;
 use App\Services\Replies\RuleBasedReplyInterpreter;
+use Filament\Tables\Table;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Event;
@@ -49,6 +51,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Ogni tabella (risorse, relation manager, widget) ha il pulsante «Excel»: colonne visibili e filtri applicati.
+        Table::configureUsing(fn (Table $table): Table => $table->pushHeaderActions([ExcelExportAction::make()]));
+
         // Il pacchetto unico-core sta nel database condiviso (connessione `core`), creato da un'altra app: qui non si
         // eseguono le sue migration. Se invece usa la connessione dell'app (es. nei test), si creano con `migrate`.
         if (config('unico-core.connection') === config('database.default')) {

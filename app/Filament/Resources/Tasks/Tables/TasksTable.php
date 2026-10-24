@@ -181,7 +181,7 @@ class TasksTable
                             ->send();
                     }),
             ])
-            ->headerActions([
+            ->pushHeaderActions([
                 Action::make('create')
                     ->label('Crea documentazione')
                     ->requiresConfirmation()

@@ -163,7 +163,7 @@ class ProcessTasksRelationManager extends RelationManager
                 IconColumn::make('has_reminders')->label('Solleciti')->boolean(),
             ])
             ->defaultSort('ordine', 'asc')
-            ->headerActions([CreateAction::make()])
+            ->pushHeaderActions([CreateAction::make()])
             ->actions([EditAction::make(), DeleteAction::make()])
             ->bulkActions([BulkActionGroup::make([DeleteBulkAction::make()])]);
     }

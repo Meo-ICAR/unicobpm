@@ -2,19 +2,28 @@
 
 namespace App\Filament\Exports;
 
+use App\Support\TestoExcelSicuro;
+use Maatwebsite\Excel\Concerns\WithCustomValueBinder;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Events\AfterSheet;
+use PhpOffice\PhpSpreadsheet\Cell\Cell;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use pxlrbt\FilamentExcel\Exports\ExcelExport;
 use Unico\Core\Filament\Concerns\InjectsRecordByTypeInExports;
 
-class DynamicGroupExport extends ExcelExport implements WithEvents
+/**
+ * Esporta in Excel le colonne della tabella (filtri compresi), come in Proforma: in cima i filtri applicati, in fondo i totali
+ * delle colonne indicate in `sumColumns()`, con subtotali per gruppo se c'è `groupBy()`.
+ */
+class DynamicGroupExport extends ExcelExport implements WithCustomValueBinder, WithEvents
 {
     use InjectsRecordByTypeInExports;
 
     protected ?string $groupBy = null;
 
+    /** @var list<string> */
     protected array $sumColumns = [];
 
     const FORMAT_CURRENCY = '#,##0.00" €"';
@@ -33,6 +42,7 @@ class DynamicGroupExport extends ExcelExport implements WithEvents
         return $this;
     }
 
+    /** @param  list<string>  $columns  intestazioni delle colonne da sommare */
     public function sumColumns(array $columns): static
     {
         $this->sumColumns = $columns;
@@ -40,10 +50,17 @@ class DynamicGroupExport extends ExcelExport implements WithEvents
         return $this;
     }
 
+    /** I testi che iniziano con «=» restano testo (vedi TestoExcelSicuro). */
+    public function bindValue(Cell $cell, mixed $value): bool
+    {
+        return (new TestoExcelSicuro)->bindValue($cell, $value);
+    }
+
+    /** @return array<class-string, callable> */
     public function registerEvents(): array
     {
         return [
-            AfterSheet::class => function (AfterSheet $event) {
+            AfterSheet::class => function (AfterSheet $event): void {
                 $this->processSheet($event);
             },
         ];
@@ -53,130 +70,145 @@ class DynamicGroupExport extends ExcelExport implements WithEvents
     {
         $sheet = $event->sheet->getDelegate();
 
-        // 1. GESTIONE FILTRI IN CIMA
-        $livewire = $this->getLivewire();
-        $appliedFilters = $livewire->tableFilters ?? [];
-
         $filterStrings = [];
-        foreach ($appliedFilters as $name => $data) {
-            if (! empty($data['value'])) {
-                $val = is_array($data['value']) ? implode(', ', $data['value']) : $data['value'];
-                $filterStrings[] = strtoupper($name).': '.$val;
+        foreach ($this->getLivewire()->tableFilters ?? [] as $name => $data) {
+            $value = $this->describeFilter($data);
+            if ($value !== '') {
+                $filterStrings[] = strtoupper($name).': '.$value;
             }
         }
         $filtersText = 'FILTRI APPLICATI: '.(empty($filterStrings) ? 'Nessuno' : implode(' | ', $filterStrings));
 
-        // Inserimento spazio per i filtri
         $sheet->insertNewRowBefore(1, 2);
         $sheet->setCellValue('A1', $filtersText);
         $sheet->getStyle('A1')->getFont()->setBold(true)->setItalic(true)->getColor()->setARGB('FF555555');
 
-        // 2. FORMATTAZIONE INTESTAZIONI (RIGA 3) IN GRASSETTO
         $headerRow = 3;
         $highestColumn = $sheet->getHighestColumn();
         $sheet->getStyle("A{$headerRow}:{$highestColumn}{$headerRow}")->getFont()->setBold(true);
 
-        // Identificazione colonne da sommare e dati
         $highestRow = $sheet->getHighestRow();
         $highestColumnIndex = Coordinate::columnIndexFromString($highestColumn);
 
-        if ($highestRow <= $headerRow) {
+        if ($highestRow <= $headerRow || $this->sumColumns === []) {
             return;
         }
 
         $headings = $sheet->rangeToArray("A{$headerRow}:{$highestColumn}{$headerRow}", null, true, false)[0];
-        $headingsLower = array_map(fn ($h) => strtolower(trim((string) $h)), $headings);
+        $headingsLower = array_map(fn ($heading): string => strtolower(trim((string) $heading)), $headings);
 
         $sumIndices = [];
-        foreach ($this->sumColumns as $col) {
-            $idx = array_search(strtolower($col), $headingsLower);
-            if ($idx !== false) {
-                $sumIndices[] = $idx;
+        foreach ($this->sumColumns as $column) {
+            $index = array_search(strtolower($column), $headingsLower, true);
+            if ($index !== false) {
+                $sumIndices[] = $index;
             }
         }
 
         $dataStartRow = $headerRow + 1;
         $rows = $sheet->rangeToArray("A{$dataStartRow}:{$highestColumn}{$highestRow}", null, true, false);
 
-        // --- LOGICA A: CON RAGGRUPPAMENTO ---
-        if ($this->groupBy) {
-            $groupByIndex = array_search(strtolower($this->groupBy), $headingsLower);
+        $groupByIndex = $this->groupBy === null ? false : array_search(strtolower($this->groupBy), $headingsLower, true);
 
-            if ($groupByIndex !== false) {
-                $groups = [];
-                foreach ($rows as $row) {
-                    $groupValue = $row[$groupByIndex] ?? '';
-                    $groups[$groupValue][] = $row;
-                }
-
-                $sheet->removeRow($dataStartRow, $highestRow - $headerRow);
-
-                $grandTotals = array_fill_keys($sumIndices, 0);
-                $currentRow = $dataStartRow;
-
-                foreach ($groups as $groupName => $groupRows) {
-                    $groupSums = array_fill_keys($sumIndices, 0);
-
-                    foreach ($groupRows as $row) {
-                        foreach ($row as $colIdx => $value) {
-                            $colLetter = Coordinate::stringFromColumnIndex($colIdx + 1);
-                            $sheet->setCellValue($colLetter.$currentRow, $value);
-                        }
-                        foreach ($sumIndices as $idx) {
-                            $val = $this->parseNumericValue($row[$idx] ?? 0);
-                            $groupSums[$idx] += $val;
-                        }
-                        $currentRow++;
-                    }
-
-                    // Riga Totale Gruppo
-                    foreach ($sumIndices as $idx) {
-                        $grandTotals[$idx] += $groupSums[$idx];
-                    }
-
-                    $this->writeTotalRow($sheet, $currentRow, $groupByIndex, 'TOTALE '.strtoupper((string) $groupName), $groupSums, $sumIndices, $highestColumnIndex, false);
-                    $currentRow += 2;
-                }
-
-                // Gran Totale Finale (dopo i gruppi)
-                $this->writeTotalRow($sheet, $currentRow, $groupByIndex, 'GRAN TOTALE COMPLESSIVO', $grandTotals, $sumIndices, $highestColumnIndex, true);
-
-                return;
+        if ($groupByIndex !== false) {
+            $groups = [];
+            foreach ($rows as $row) {
+                $groups[$row[$groupByIndex] ?? ''][] = $row;
             }
+
+            $sheet->removeRow($dataStartRow, $highestRow - $headerRow);
+
+            $grandTotals = array_fill_keys($sumIndices, 0);
+            $currentRow = $dataStartRow;
+
+            foreach ($groups as $groupName => $groupRows) {
+                $groupSums = array_fill_keys($sumIndices, 0);
+
+                foreach ($groupRows as $row) {
+                    foreach ($row as $columnIndex => $value) {
+                        $sheet->setCellValue(Coordinate::stringFromColumnIndex($columnIndex + 1).$currentRow, $value);
+                    }
+                    foreach ($sumIndices as $index) {
+                        $groupSums[$index] += $this->parseNumericValue($row[$index] ?? 0);
+                    }
+                    $currentRow++;
+                }
+
+                foreach ($sumIndices as $index) {
+                    $grandTotals[$index] += $groupSums[$index];
+                }
+
+                $this->writeTotalRow($sheet, $currentRow, $groupByIndex, 'TOTALE '.strtoupper((string) $groupName), $groupSums, $sumIndices, $highestColumnIndex, false);
+                $currentRow += 2;
+            }
+
+            $this->writeTotalRow($sheet, $currentRow, $groupByIndex, 'GRAN TOTALE COMPLESSIVO', $grandTotals, $sumIndices, $highestColumnIndex, true);
+
+            return;
         }
 
-        // --- LOGICA B: SENZA RAGGRUPPAMENTO (SOLO GRAN TOTALE) ---
         $grandTotals = array_fill_keys($sumIndices, 0);
         foreach ($rows as $row) {
-            foreach ($sumIndices as $idx) {
-                $grandTotals[$idx] += $this->parseNumericValue($row[$idx] ?? 0);
+            foreach ($sumIndices as $index) {
+                $grandTotals[$index] += $this->parseNumericValue($row[$index] ?? 0);
             }
         }
 
-        // Scriviamo il gran totale in fondo ai dati esistenti
-        $lastDataRow = $highestRow + 1;
-        $this->writeTotalRow($sheet, $lastDataRow, 0, 'GRAN TOTALE COMPLESSIVO', $grandTotals, $sumIndices, $highestColumnIndex, true);
+        $this->writeTotalRow($sheet, $highestRow + 1, 0, 'GRAN TOTALE COMPLESSIVO', $grandTotals, $sumIndices, $highestColumnIndex, true);
     }
 
-    // Helper per pulire i valori numerici
-    protected function parseNumericValue($val): float
+    /**
+     * Il valore di un filtro: `value`/`values` per quelli semplici, «campo valore» per quelli con più campi (date da/a...).
+     */
+    protected function describeFilter(mixed $data): string
     {
-        if (is_string($val)) {
-            $val = str_replace(['€', '.', ' '], '', $val);
-            $val = str_replace(',', '.', $val);
+        if (! is_array($data)) {
+            return is_scalar($data) ? trim((string) $data) : '';
         }
 
-        return (float) $val;
+        if (array_key_exists('value', $data) || array_key_exists('values', $data)) {
+            $value = $data['value'] ?? $data['values'] ?? null;
+            if (empty($value)) {
+                return '';
+            }
+
+            return is_array($value) ? implode(', ', array_filter($value, fn ($item): bool => filled($item))) : trim((string) $value);
+        }
+
+        if (array_key_exists('isActive', $data)) {
+            return $data['isActive'] ? 'sì' : '';
+        }
+
+        $parts = [];
+        foreach ($data as $field => $value) {
+            if (is_scalar($value) && filled($value)) {
+                $parts[] = $field.' '.$value;
+            }
+        }
+
+        return implode(', ', $parts);
     }
 
-    // Helper per scrivere una riga di totale (subtotale o gran totale)
-    protected function writeTotalRow($sheet, $rowIdx, $labelColIdx, $label, $totals, $sumIndices, $maxCol, $isGrandTotal)
+    /** Importi formattati all'italiana ("1.234,56 €") tornano numeri. */
+    protected function parseNumericValue(mixed $value): float
     {
-        $colLetterLabel = Coordinate::stringFromColumnIndex($labelColIdx + 1);
-        $sheet->setCellValue($colLetterLabel.$rowIdx, $label);
+        if (is_string($value)) {
+            $value = str_replace(['€', '.', ' ', "\u{00A0}"], '', $value);
+            $value = str_replace(',', '.', $value);
+        }
 
-        $rowRange = Coordinate::stringFromColumnIndex(1).$rowIdx.':'.Coordinate::stringFromColumnIndex($maxCol).$rowIdx;
-        $style = $sheet->getStyle($rowRange);
+        return (float) $value;
+    }
+
+    /**
+     * @param  array<int, float>  $totals
+     * @param  list<int>  $sumIndices
+     */
+    protected function writeTotalRow(Worksheet $sheet, int $rowIndex, int $labelColumnIndex, string $label, array $totals, array $sumIndices, int $maxColumn, bool $isGrandTotal): void
+    {
+        $sheet->setCellValue(Coordinate::stringFromColumnIndex($labelColumnIndex + 1).$rowIndex, $label);
+
+        $style = $sheet->getStyle('A'.$rowIndex.':'.Coordinate::stringFromColumnIndex($maxColumn).$rowIndex);
         $style->getFont()->setBold(true);
 
         if ($isGrandTotal) {
@@ -184,10 +216,9 @@ class DynamicGroupExport extends ExcelExport implements WithEvents
             $style->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFD9D9D9');
         }
 
-        foreach ($sumIndices as $idx) {
-            $colLetter = Coordinate::stringFromColumnIndex($idx + 1);
-            $cell = $colLetter.$rowIdx;
-            $sheet->setCellValue($cell, $totals[$idx]);
+        foreach ($sumIndices as $index) {
+            $cell = Coordinate::stringFromColumnIndex($index + 1).$rowIndex;
+            $sheet->setCellValue($cell, $totals[$index]);
             $sheet->getStyle($cell)->getNumberFormat()->setFormatCode(self::FORMAT_CURRENCY);
         }
     }

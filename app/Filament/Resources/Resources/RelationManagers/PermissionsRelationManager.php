@@ -93,7 +93,7 @@ class PermissionsRelationManager extends RelationManager
             ->filters([
                 //
             ])
-            ->headerActions([
+            ->pushHeaderActions([
                 // Azione Rapida: Concedi TUTTE le azioni per TUTTI i tipi di dipendente su questa risorsa
                 Action::make('grantAllGlobal')
                     ->label('Abilita Tutto')

@@ -83,7 +83,7 @@ class TaskExecutionsRelationManager extends RelationManager
             ->filters([
                 // Puoi inserire filtri per esito o per operatore se necessario
             ])
-            ->headerActions([
+            ->pushHeaderActions([
                 // Ora l'azione di creazione ha il contesto corretto della tabella
                 CreateAction::make()
                     ->label('Forza Nuova Esecuzione'),

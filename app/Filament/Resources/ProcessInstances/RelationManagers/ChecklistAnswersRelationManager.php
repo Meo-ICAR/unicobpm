@@ -19,7 +19,7 @@ class ChecklistAnswersRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
-            ->headerActions([
+            ->pushHeaderActions([
                 CreateAction::make(),
             ]);
     }

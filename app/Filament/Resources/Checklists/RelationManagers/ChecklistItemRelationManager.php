@@ -89,7 +89,7 @@ class ChecklistItemRelationManager extends RelationManager
                 IconColumn::make('is_knockout')->label('KO')->boolean(),
             ])
             ->defaultSort('ordine')
-            ->headerActions([CreateAction::make()])
+            ->pushHeaderActions([CreateAction::make()])
             ->actions([EditAction::make(), DeleteAction::make()])
             ->bulkActions([BulkActionGroup::make([DeleteBulkAction::make()])]);
     }

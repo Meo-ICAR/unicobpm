@@ -100,7 +100,7 @@ class ProcessTaskItemsRelationManager extends RelationManager
                 TextColumn::make('handler_job')->label('Job')->placeholder('—')->toggleable(isToggledHiddenByDefault: true),
             ])
             ->defaultSort('ordine')
-            ->headerActions([CreateAction::make()])
+            ->pushHeaderActions([CreateAction::make()])
             ->actions([EditAction::make(), DeleteAction::make()])
             ->bulkActions([BulkActionGroup::make([DeleteBulkAction::make()])]);
     }

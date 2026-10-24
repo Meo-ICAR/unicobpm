@@ -118,7 +118,7 @@ class PermissionsRelationManager extends RelationManager
                     ->label('Filtra per Gruppo')
                     ->options(fn () => Resource::query()->whereNotNull('group')->pluck('group', 'group')->toArray()),
             ])
-            ->headerActions([
+            ->pushHeaderActions([
                 // Azione Rapida: Concedi TUTTO il sistema a questo Ruolo
                 Action::make('grantAllGlobal')
                     ->label('Abilita Tutto')

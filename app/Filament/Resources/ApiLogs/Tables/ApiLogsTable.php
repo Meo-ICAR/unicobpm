@@ -55,7 +55,7 @@ class ApiLogsTable
                     ->query(fn ($query) => $query->where(fn ($q) => $q->whereNotNull('error')->orWhere('status_code', '>=', 400))),
                 Filter::make('con_costo')->label('Con costo AI')->query(fn ($query) => $query->whereNotNull('ai_cost')),
             ])
-            ->headerActions([
+            ->pushHeaderActions([
                 ExportAction::make()->label('Esporta Excel'),
             ])
             ->recordActions([ViewAction::make()->label('Dettaglio')]);

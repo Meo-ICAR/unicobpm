@@ -73,7 +73,7 @@ class ResourcePresetsRelationManager extends RelationManager
                     ->label('Filtra per Gruppo')
                     ->options(fn () => Resource::query()->whereNotNull('group')->pluck('group', 'group')->toArray()),
             ])
-            ->headerActions([
+            ->pushHeaderActions([
                 Action::make('grantAllPresets')
                     ->label('Abilita Tutto')
                     ->icon('heroicon-o-check-badge')
