@@ -12,8 +12,12 @@ use App\Models\ComplaintRegistry;
 use App\Models\Document;
 use App\Models\Employee;
 use App\Models\Fornitore;
-use App\Models\PROFORMA\Clienti;
 use App\Models\Website;
+use App\Services\Correlation;
+use App\Services\Replies\CompositeReplyInterpreter;
+use App\Services\Replies\NeuronReplyInterpreter;
+use App\Services\Replies\ReplyInterpreter;
+use App\Services\Replies\RuleBasedReplyInterpreter;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Event;
@@ -21,6 +25,7 @@ use Illuminate\Support\ServiceProvider;
 use SocialiteProviders\Google\GoogleExtendSocialite;
 use SocialiteProviders\Manager\SocialiteWasCalled;
 use SocialiteProviders\Microsoft\MicrosoftExtendSocialite;
+use Unico\Core\UnicoCoreServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -30,12 +35,12 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         // Un solo identificativo di correlazione per richiesta/esecuzione, riusato da tutte le chiamate verso le altre app.
-        $this->app->singleton(\App\Services\Correlation::class);
+        $this->app->singleton(Correlation::class);
 
         // Risposte email: prima le regole (risposte brevi e inequivocabili), poi l'AI per il resto.
-        $this->app->bind(\App\Services\Replies\ReplyInterpreter::class, fn () => new \App\Services\Replies\CompositeReplyInterpreter([
-            new \App\Services\Replies\RuleBasedReplyInterpreter,
-            new \App\Services\Replies\NeuronReplyInterpreter,
+        $this->app->bind(ReplyInterpreter::class, fn () => new CompositeReplyInterpreter([
+            new RuleBasedReplyInterpreter,
+            new NeuronReplyInterpreter,
         ]));
     }
 
@@ -47,14 +52,13 @@ class AppServiceProvider extends ServiceProvider
         // Il pacchetto unico-core sta nel database condiviso (connessione `core`), creato da un'altra app: qui non si
         // eseguono le sue migration. Se invece usa la connessione dell'app (es. nei test), si creano con `migrate`.
         if (config('unico-core.connection') === config('database.default')) {
-            $this->loadMigrationsFrom(\Unico\Core\UnicoCoreServiceProvider::migrationsPath());
+            $this->loadMigrationsFrom(UnicoCoreServiceProvider::migrationsPath());
         }
 
         Relation::morphMap([
             'audit' => Audit::class,
             'branch' => Branch::class,
             'client' => Client::class,
-            'cliente' => Clienti::class,
             'company' => Company::class,
             'complaint' => ComplaintRegistry::class,
             'document' => Document::class,

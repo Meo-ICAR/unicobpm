@@ -15,7 +15,7 @@ class ModuleSeeder extends Seeder
         $modules = [
             ['code' => 'UNICOBPM', 'name' => 'UnicoBPM', 'description' => 'Gestione processi'],
             ['code' => 'UNICOOAM', 'name' => 'UnicoOAM', 'description' => 'Gestione compliance'],
-            ['code' => 'PROFORMA', 'name' => 'Proforma', 'description' => 'Gestione contabilità'],
+            ['code' => 'UNICOCOGE', 'name' => 'UnicoCoge', 'description' => 'Gestione contabilità'],
             ['code' => 'UNICOFINANCE', 'name' => 'UnicoFinance', 'description' => 'Istruttoria delle pratiche'],
             ['code' => 'DASHBOARDAI', 'name' => 'DashboardAI', 'description' => 'Reporting direzionale'],
         ];

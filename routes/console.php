@@ -48,6 +48,9 @@ Schedule::job(new TaskEscalationWatchdogJob)->hourly();
 // 5. Controllo orario dei termini tassativi facoltativi (data fine pratica, giorni per singolo step)
 Schedule::job(new MandatoryDeadlineWatchdogJob)->hourly();
 
+// 5b. Solleciti settimanali alla controparte delle pratiche ferme su passi con «solleciti attivi» (documenti mancanti)
+Schedule::command('bpm:send-reminders')->weeklyOn(1, '08:30');
+
 // 6. Reminder giornaliero se l'ultimo record creato di un modello esterno è troppo vecchio
 Schedule::command('bpm:check-stale-records')->dailyAt('08:00');
 

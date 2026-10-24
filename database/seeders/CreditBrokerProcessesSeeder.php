@@ -34,9 +34,8 @@ class CreditBrokerProcessesSeeder extends Seeder
     }
 
     /**
-     * NOTA: i primi due task di PRC-AML (ordine 10 e 20) sono già seminati da
-     * ProcessTaskSeeder + ProcessTaskRaciSeeder con una matrice RACI a 4 ruoli completa.
-     * Qui aggiungiamo solo il terzo step (monitoraggio), senza toccare ordine 10/20.
+     * NOTA: i primi due task di PRC-AML (ordine 10 e 20) sono già seminati da ProcessTaskSeeder + ProcessTaskRaciSeeder (matrice
+     * RACI del primo passo). Qui si aggiungono le azioni dei primi due, il responsabile del secondo e il terzo step (monitoraggio).
      */
     private function seedAmlProcess(): void
     {
@@ -48,6 +47,28 @@ class CreditBrokerProcessesSeeder extends Seeder
         }
 
         $ctrlCompl = EmployeeType::where('code', 'CTRL-COMPL')->first();
+        $ctrlAml = EmployeeType::where('code', 'CTRL-AML')->first();
+        $cartaIdentita = DocumentType::where('code', 'CARTA_IDENTITA')->first();
+        $visura = DocumentType::where('code', 'VISURA_CAMERALE')->first();
+        $checklistAml = Checklist::where('code', 'chk_aml_01')->first();
+
+        // I primi due passi hanno la matrice RACI e il passo; qui si completano con le azioni (e il responsabile del secondo passo).
+        $task1 = $process->tasks()->where('ordine', 10)->first();
+        $task2 = $process->tasks()->where('ordine', 20)->first();
+
+        if ($task1) {
+            $this->upsertItem($task1, 1, 'Documento di identità del cliente', 'document_upload', $cartaIdentita?->id, true);
+            $this->upsertItem($task1, 2, 'Visura camerale (persone giuridiche)', 'document_upload', $visura?->id, false);
+        }
+
+        if ($task2 && $ctrlAml) {
+            $this->upsertItem($task2, 1, 'Questionario di adeguata verifica', 'fill_checklist', null, true, null, $checklistAml?->id);
+            $task2->raciAssignments()->updateOrCreate(['employee_type_id' => $ctrlAml->id], ['raci_role' => 'R']);
+
+            if ($ctrlCompl) {
+                $task2->raciAssignments()->updateOrCreate(['employee_type_id' => $ctrlCompl->id], ['raci_role' => 'A']);
+            }
+        }
 
         $task3 = $this->upsertTask($process, 30, 'Monitoraggio Continuativo', $ctrlCompl);
         $this->upsertItem($task3, 1, 'Esito monitoraggio periodico', 'text_input', null, true);
@@ -134,10 +155,8 @@ class CreditBrokerProcessesSeeder extends Seeder
 
         $task2 = $this->upsertTask($process, 20, 'Invio Pratica all\'Istituto Convenzionato', $busBo);
         $this->upsertItem($task2, 1, 'Conferma Trasmissione Pratica', 'text_input', null, true);
-        $this->upsertItem($task2, 2, 'Verifica Blacklist Agente', 'blacklist_check', null, true, [
-            'pratica_id_field' => 'subject_id',
-            'app' => 'unicofinance',
-        ]);
+        // La verifica blacklist dell'agente non è più un'azione del passo: si toglie anche dove il seeder l'aveva creata.
+        $task2->processTaskItems()->where('action_type', 'blacklist_check')->delete();
 
         // Task in attesa dell'istituto finanziatore: dotato di regole di escalation per sollecitare
         // se la delibera tarda ad arrivare (usato da TaskEscalationWatchdogJob).

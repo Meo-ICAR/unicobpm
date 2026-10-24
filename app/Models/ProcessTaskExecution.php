@@ -81,7 +81,7 @@ class ProcessTaskExecution extends Model
     /**
      * Gli item del task (filtrati per action_type) di questa esecuzione che non hanno ancora
      * una ProcessTaskItemAnswer: condiviso tra l'interfaccia operatore (CompleteCurrentTaskAction)
-     * e l'ingestione email (ProcessIncomingEmails), così entrambi concordano su cosa sia "in attesa".
+     * e l'ingestione email (ProcessAttachmentIngestor), così entrambi concordano su cosa sia "in attesa".
      *
      * @param  array<int, string>  $actionTypes
      */

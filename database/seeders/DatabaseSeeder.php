@@ -84,6 +84,8 @@ class DatabaseSeeder extends Seeder
             CreditBrokerProcessesSeeder::class, // AML, Trasparenza, OAM, Istruttoria Finanziamento
             ScadenziarioCogeProcessSeeder::class, // Scadenziario COGE (check Proforma con severity + RACI)
             ComplianceDocumentazioneProcessSeeder::class, // Compliance (documenti scaduti da UnicoOAM)
+            ProcessEmailTemplateSeeder::class, // Solleciti di presa in carico (TASK_ESCALATION)
+            WhistleblowingProcessSeeder::class, // Segnalazioni da UnicoWhistle
             ProcedureAziendaliSeeder::class, // Procedure aziendali dalla Relazione sui requisiti organizzativi (rete, pratiche, governance)
 
             // 5. Preset di accesso per ruolo (richiede employee_types e resources già censiti)
