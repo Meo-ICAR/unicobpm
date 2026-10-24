@@ -74,7 +74,7 @@ class EscalationNotifier
     private function functionEmails(Collection $roleIds): Collection
     {
         return EmployeeType::query()->whereIn('id', $roleIds)->get()
-            ->flatMap(fn (EmployeeType $role) => $role->loginUsers()->pluck('email'))
+            ->flatMap(fn (EmployeeType $role) => $role->memberEmails())
             ->filter();
     }
 

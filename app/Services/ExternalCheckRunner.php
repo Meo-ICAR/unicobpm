@@ -153,17 +153,13 @@ class ExternalCheckRunner
     }
 
     /**
+     * Email di chi ricopre il ruolo, dall'anagrafica (non serve un account di accesso); se nessuno lo ricopre, quella dell'ufficio.
+     *
      * @return Collection<int, string>
      */
     private function emailsOf(?EmployeeType $role): Collection
     {
-        if (! $role) {
-            return collect();
-        }
-
-        return filled($role->email)
-            ? collect([$role->email])
-            : $role->loginUsers()->pluck('email');
+        return $role ? $role->memberEmails() : collect();
     }
 
     /**
