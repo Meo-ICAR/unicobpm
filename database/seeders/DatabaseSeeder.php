@@ -65,6 +65,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             // 1. Anagrafiche di base (nessuna Foreign Key)
             DocumentTypeSeeder::class,
+            MergeDuplicateDocumentTypesSeeder::class, // Unisce Polizza/Visura/Relazione audit e code TRASPARENZA
             TaskSeeder::class,
             TaskDocumentTypeSeeder::class, // Dipende da DocumentTypeSeeder e TaskSeeder
             OfficeRoleSeeder::class,

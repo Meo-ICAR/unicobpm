@@ -81,10 +81,17 @@ class TaskDocumentTypeSeeder extends Seeder
             ['id' => 73, 'task_id' => 1, 'document_type_id' => 35, 'is_required' => 1, 'created_at' => '2026-07-08 08:53:30', 'updated_at' => '2026-07-08 08:53:30'],
             ['id' => 74, 'task_id' => 1, 'document_type_id' => 36, 'is_required' => 1, 'created_at' => '2026-07-08 08:53:30', 'updated_at' => '2026-07-08 08:53:30'],
             ['id' => 75, 'task_id' => 1, 'document_type_id' => 39, 'is_required' => 1, 'created_at' => '2026-07-08 08:53:30', 'updated_at' => '2026-07-08 08:53:30'],
+            // Fascicolo Pratica (task 13): documenti dalla Relazione (trasparenza / AML / privacy).
+            ['id' => 76, 'task_id' => 13, 'document_type_id' => 27, 'is_required' => 1, 'created_at' => now(), 'updated_at' => now()],
+            ['id' => 77, 'task_id' => 13, 'document_type_id' => 19, 'is_required' => 1, 'created_at' => now(), 'updated_at' => now()],
+            ['id' => 78, 'task_id' => 13, 'document_type_id' => 18, 'is_required' => 1, 'created_at' => now(), 'updated_at' => now()],
+            ['id' => 79, 'task_id' => 13, 'document_type_id' => 15, 'is_required' => 1, 'created_at' => now(), 'updated_at' => now()],
+            ['id' => 80, 'task_id' => 13, 'document_type_id' => 26, 'is_required' => 1, 'created_at' => now(), 'updated_at' => now()],
+            ['id' => 81, 'task_id' => 13, 'document_type_id' => 41, 'is_required' => 1, 'created_at' => now(), 'updated_at' => now()],
         ];
 
         foreach ($rows as $row) {
-            DB::connection('mysql_unicooam')->table('document_requirements')->updateOrInsert(
+            DB::table('document_requirements')->updateOrInsert(
                 ['id' => $row['id']],
                 $row
             );

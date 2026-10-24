@@ -2,15 +2,18 @@
 
 namespace Database\Seeders;
 
+use App\Models\Checklist;
+use App\Models\DocumentType;
 use App\Models\EmployeeType;
 use App\Models\Process;
+use App\Models\ProcessTask;
 use Illuminate\Database\Seeder;
 
 /**
  * Procedure aziendali di un mediatore creditizio, ricavate dalla «Relazione sui requisiti organizzativi» (D.M. 31/2014) e dalla
  * struttura della rete distributiva. Si aggiungono a quelle già progettate (PRC-AML, PRC-TRANSP, PRC-OAM, PRC-ISTRUTTORIA,
- * PRC-COMPLIANCE, PRC-COGE, PRC-WHISTLE). Ogni processo ha i suoi passi in ordine e la matrice RACI per funzione aziendale
- * (R responsabile, A approva, C consultato, I informato). Le funzioni sono quelle dell'organigramma; i membri si assegnano da pannello.
+ * PRC-COMPLIANCE, PRC-COGE, PRC-WHISTLE). Ogni processo ha i suoi passi in ordine, la matrice RACI e almeno un'azione
+ * (`process_task_items`: upload, checklist o testo). Le funzioni sono quelle dell'organigramma; i membri si assegnano da pannello.
  * Nei processi a scadenza (cron) la Segreteria di Rete è la responsabile di ogni passo: segue le scadenze e le sollecita. Idempotente.
  */
 class ProcedureAziendaliSeeder extends Seeder
@@ -222,8 +225,9 @@ class ProcedureAziendaliSeeder extends Seeder
             ]);
 
             foreach ($passi as $indice => [$nomePasso, $raci]) {
+                $ordine = ($indice + 1) * 10;
                 $passo = $processo->tasks()->updateOrCreate(
-                    ['process_id' => $processo->id, 'ordine' => ($indice + 1) * 10],
+                    ['process_id' => $processo->id, 'ordine' => $ordine],
                     ['name' => $nomePasso, 'code' => strtolower($codice).'-'.($indice + 1)],
                 );
 
@@ -236,10 +240,244 @@ class ProcedureAziendaliSeeder extends Seeder
                 }
 
                 $passo->raciAssignments()->whereNotIn('employee_type_id', collect(array_keys($raci))->map(fn (string $f): int => $funzioni[$f]->id))->delete();
+
+                $this->seedItemsForStep($passo, $codice, $ordine, $nomePasso);
             }
 
             $processo->tasks()->where('ordine', '>', count($passi) * 10)->delete();
         }
+    }
+
+    /**
+     * Almeno un process_task_item per passo: upload documenti della Relazione, checklist AML/OAM/trasparenza, oppure testo di esito.
+     *
+     * @param  list<array{0: string, 1: string, 2: ?string, 3: ?string}>  $items
+     */
+    private function seedItemsForStep(ProcessTask $passo, string $processCode, int $ordine, string $stepName): void
+    {
+        $items = $this->itemsFor($processCode, $ordine, $stepName);
+        $kept = [];
+
+        foreach ($items as $indice => [$nome, $actionType, $documentCode, $checklistCode]) {
+            $itemOrdine = ($indice + 1) * 10;
+            $kept[] = $itemOrdine;
+
+            $passo->processTaskItems()->updateOrCreate(
+                ['process_task_id' => $passo->id, 'ordine' => $itemOrdine],
+                [
+                    'name' => $nome,
+                    'action_type' => $actionType,
+                    'document_type_id' => $this->documentTypeId($documentCode),
+                    'checklist_id' => $this->checklistId($checklistCode),
+                    'is_required' => true,
+                    'config' => null,
+                ]
+            );
+        }
+
+        $passo->processTaskItems()->whereNotIn('ordine', $kept)->delete();
+    }
+
+    /**
+     * @return list<array{0: string, 1: string, 2: ?string, 3: ?string}>
+     */
+    private function itemsFor(string $processCode, int $ordine, string $stepName): array
+    {
+        $override = $this->itemOverrides()[$processCode][$ordine] ?? null;
+
+        if ($override !== null) {
+            return $override;
+        }
+
+        $name = mb_strtolower($stepName);
+
+        if (str_contains($name, 'casellario') || str_contains($name, 'carichi pendenti') || str_contains($name, 'onorabilit')) {
+            return [
+                ['Casellario giudiziale e carichi pendenti', 'document_upload', 'casellario-giudiziale', null],
+                ['Dichiarazione sostitutiva di onorabilità (se prevista)', 'document_upload', null, null],
+                ['Esito della verifica', 'text_input', null, null],
+            ];
+        }
+
+        if (str_contains($name, 'curriculum') || str_contains($name, 'candidatura') || str_contains($name, 'scheda candidato')) {
+            return [
+                ['Curriculum vitae', 'document_upload', null, null],
+                ['Scheda candidato / note di selezione', 'text_input', null, null],
+            ];
+        }
+
+        if (str_contains($name, 'prova valutativa')) {
+            return [
+                ['Esito prova valutativa OAM', 'document_upload', 'ESITO_PROVA_OAM', null],
+                ['Annotazioni', 'text_input', null, null],
+            ];
+        }
+
+        if (str_contains($name, 'contratto di agenzia') || str_contains($name, 'firma elettronica del contratto') || str_contains($name, 'appendice')) {
+            return [
+                ['Contratto / appendice firmata', 'document_upload', 'APPENDICE_CONTRATTO_AGENZIA', null],
+                ['Conferma firma e data', 'text_input', null, null],
+            ];
+        }
+
+        if (str_contains($name, 'pec')) {
+            return [
+                ['Dichiarazione / ricevute PEC', 'document_upload', null, null],
+                ['Esito verifica PEC', 'text_input', null, null],
+            ];
+        }
+
+        if (str_contains($name, 'kyc') || str_contains($name, 'adeguata verifica') || (str_contains($name, 'antiriciclaggio') && str_contains($name, 'anagraf'))) {
+            return [
+                ['Questionario di adeguata verifica', 'fill_checklist', null, 'chk_aml_01'],
+                ['Modulo AML firmato', 'document_upload', null, null],
+            ];
+        }
+
+        if (str_contains($name, 'privacy')) {
+            return [
+                ['Informativa privacy e consensi', 'document_upload', null, null],
+                ['Esito / annotazioni privacy', 'text_input', null, null],
+            ];
+        }
+
+        if (str_contains($name, 'foglio informativo') || str_contains($name, 'trasparenza') || str_contains($name, 'modulistica')) {
+            return [
+                ['Check list trasparenza', 'fill_checklist', null, 'chk_trasparenza_01'],
+                ['Foglio informativo / modulistica consegnata', 'document_upload', null, null],
+            ];
+        }
+
+        if (str_contains($name, 'formazione') || str_contains($name, 'attestato') || str_contains($name, 'ore svolte')) {
+            return [
+                ['Attestato formazione OAM', 'document_upload', 'ATTESTATO_FORMAZIONE', null],
+                ['Ore e note formative', 'text_input', null, null],
+            ];
+        }
+
+        if (str_contains($name, 'polizza') || str_contains($name, 'rc professionale')) {
+            return [
+                ['Polizza RC professionale', 'document_upload', 'POLIZZA_RC_PROFESSIONALE', null],
+                ['Scadenza e massimali', 'text_input', null, null],
+            ];
+        }
+
+        if (str_contains($name, 'reclamo')) {
+            return [
+                ['Documentazione del reclamo', 'document_upload', null, null],
+                ['Registro / esito istruttoria', 'text_input', null, null],
+            ];
+        }
+
+        if (str_contains($name, 'sos') || str_contains($name, 'operazione sospetta') || str_contains($name, 'uif')) {
+            return [
+                ['Documentazione a supporto della valutazione', 'document_upload', null, null],
+                ['Decisione e tracciamento SOS', 'text_input', null, null],
+            ];
+        }
+
+        if (str_contains($name, 'oam') && (str_contains($name, 'iscrizione') || str_contains($name, 'cancellazione') || str_contains($name, 'elenco'))) {
+            return [
+                ['Check list requisiti OAM', 'fill_checklist', null, 'chk_oam_01'],
+                ['Evidenza adempimento OAM', 'document_upload', null, null],
+            ];
+        }
+
+        if (str_contains($name, 'check list') || str_contains($name, 'documenti del cliente') || str_contains($name, 'fascicolo')) {
+            return [
+                ['Documento di identità', 'document_upload', 'CARTA_IDENTITA', null],
+                ['Altri documenti del fascicolo', 'document_upload', null, null],
+                ['Esito controllo fascicolo', 'text_input', null, null],
+            ];
+        }
+
+        if (str_contains($name, 'delibera') || str_contains($name, 'esito') && str_contains($name, 'banca')) {
+            return [
+                ['Delibera / esito istituto', 'document_upload', 'DELIBERA_ISTITUTO', null],
+                ['Aggiornamento stato pratica', 'text_input', null, null],
+            ];
+        }
+
+        return [
+            ['Registrazione esito: '.$stepName, 'text_input', null, null],
+        ];
+    }
+
+    /**
+     * Override puntuali (processo => ordine passo => items).
+     *
+     * @return array<string, array<int, list<array{0: string, 1: string, 2: ?string, 3: ?string}>>>
+     */
+    private function itemOverrides(): array
+    {
+        return [
+            'PRC-ONBOARD-COLL' => [
+                10 => [
+                    ['Curriculum vitae', 'document_upload', null, null],
+                    ['Scheda candidato', 'text_input', null, null],
+                ],
+                20 => [
+                    ['Casellario giudiziale e carichi pendenti', 'document_upload', 'casellario-giudiziale', null],
+                    ['Visura camerale (se persona giuridica)', 'document_upload', 'VISURA_CAMERALE', null],
+                    ['Esito prova valutativa OAM', 'document_upload', 'ESITO_PROVA_OAM', null],
+                    ['Esito istruttoria pre-contrattuale', 'text_input', null, null],
+                ],
+                50 => [
+                    ['Check list adempimenti OAM / Enasarco', 'fill_checklist', null, 'chk_oam_01'],
+                    ['Evidenza iscrizione OAM e account', 'text_input', null, null],
+                ],
+            ],
+            'PRC-PERFEZIONAMENTO' => [
+                10 => [
+                    ['Documento di identità', 'document_upload', 'CARTA_IDENTITA', null],
+                    ['Busta paga / CU', 'document_upload', 'BUSTA_PAGA', null],
+                    ['Estratto conto', 'document_upload', 'ESTRATTO_CONTO', null],
+                ],
+                20 => [
+                    ['Informativa privacy firmata', 'document_upload', null, null],
+                ],
+                30 => [
+                    ['Questionario adeguata verifica', 'fill_checklist', null, 'chk_aml_01'],
+                ],
+                40 => [
+                    ['Check list trasparenza precontrattuale', 'fill_checklist', null, 'chk_trasparenza_01'],
+                    ['Contratto di mediazione firmato', 'document_upload', 'INCARICO-MED', null],
+                ],
+                50 => [
+                    ['Esito controllo di primo livello del fascicolo', 'text_input', null, null],
+                ],
+            ],
+            'PRC-RELAZIONE-ORGANIZZATIVA' => [
+                10 => [
+                    ['Bozza aggiornata della Relazione', 'document_upload', null, null],
+                    ['Checklist dati organi e outsourcer', 'text_input', null, null],
+                ],
+                30 => [
+                    ['Verbale CdA di approvazione', 'document_upload', 'VERBALE_CDA', null],
+                    ['Relazione approvata archiviata', 'document_upload', null, null],
+                ],
+            ],
+        ];
+    }
+
+    private function documentTypeId(?string $code): ?int
+    {
+        if ($code === null || $code === '') {
+            return null;
+        }
+
+        return DocumentType::query()->where('code', $code)->value('id')
+            ?? DocumentType::query()->where('slug', $code)->value('id')
+            ?? DocumentType::query()->where('slug', strtolower(str_replace('_', '-', $code)))->value('id');
+    }
+
+    private function checklistId(?string $code): ?int
+    {
+        if ($code === null || $code === '') {
+            return null;
+        }
+
+        return Checklist::query()->where('code', $code)->value('id');
     }
 
     /**

@@ -28,10 +28,13 @@ class TaskSeeder extends Seeder
             ['id' => 10, 'parent_id' => null, 'name' => 'OffBoarding', 'description' => 'Attività e documenti richiesti per la chiusura di una anagrafica.', 'app_identifier' => 'UnicoFin', 'taskable' => 'fornitore', 'trigger_field' => 'dismissed_at', 'trigger_state' => 'filled', 'trigger_value' => null, 'exclude_field' => null, 'exclude_state' => null, 'exclude_value' => null, 'is_active' => 0, 'created_at' => '2026-06-30 09:36:06', 'updated_at' => '2026-06-30 09:36:06'],
             ['id' => 11, 'parent_id' => null, 'name' => 'OAM-Onorabilita-produttori', 'description' => 'Onorabilita agenti', 'app_identifier' => 'UnicoOAM', 'taskable' => 'fornitore', 'trigger_field' => null, 'trigger_state' => null, 'trigger_value' => null, 'exclude_field' => null, 'exclude_state' => null, 'exclude_value' => 'E', 'is_active' => 1, 'created_at' => '2026-06-30 12:33:06', 'updated_at' => '2026-06-30 17:47:48'],
             ['id' => 12, 'parent_id' => null, 'name' => 'OAM-Onorabilita Dipendenti', 'description' => 'Onorabilita agenti', 'app_identifier' => 'UnicoOAM', 'taskable' => 'employee', 'trigger_field' => null, 'trigger_state' => null, 'trigger_value' => null, 'exclude_field' => null, 'exclude_state' => null, 'exclude_value' => 'E', 'is_active' => 1, 'created_at' => '2026-06-30 12:34:14', 'updated_at' => '2026-06-30 12:34:55'],
+            // Plico fascicolo pratica (trasparenza + AML + privacy) dalla Relazione organizzativa.
+            ['id' => 13, 'parent_id' => null, 'name' => 'Fascicolo Pratica', 'description' => 'Documenti del fascicolo di mediazione: identità, privacy, AML, foglio informativo, contratto di mediazione.', 'app_identifier' => 'UNICOFINANCE', 'taskable' => 'pratica', 'trigger_field' => null, 'trigger_state' => null, 'trigger_value' => null, 'exclude_field' => null, 'exclude_state' => null, 'exclude_value' => null, 'is_active' => 1, 'created_at' => now(), 'updated_at' => now()],
         ];
 
         foreach ($rows as $row) {
-            DB::connection('mysql_unicooam')->table('tasks')->updateOrInsert(
+            // Stesso database unicosuite (connessione default / core): non più mysql_unicooam separato.
+            DB::table('tasks')->updateOrInsert(
                 ['id' => $row['id']],
                 $row
             );
