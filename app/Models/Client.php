@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Arr;
 use Unico\Core\Models\Client as CoreClient;
@@ -40,14 +39,6 @@ class Client extends CoreClient
         $this->forceFill([
             'employee_roles' => $roles->push($roleName)->all(),
         ])->save();
-    }
-
-    /**
-     * Get all addresses for the client.
-     */
-    public function addresses(): MorphMany
-    {
-        return $this->morphMany(Address::class, 'addressable');
     }
 
     /**
