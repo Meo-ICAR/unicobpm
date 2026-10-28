@@ -6,6 +6,7 @@ use App\Models\DocumentType;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
+use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -130,6 +131,7 @@ class DocumentTypeForm
                     ->schema([
                         Toggle::make('is_monitored')
                             ->label('Monitora Scadenza')
+                            ->helperText('Va nello scadenziario; si copia sui documenti del tipo, dove si può forzare.')
                             ->live()
                             ->inline(false),
                         Toggle::make('is_versioned')
@@ -149,8 +151,17 @@ class DocumentTypeForm
                             ])
                             ->default('days')
                             ->visible(fn ($get) => $get('is_monitored')),
-                        Toggle::make('is_end_month')
-                            ->label('Approssima a Fine Mese')
+                        TagsInput::make('notify_days_before')
+                            ->label('Preavvisi (giorni prima)')
+                            ->placeholder('es. 60')
+                            ->helperText('Vuoto = 15, 7 e 0 giorni. Un preavviso più lungo anticipa la comparsa nello scadenziario.')
+                            ->nestedRecursiveRules(['integer', 'min:0'])
+                            ->visible(fn ($get) => $get('is_monitored')),
+                        Select::make('is_end_month')
+                            ->label('Approssima la scadenza a')
+                            ->options(DocumentType::END_OPTIONS)
+                            ->default(DocumentType::END_NONE)
+                            ->native(false)
                             ->visible(fn ($get) => $get('is_monitored')),
                         Select::make('renewed_by_id')
                             ->label('Rinnovato da altro documento')
