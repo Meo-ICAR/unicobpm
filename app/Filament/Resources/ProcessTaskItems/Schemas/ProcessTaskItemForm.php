@@ -96,6 +96,15 @@ class ProcessTaskItemForm
                 ->options(self::RACI_ROLES)
                 ->helperText('Vuoto = i ruoli della RACI previsti dalla severity (regular: R; warning: R+A; alert: R+A+C). Con ruoli scelti scrivono sempre quelli.')
                 ->visible($isExternalCheck),
+            ...collect(['regular' => 'Regular', 'warning' => 'Warning', 'alert' => 'Alert'])->map(
+                fn (string $label, string $severity) => TextInput::make("config.repeat_days.{$severity}")
+                    ->label("{$label}: rimanda dopo (giorni)")
+                    ->numeric()
+                    ->minValue(1)
+                    ->placeholder('Dal processo')
+                    ->helperText($severity === 'regular' ? 'Giorni prima di rimandare l\'avviso se il problema resta; poi sale di grado. Vuoto = valore del processo.' : null)
+                    ->visible($isExternalCheck)
+            )->values()->all(),
             ...self::runOnDayFields(['external_check', 'external_command']),
         ];
     }

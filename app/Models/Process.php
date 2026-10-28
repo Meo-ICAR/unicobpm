@@ -33,6 +33,7 @@ class Process extends Model
         'completion_write_value',
         'completion_write_app',
         'include_eligible_count_in_reminders',
+        'reminder_repeat_days',
         'last_activated_at',
         'next_run_at',
     ];
@@ -47,6 +48,7 @@ class Process extends Model
             'is_active' => 'boolean',
             'is_periodic' => 'boolean',
             'trigger_filters' => 'array', // Converte automaticamente il JSON in array PHP
+            'reminder_repeat_days' => 'array',
             'include_eligible_count_in_reminders' => 'boolean',
             'last_activated_at' => 'datetime',
             'next_run_at' => 'datetime',

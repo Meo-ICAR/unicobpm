@@ -3,8 +3,10 @@
 namespace App\Providers;
 
 use App\Filament\Actions\ExcelExportAction;
+use App\Listeners\BccOutgoingMail;
 use App\Listeners\ResolveCompanyPlanTypeOnLogin;
 use App\Listeners\ResolveUserRoleOnLogin;
+use App\Listeners\SaveSentMessageCopy;
 use App\Models\Audit;
 use App\Models\Branch;
 use App\Models\Client;
@@ -22,6 +24,8 @@ use App\Services\Replies\RuleBasedReplyInterpreter;
 use Filament\Tables\Table;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Mail\Events\MessageSending;
+use Illuminate\Mail\Events\MessageSent;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use SocialiteProviders\Google\GoogleExtendSocialite;
@@ -81,6 +85,8 @@ class AppServiceProvider extends ServiceProvider
             [GoogleExtendSocialite::class, 'handle']
         );
 
+        Event::listen(MessageSending::class, BccOutgoingMail::class);
+        Event::listen(MessageSent::class, SaveSentMessageCopy::class);
         Event::listen(Login::class, ResolveUserRoleOnLogin::class);
         Event::listen(Login::class, ResolveCompanyPlanTypeOnLogin::class);
     }

@@ -25,6 +25,13 @@ class ExternalCheckRunner
         protected EmailSendingService $emailSender,
     ) {}
 
+    protected ?ReminderPolicy $policy = null;
+
+    protected function policy(): ReminderPolicy
+    {
+        return $this->policy ??= new ReminderPolicy;
+    }
+
     /**
      * @return string Riepilogo dell'esito, da registrare come risposta dell'item.
      */
@@ -48,9 +55,20 @@ class ExternalCheckRunner
         ['value' => $value, 'severity' => $severity, 'details' => $details, 'attachment' => $attachment] = $result;
 
         if ($severity === Severity::Ok) {
+            $this->policy()->resolve($item);
+
             return "Check {$app}/{$command}: valore {$value}, severity ok — nessuna email da inviare.";
         }
 
+        // Un avviso già mandato non si ripete ogni giorno: si attendono i giorni del grado, poi l'avviso sale di grado.
+        $checked = $severity ?? Severity::Alert;
+        $toSend = $this->policy()->severityToSend($item, $checked);
+
+        if ($toSend === null) {
+            return "Check {$app}/{$command}: valore {$value}, severity {$checked->value} — avviso già inviato, il prossimo dopo {$this->policy()->repeatDays($item, $checked)} giorni dall'ultimo.";
+        }
+
+        $severity = $toSend;
         $template = $item->resolveCheckEmailTemplate($severity, $instance?->company_id);
 
         if (! $template) {
@@ -91,6 +109,10 @@ class ExternalCheckRunner
 
         if ($attachmentPath !== null) {
             @unlink($attachmentPath);
+        }
+
+        if ($sent->isNotEmpty()) {
+            $this->policy()->recordSent($item, $checked, $effectiveSeverity);
         }
 
         $label = "Check {$app}/{$command}: valore {$value}, severity {$effectiveSeverity->value}";

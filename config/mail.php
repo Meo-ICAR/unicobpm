@@ -110,6 +110,30 @@ return [
     |
     */
 
+    /*
+    |--------------------------------------------------------------------------
+    | Copia nascosta di ogni email in uscita
+    |--------------------------------------------------------------------------
+    |
+    | Indirizzi (separati da virgola) che ricevono in ccn ogni email inviata dall'app
+    | (listener App\Listeners\BccOutgoingMail). Vuoto = nessuna copia.
+    |
+    */
+    'always_bcc' => env('MAIL_ALWAYS_BCC'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Copia nella cartella «Posta inviata»
+    |--------------------------------------------------------------------------
+    |
+    | Con MAIL_SAVE_SENT attivo ogni email spedita con la casella del .env viene copiata via IMAP
+    | (parametri IMAP_*) nella cartella `sent_folder` della stessa casella (OVH: «Sent»).
+    |
+    */
+    'save_sent_copy' => env('MAIL_SAVE_SENT', false),
+
+    'sent_folder' => env('MAIL_SENT_FOLDER', 'Sent'),
+
     'from' => [
         'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
         'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),

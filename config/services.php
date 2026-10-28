@@ -63,6 +63,12 @@ return [
     | created_at risale a più di 'max_age_days' giorni fa, invia un'email a 'recipient'.
     |
     */
+    /*
+    | Giorni da attendere prima di rimandare l'avviso di un controllo esterno che segnala ancora il problema, per grado: allo scadere
+    | l'avviso sale al grado successivo (regular > warning > alert). Modificabili per processo (campo «Ripetizione avvisi») e per azione.
+    */
+    'reminder_repeat_days' => ['regular' => 7, 'warning' => 3, 'alert' => 2],
+
     'fallback_recipient' => env('BPM_FALLBACK_EMAIL', 'sergio.bracale@races.it'),
 
     'stale_record_reminders' => [

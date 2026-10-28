@@ -51,4 +51,14 @@ class ExternalCheckRecipientsTest extends TestCase
 
         $this->assertSame(['segreteria@example.com'], app(ExternalCheckRunner::class)->recipientsFor($this->task, Severity::Regular)->all());
     }
+
+    public function test_inactive_or_terminated_employees_are_not_notified(): void
+    {
+        $this->role('compliance', 'R');
+        Employee::create(['name' => 'In servizio', 'email' => 'attivo@example.com', 'employee_roles' => ['compliance']]);
+        Employee::create(['name' => 'Disattivato', 'email' => 'disattivato@example.com', 'employee_roles' => ['compliance'], 'is_active' => false]);
+        Employee::create(['name' => 'Cessato', 'email' => 'cessato@example.com', 'employee_roles' => ['compliance'], 'termination_date' => now()->subDay()]);
+
+        $this->assertSame(['attivo@example.com'], app(ExternalCheckRunner::class)->recipientsFor($this->task, Severity::Regular)->all());
+    }
 }

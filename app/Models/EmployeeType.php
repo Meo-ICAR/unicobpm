@@ -36,7 +36,9 @@ class EmployeeType extends CoreEmployeeType
      */
     public function employees(): Builder
     {
-        return Employee::whereJsonContains('employee_roles', $this->name);
+        return Employee::whereJsonContains('employee_roles', $this->name)
+            ->where(fn (Builder $active) => $active->whereNull('is_active')->orWhere('is_active', true))
+            ->where(fn (Builder $active) => $active->whereNull('termination_date')->orWhereDate('termination_date', '>', now()));
     }
 
     /** Esterni (client) che ricoprono questo ruolo. */

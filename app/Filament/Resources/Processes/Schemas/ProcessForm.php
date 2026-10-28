@@ -153,6 +153,15 @@ class ProcessForm
                         ->inline(false),
                 ]),
 
+            Section::make('Ripetizione avvisi')
+                ->description('Quanti giorni attendere prima di rimandare l\'avviso di un controllo che segnala ancora il problema. Allo scadere l\'avviso sale di grado (regular, warning, alert) e allarga i destinatari. Vuoto = valori predefiniti; ogni azione può sovrascriverli.')
+                ->columns(3)
+                ->schema([
+                    TextInput::make('reminder_repeat_days.regular')->label('Regular: rimanda dopo (giorni)')->numeric()->minValue(1)->placeholder((string) config('services.reminder_repeat_days.regular')),
+                    TextInput::make('reminder_repeat_days.warning')->label('Warning: rimanda dopo (giorni)')->numeric()->minValue(1)->placeholder((string) config('services.reminder_repeat_days.warning')),
+                    TextInput::make('reminder_repeat_days.alert')->label('Alert: rimanda dopo (giorni)')->numeric()->minValue(1)->placeholder((string) config('services.reminder_repeat_days.alert')),
+                ]),
+
             Section::make('Periodicità')
                 ->columns(3)
                 ->schema([
@@ -173,7 +182,7 @@ class ProcessForm
                         ->live()
                         ->dehydrated(false)
                         ->hidden(fn (Get $get) => ! $get('is_periodic'))
-                        ->required(fn (Get $get) => (bool) $get('is_periodic'))
+                        ->required(fn (Get $get, ?Process $record) => (bool) $get('is_periodic') && blank($record?->recurrence_frequency))
                         ->afterStateHydrated(function (Set $set, Get $get, ?Process $record) {
                             $parsed = Process::parseSimpleCronExpression($record?->cron_expression);
                             $set('cron_unit', $parsed['unit']);
@@ -197,7 +206,7 @@ class ProcessForm
                         ->live(onBlur: true)
                         ->dehydrated(false)
                         ->hidden(fn (Get $get) => ! $get('is_periodic'))
-                        ->required(fn (Get $get) => (bool) $get('is_periodic'))
+                        ->required(fn (Get $get, ?Process $record) => (bool) $get('is_periodic') && blank($record?->recurrence_frequency))
                         ->afterStateUpdated(function (Set $set, Get $get) {
                             self::recomputeCronExpression($set, $get);
                         }),
@@ -208,7 +217,7 @@ class ProcessForm
                         ->disabled()
                         ->dehydrated()
                         ->hidden(fn (Get $get) => ! $get('is_periodic'))
-                        ->helperText('Generata automaticamente dalla scelta qui sopra: non modificabile a mano.'),
+                        ->helperText('Generata automaticamente dalla scelta qui sopra: non modificabile a mano. I processi con frequenza giornaliera, settimanale o mensile (es. Compliance) partono dallo scheduler delle 06:00 e non la richiedono.'),
                 ]),
 
             Section::make('Schedulazione')
