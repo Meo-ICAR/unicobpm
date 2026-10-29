@@ -30,6 +30,7 @@ class AppSwitcherWidget extends Widget
         'unicofinance' => 'unico-finance',
         'unicooam' => 'unico-oam',
         'unicocoge' => 'unico-coge',
+        'unicopec' => 'unico-pec',
         'unicogdpr' => 'unico-gdpr',
         'daishboard' => 'dai-shboard',
         'whistle' => 'unico-whistle',

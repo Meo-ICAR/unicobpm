@@ -111,6 +111,11 @@ return [
             'url' => env('UNICOCOGE_API_URL'),
             'label' => 'UnicoCoge',
         ],
+        // UnicoPEC legge email e PEC, le classifica e comunica a UnicoBPM gli eventi `email.ricevuta`. Nessun indirizzo di ripiego: senza UNICOPEC_API_URL l'app risulta sconosciuta.
+        'unicopec' => [
+            'url' => env('UNICOPEC_API_URL'),
+            'label' => 'UnicoPEC',
+        ],
         'unicogdpr' => [
             'url' => env('UNICOGDPR_API_URL', 'https://unicogdpr.hassisto.com'),
             'label' => 'UnicoGDPR',
