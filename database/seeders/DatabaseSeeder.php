@@ -87,6 +87,8 @@ class DatabaseSeeder extends Seeder
             ComplianceDocumentazioneProcessSeeder::class, // Compliance (documenti scaduti da UnicoOAM)
             ProcessEmailTemplateSeeder::class, // Solleciti di presa in carico (TASK_ESCALATION)
             WhistleblowingProcessSeeder::class, // Segnalazioni da UnicoWhistle
+            RettificaIbanProcessSeeder::class, // Cambio IBAN comunicato per email (da UnicoPEC)
+            ValidazioneFatturaProformaProcessSeeder::class, // Fattura ricevuta per email, da confrontare con il proforma
             ProcedureAziendaliSeeder::class, // Procedure aziendali dalla Relazione sui requisiti organizzativi (rete, pratiche, governance)
 
             // 5. Preset di accesso per ruolo (richiede employee_types e resources già censiti)
