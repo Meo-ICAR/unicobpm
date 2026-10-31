@@ -89,6 +89,7 @@ class DatabaseSeeder extends Seeder
             WhistleblowingProcessSeeder::class, // Segnalazioni da UnicoWhistle
             RettificaIbanProcessSeeder::class, // Cambio IBAN comunicato per email (da UnicoPEC)
             ValidazioneFatturaProformaProcessSeeder::class, // Fattura ricevuta per email, da confrontare con il proforma
+            IbanAllineamentoProcessSeeder::class, // IBAN agente variato (da UnicoPEC): avviso al contabile finché non è allineato
             ProcedureAziendaliSeeder::class, // Procedure aziendali dalla Relazione sui requisiti organizzativi (rete, pratiche, governance)
 
             // 5. Preset di accesso per ruolo (richiede employee_types e resources già censiti)
