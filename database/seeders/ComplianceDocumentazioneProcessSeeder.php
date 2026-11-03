@@ -18,7 +18,7 @@ use Illuminate\Database\Seeder;
  *
  *  - «Provvigioni del mese» (UnicoCoge) lavora a date fisse del mese (`run_on_day`), con i destinatari presi dalla RACI del passo (R contabile,
  *    A contabile responsabile, C area commerciale, I amministratore): il 3 elenco delle provvigioni maturate (CSV allegato) a R, A e C (contabilità e direttore commerciale);
- *    il 5 promemoria a R per rettificare o escludere; il 10 invio dei proforma ai produttori (`proformas:send-pending`) con in copia A e I.
+ *    il 5 promemoria a R per rettificare o escludere; il 10 creazione dei proforma dalle provvigioni maturate degli agenti e invio ai produttori (`proformas:send-pending --genera`) con in copia A e I.
  *
  * RACI: documentazione R = Segreteria, A = Ufficio Compliance, I = Amministratore; fatture R = Contabile, A = Contabile responsabile,
  * I = Amministratore. I membri si assegnano nella scheda del dipendente (campo Ruoli). Il testo dei template email si rifinisce
@@ -90,6 +90,7 @@ class ComplianceDocumentazioneProcessSeeder extends Seeder
                 'config' => [
                     'app' => 'unicocoge',
                     'command' => 'proformas:send-pending',
+                    'options' => ['genera' => '1'],
                     'run_on_day' => 10,
                     'cc_raci' => ['A', 'I'],
                 ],
