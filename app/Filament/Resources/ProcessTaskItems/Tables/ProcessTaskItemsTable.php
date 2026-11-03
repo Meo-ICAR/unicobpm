@@ -34,6 +34,9 @@ class ProcessTaskItemsTable
                 IconColumn::make('is_required')
                     ->label('Obbligatorio')
                     ->boolean(),
+                IconColumn::make('is_active')
+                    ->label('Attiva')
+                    ->boolean(),
                 TextColumn::make('documentType.name')
                     ->label('Tipo Documento')
                     ->placeholder('—')

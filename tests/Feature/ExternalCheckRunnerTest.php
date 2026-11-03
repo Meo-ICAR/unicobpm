@@ -126,6 +126,27 @@ class ExternalCheckRunnerTest extends TestCase
         $this->assertStringContainsString('severity warning', $summary);
     }
 
+    public function test_per_recipient_gives_each_one_only_their_own_detail_and_skips_who_has_nothing(): void
+    {
+        Http::fake(['*/api/checks/*' => function ($request) {
+            return match ($request->header('X-Check-Recipient')[0] ?? null) {
+                'agente@x.it' => Http::response(['value' => 2, 'severity' => 'regular']),
+                'vuoto@x.it' => Http::response(['value' => 0, 'severity' => 'ok']),
+                default => Http::response(['value' => 268, 'severity' => 'regular']),
+            };
+        }]);
+
+        $item = $this->item();
+        $item->config = [...$item->config, 'per_recipient' => true];
+
+        $runner = $this->runnerNotifying(['agente@x.it', 'vuoto@x.it', 'capo@x.it'], function (MockInterface $mock) {
+            $mock->shouldReceive('send')->once()->with('agente@x.it', 'Subject regular: 2', \Mockery::any(), [], null, null);
+            $mock->shouldReceive('send')->once()->with('capo@x.it', 'Subject regular: 268', \Mockery::any(), [], null, null);
+        });
+
+        $runner->run($item);
+    }
+
     public function test_falls_back_to_highest_severity_template_when_response_has_no_severity(): void
     {
         Http::fake(['*/api/checks/*' => Http::response(['value' => 7])]);

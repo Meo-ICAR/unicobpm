@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Process;
 use App\Services\EmailSendingService;
 use App\Services\ExternalAppResolver;
 use Carbon\Carbon;
@@ -18,6 +19,11 @@ class CheckStaleExternalRecords extends Command
     public function handle(ExternalAppResolver $appResolver, EmailSendingService $emailSender): int
     {
         foreach ((array) config('services.stale_record_reminders') as $rule) {
+            // Parte solo se il processo a cui appartiene la regola è attivo.
+            if (blank($rule['process_code'] ?? null) || ! Process::where('code', $rule['process_code'])->where('is_active', true)->exists()) {
+                continue;
+            }
+
             $createdAt = $this->fetchLatestCreatedAt($appResolver, $rule['app'], $rule['model']);
 
             if (! $createdAt) {

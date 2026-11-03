@@ -16,6 +16,7 @@ class ProcessTask extends Model
         'code',
         'description',
         'ordine',
+        'is_active',
         'employee_type_id',
         'trigger_field',
         'trigger_state',
@@ -36,6 +37,7 @@ class ProcessTask extends Model
     {
         return [
             'ordine' => 'integer',
+            'is_active' => 'boolean',
             'has_reminders' => 'boolean',
             'reminder_interval_days' => 'integer',
             'max_reminders' => 'integer',
@@ -114,6 +116,7 @@ class ProcessTask extends Model
     public static function firstApplicableTask(int $processId, ?Model $subject): ?self
     {
         return static::where('process_id', $processId)
+            ->where('is_active', true)
             ->orderBy('ordine')
             ->get()
             ->first(fn (self $task) => $task->isApplicableTo($subject));
@@ -126,6 +129,7 @@ class ProcessTask extends Model
     public static function nextApplicableTask(int $processId, int $afterOrdine, ?Model $subject): ?self
     {
         return static::where('process_id', $processId)
+            ->where('is_active', true)
             ->where('ordine', '>', $afterOrdine)
             ->orderBy('ordine')
             ->get()
@@ -139,6 +143,7 @@ class ProcessTask extends Model
     public static function previousApplicableTask(int $processId, int $beforeOrdine, ?Model $subject): ?self
     {
         return static::where('process_id', $processId)
+            ->where('is_active', true)
             ->where('ordine', '<', $beforeOrdine)
             ->orderByDesc('ordine')
             ->get()

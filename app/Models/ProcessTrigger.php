@@ -53,6 +53,6 @@ class ProcessTrigger extends Model
      */
     public function scopeActive($query)
     {
-        return $query->where('is_active', true);
+        return $query->where('is_active', true)->whereHas('process', fn ($process) => $process->where('is_active', true));
     }
 }

@@ -28,6 +28,7 @@ class SendProcessReminders extends Command
 
         $instances = ProcessInstance::query()
             ->where('status', 'in_progress')
+            ->whereHas('process', fn ($process) => $process->where('is_active', true))
             ->whereHas('currentTask', fn ($query) => $query->where('has_reminders', true))
             ->with(['currentTask', 'subject'])
             ->get();

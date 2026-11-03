@@ -52,6 +52,7 @@ class ProcessTasksRelationManager extends RelationManager
                         ->searchable()
                         ->preload()
                         ->columnSpanFull(),
+                    Toggle::make('is_active')->label('Attivo')->helperText('Se disattivo, il passo viene saltato nelle nuove pratiche')->default(true)->inline(false),
                     Textarea::make('description')
                         ->label('Descrizione')
                         ->nullable()
@@ -160,6 +161,7 @@ class ProcessTasksRelationManager extends RelationManager
                         ->map(fn ($a) => $a->employeeType?->name)
                         ->filter()->values()->toArray()
                     )->placeholder('—'),
+                IconColumn::make('is_active')->label('Attivo')->boolean(),
                 IconColumn::make('has_reminders')->label('Solleciti')->boolean(),
             ])
             ->defaultSort('ordine', 'asc')

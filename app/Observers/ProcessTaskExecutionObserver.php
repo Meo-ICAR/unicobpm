@@ -115,6 +115,21 @@ class ProcessTaskExecutionObserver
 
             $config = $item->config ?? [];
 
+            if (! $item->is_active) {
+                ProcessTaskItemAnswer::create([
+                    'process_instance_id' => $instance->id,
+                    'process_task_execution_id' => $execution->id,
+                    'process_task_item_id' => $item->id,
+                    'user_id' => 0, // Bot
+                    'operator_type' => 'procedural',
+                    'operator_label' => $item->action_type,
+                    'value_text' => 'Azione disattivata: non eseguita.',
+                    'completed_at' => now(),
+                ]);
+
+                continue;
+            }
+
             if (! $item->isDueOn(now())) {
                 ProcessTaskItemAnswer::create([
                     'process_instance_id' => $instance->id,

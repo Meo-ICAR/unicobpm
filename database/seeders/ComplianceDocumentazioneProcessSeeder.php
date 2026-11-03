@@ -17,7 +17,7 @@ use Illuminate\Database\Seeder;
  *    (regular da 25 giorni, warning da 31, alert da 45).
  *
  *  - «Provvigioni del mese» (UnicoCoge) lavora a date fisse del mese (`run_on_day`), con i destinatari presi dalla RACI del passo (R contabile,
- *    A contabile responsabile, C area commerciale, I amministratore): il 3 elenco delle provvigioni maturate (CSV allegato) ad A, C e I;
+ *    A contabile responsabile, C area commerciale, I amministratore): il 3 elenco delle provvigioni maturate (CSV allegato) a R, A e C (contabilità e direttore commerciale);
  *    il 5 promemoria a R per rettificare o escludere; il 10 invio dei proforma ai produttori (`proformas:send-pending`) con in copia A e I.
  *
  * RACI: documentazione R = Segreteria, A = Ufficio Compliance, I = Amministratore; fatture R = Contabile, A = Contabile responsabile,
@@ -44,9 +44,8 @@ class ComplianceDocumentazioneProcessSeeder extends Seeder
                 ."• Documenti scaduti (UnicoOAM, Scadenziario): un documento scaduto è sempre un alert.\n"
                 ."• Documenti in scadenza (UnicoOAM): avviso entro 15 giorni (regular) e entro 7 giorni (warning); sono esclusi i documenti già rinnovati o sostituiti e quelli di produttori dimessi e dipendenti cessati.\n"
                 ."• Fatture di acquisto (UnicoCoge): se l'ultima fattura caricata ha più di 25 giorni avvisa (regular), da 31 giorni warning, da 45 giorni alert.\n"
-                ."• Provvigioni del mese (UnicoCoge): il 3 invio dell'elenco delle provvigioni maturate (CSV allegato) ai ruoli A, C e I della RACI (contabile responsabile, area commerciale, amministratore); il 5 promemoria a R (contabile) per rettificare o escludere; il 10 invio automatico dei proforma ai produttori, in copia A e I della RACI.\n"
+                ."• Provvigioni del mese (UnicoCoge): il 3 invio dell'elenco delle provvigioni maturate (CSV allegato) ai ruoli R, A e C della RACI (contabile, contabile responsabile, commerciale); il 5 promemoria a R e A (contabile e contabile responsabile) per rettificare o escludere; il 10 invio automatico dei proforma ai produttori, in copia A e I della RACI.\n"
                 .'Le email partono ai ruoli RACI del passo secondo la gravità e il testo si sceglie per grado di severity.',
-            'is_active' => true,
             'is_periodic' => true,
             'recurrence_frequency' => 'daily',
         ]);
@@ -74,11 +73,13 @@ class ComplianceDocumentazioneProcessSeeder extends Seeder
         ]);
         $this->check($month, 10, 'Il 3: elenco provvigioni maturate', 'unicocoge', 'provvigioni:check-maturate', self::TEMPLATE_MATURATE, [
             'run_on_day' => 3,
-            'to_raci' => ['A', 'C', 'I'],
+            'to_raci' => ['R', 'A', 'C'],
+            'per_recipient' => true,
         ]);
         $this->check($month, 20, 'Il 5: rettifica o esclusione provvigioni', 'unicocoge', 'provvigioni:check-maturate', self::TEMPLATE_RETTIFICA, [
             'run_on_day' => 5,
-            'to_raci' => ['R'],
+            'to_raci' => ['R', 'A'],
+            'per_recipient' => true,
         ]);
         $month->processTaskItems()->updateOrCreate(
             ['process_task_id' => $month->id, 'ordine' => 30],

@@ -19,6 +19,7 @@ class ProcessTaskItem extends Model
         'ordine',
         'action_type',
         'is_required',
+        'is_active',
         'document_type_id',
         'checklist_id',
         'handler_job',
@@ -30,6 +31,7 @@ class ProcessTaskItem extends Model
         return [
             'ordine' => 'integer',
             'is_required' => 'boolean',
+            'is_active' => 'boolean',
             'config' => 'array', // Converte automaticamente il JSON in un array PHP e viceversa
         ];
     }

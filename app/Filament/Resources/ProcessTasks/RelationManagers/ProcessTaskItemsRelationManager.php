@@ -51,6 +51,11 @@ class ProcessTaskItemsRelationManager extends RelationManager
                 ->label('Obbligatoria')
                 ->inline(false)
                 ->default(true),
+            Toggle::make('is_active')
+                ->label('Attiva')
+                ->helperText('Se disattiva, l\'azione automatica non parte')
+                ->inline(false)
+                ->default(true),
             Select::make('document_type_id')
                 ->label('Tipo Documento Richiesto')
                 ->relationship('documentType', 'name')
@@ -95,6 +100,7 @@ class ProcessTaskItemsRelationManager extends RelationManager
                     ->badge()
                     ->formatStateUsing(fn (?string $state) => ProcessTaskItemForm::actionTypeOptions()[$state] ?? $state),
                 IconColumn::make('is_required')->label('Obbligatorio')->boolean(),
+                IconColumn::make('is_active')->label('Attiva')->boolean(),
                 TextColumn::make('documentType.name')->label('Tipo Documento')->placeholder('—'),
                 TextColumn::make('checklist.name')->label('Checklist')->placeholder('—'),
                 TextColumn::make('handler_job')->label('Job')->placeholder('—')->toggleable(isToggledHiddenByDefault: true),

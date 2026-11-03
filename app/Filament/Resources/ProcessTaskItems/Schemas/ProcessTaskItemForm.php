@@ -96,6 +96,10 @@ class ProcessTaskItemForm
                 ->options(self::RACI_ROLES)
                 ->helperText('Vuoto = i ruoli della RACI previsti dalla severity (regular: R; warning: R+A; alert: R+A+C). Con ruoli scelti scrivono sempre quelli.')
                 ->visible($isExternalCheck),
+            Toggle::make('config.per_recipient')
+                ->label('Dettaglio personale per destinatario')
+                ->helperText('Per ogni destinatario il controllo restituisce solo i suoi dati (es. un agente riceve soltanto le proprie provvigioni); gli altri ricevono l\'elenco completo. Se per un destinatario non c\'è nulla, non gli si scrive.')
+                ->visible($isExternalCheck),
             ...collect(['regular' => 'Regular', 'warning' => 'Warning', 'alert' => 'Alert'])->map(
                 fn (string $label, string $severity) => TextInput::make("config.repeat_days.{$severity}")
                     ->label("{$label}: rimanda dopo (giorni)")
@@ -193,6 +197,11 @@ class ProcessTaskItemForm
                             ->columnSpan(2),
                         Toggle::make('is_required')
                             ->label('Obbligatoria')
+                            ->default(true)
+                            ->inline(false),
+                        Toggle::make('is_active')
+                            ->label('Attiva')
+                            ->helperText('Se disattiva, l\'azione automatica non parte')
                             ->default(true)
                             ->inline(false),
                     ]),

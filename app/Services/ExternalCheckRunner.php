@@ -97,13 +97,44 @@ class ExternalCheckRunner
         $attachmentPath = $this->writeAttachment($attachment);
         $files = $attachmentPath === null ? [] : [['path' => $attachmentPath, 'as' => $attachment['filename']]];
 
+        $perRecipient = (bool) ($item->config['per_recipient'] ?? false);
+
         foreach ($recipients as $email) {
+            $personalPath = null;
+            $personalFiles = $files;
+            $personalSubject = $subject;
+            $personalBody = $body;
+
+            if ($perRecipient) {
+                // Il controllo può restringere il dettaglio ai dati di chi riceve (es. un agente vede solo le proprie provvigioni).
+                $personal = $this->fetchStatus($app, $command, $email);
+
+                if ($personal === null) {
+                    $failed->put($email, 'dettaglio personale non disponibile');
+
+                    continue;
+                }
+
+                if ($personal['severity'] === Severity::Ok) {
+                    continue;
+                }
+
+                $personalPath = $this->writeAttachment($personal['attachment']);
+                $personalFiles = $personalPath === null ? [] : [['path' => $personalPath, 'as' => $personal['attachment']['filename']]];
+                $personalSubject = $this->fill($template->subject, $personal['value'], $personal['details'], $effectiveSeverity, $item, $instance);
+                $personalBody = $this->fill($template->body, $personal['value'], $personal['details'], $effectiveSeverity, $item, $instance);
+            }
+
             try {
-                $this->emailSender->send($email, $subject, $body, $files, $instance?->company_id, $instance ? ['instance' => $instance->id] : null);
+                $this->emailSender->send($email, $personalSubject, $personalBody, $personalFiles, $instance?->company_id, $instance ? ['instance' => $instance->id] : null);
                 $sent->push($email);
             } catch (\Throwable $e) {
                 Log::error("Check {$app}/{$command}: invio email a {$email} fallito.", ['error' => $e->getMessage()]);
                 $failed->put($email, $e->getMessage());
+            } finally {
+                if ($personalPath !== null) {
+                    @unlink($personalPath);
+                }
             }
         }
 
@@ -200,11 +231,18 @@ class ExternalCheckRunner
     /**
      * @return array{value: string, severity: ?Severity, details: string, attachment: ?array{filename: string, content: string}}|null null se l'applicativo non risponde.
      */
-    private function fetchStatus(string $app, string $command): ?array
+    private function fetchStatus(string $app, string $command, ?string $recipient = null): ?array
     {
         try {
             $client = app(ExternalAppClient::class);
-            $response = $client->for($app)->get($client->url($app, "api/checks/{$command}"));
+            $request = $client->for($app);
+
+            // Il destinatario viaggia in un'intestazione, non nell'indirizzo, per non finire nei log dei server.
+            if ($recipient !== null) {
+                $request = $request->withHeaders(['X-Check-Recipient' => $recipient]);
+            }
+
+            $response = $request->get($client->url($app, "api/checks/{$command}"));
         } catch (\Throwable $e) {
             Log::warning("Check {$app}/{$command} fallito per errore di rete.", ['error' => $e->getMessage()]);
 

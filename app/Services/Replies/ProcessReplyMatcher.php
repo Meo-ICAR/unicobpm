@@ -28,7 +28,8 @@ class ProcessReplyMatcher
 
         $instance = ProcessInstance::query()->find($thread['instance']);
 
-        if ($instance === null || $instance->status !== 'in_progress') {
+        // Un processo disattivato non legge né conferma più le risposte.
+        if ($instance === null || $instance->status !== 'in_progress' || ! $instance->process?->is_active) {
             return null;
         }
 

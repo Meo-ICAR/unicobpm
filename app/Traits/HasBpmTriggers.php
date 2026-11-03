@@ -32,7 +32,7 @@ trait HasBpmTriggers
     {
         $triggers = ProcessTrigger::where('model_class', get_class($model))
             ->where('event_type', $eventType)
-            ->where('is_active', true)
+            ->active()
             ->get();
 
         foreach ($triggers as $trigger) {

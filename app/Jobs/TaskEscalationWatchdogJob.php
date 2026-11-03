@@ -31,6 +31,8 @@ class TaskEscalationWatchdogJob implements ShouldQueue
         // con `until_claimed` (vedi sotto), che si fermano appena qualcuno prende in carico la pratica.
         $openExecutions = ProcessTaskExecution::query()
             ->whereNull('completed_at')
+            // I solleciti partono solo per i processi attivi.
+            ->whereHas('processInstance.process', fn ($process) => $process->where('is_active', true))
             ->whereNotIn('execution_status', ['completed', 'rejected_and_rewinded'])
             ->where(fn ($query) => $query->where('execution_status', 'pending')->orWhereHas('processInstance', fn ($instance) => $instance->where('status', 'in_progress')->whereNull('current_assignee_id')))
             ->with('processTask', 'processInstance')

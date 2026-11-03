@@ -26,7 +26,7 @@ class ProcessInstanceObserver
          * 3. Assegna l'ID del primo task a 'current_task_id' e imposta lo stato della pratica su 'running'.
          */
         if (! $instance->current_task_id) {
-            $firstTask = $instance->process->tasks()->orderBy('ordine')->first();
+            $firstTask = $instance->process->tasks()->where('is_active', true)->orderBy('ordine')->first();
 
             if ($firstTask) {
                 $instance->current_task_id = $firstTask->id;

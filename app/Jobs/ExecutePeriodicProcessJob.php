@@ -30,7 +30,7 @@ class ExecutePeriodicProcessJob implements ShouldQueue
 
         // Se attivato manualmente, potremmo voler forzare l'esecuzione anche se is_active è false,
         // ma per sicurezza controlliamo che il processo esista.
-        if (! $process) {
+        if (! $process || ! $process->is_active) {
             return;
         }
 

@@ -85,6 +85,9 @@ class ProcessTasksTable
                     ->badge()
                     ->color('gray')
                     ->alignCenter(),
+                IconColumn::make('is_active')
+                    ->label('Attivo')
+                    ->boolean(),
                 IconColumn::make('has_reminders')
                     ->label('Solleciti')
                     ->boolean(),

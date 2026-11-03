@@ -47,6 +47,7 @@ class ProcessTaskForm
                         ->nullable()
                         ->searchable()
                         ->preload(),
+                    Toggle::make('is_active')->label('Attivo')->helperText('Se disattivo, il passo viene saltato nelle nuove pratiche')->default(true)->inline(false),
                     Textarea::make('description')
                         ->label('Descrizione')
                         ->nullable()
