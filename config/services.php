@@ -104,7 +104,7 @@ return [
             'sso_post' => true,
         ],
         'unicooam' => [
-            'url' => env('UNICOOAM_API_URL', 'https://unicooam.hassisto.com'),
+            'url' => env('UNICOOAM_API_URL'),
             'label' => 'UnicoOAM',
         ],
         // UnicoCoge è il nuovo nome di Proforma. Nessun indirizzo di ripiego: senza UNICOCOGE_API_URL l'app risulta sconosciuta.
@@ -118,11 +118,11 @@ return [
             'label' => 'UnicoPEC',
         ],
         'unicogdpr' => [
-            'url' => env('UNICOGDPR_API_URL', 'https://unicogdpr.hassisto.com'),
+            'url' => env('UNICOGDPR_API_URL'),
             'label' => 'UnicoGDPR',
         ],
         'daishboard' => [
-            'url' => env('DAISHBOARD_API_URL', 'https://daishboard.hassisto.com'),
+            'url' => env('DAISHBOARD_API_URL'),
             'label' => 'Dashboard',
         ],
         'whistle' => [

@@ -8,314 +8,194 @@
 
 ## 1. Cos'è questa applicazione
 
-UnicoBPM è un motore di **Business Process Management (BPM)** su Laravel 13 + Filament 5, ad uso di
+UnicoBPM è un motore di **Business Process Management (BPM)** su Laravel 13 + Filament 5 (pacchetto `meo-icar/unico-core`), ad uso di
 mediatori creditizi. Gestisce "pratiche" (istanze di processo) che avanzano attraverso una sequenza di
 task, con assegnazione automatica basata su una matrice RACI per funzione aziendale, checklist di
 raccolta dati con regole di respingimento (KO), promemoria/escalation SLA, e integrazione con sistemi
 anagrafici e documentali esterni.
 
-L'applicazione è interamente pilotata da Filament (nessun frontend pubblico eccetto il redirect `/`
-verso `/admin`): non ci sono Controller applicativi oltre lo scheletro base.
+L'applicazione è pilotata da Filament (redirect `/` verso `/admin`). Oltre al pannello espone poche API
+(`POST /api/events`, `/api/bpm/available-activities`, `/api/verify-token`, `/api/api-logs` e il bridge
+`/api/commands` di unico-core) e fa da coordinatore della suite Unico: chiama le altre app solo via API
+(`ExternalAppClient`). Il dettaglio di comportamento, rotte, comandi e `.env` sta nei manuali
+(`resources/manuals/`); questo file tiene le convenzioni e i punti aperti.
+Ultima verifica sul codice: 2026-11-05.
 
 ## 2. Architettura multi-database
 
-Questo è il punto più importante da capire prima di scrivere qualunque query o migration: **i model
-non vivono tutti sulla stessa connessione**. Confondere le tre aree è la causa principale dei bug
-trovati durante la rianalisi (foreign key cross-database, nomi di colonna copiati dal sistema sbagliato).
+| Connessione | Variabili | Cosa ci vive |
+|---|---|---|
+| `mysql` (default) | `DB_*` | Il motore BPM: `Process`, `ProcessTask`, `ProcessTaskItem`, `ProcessTaskRaci`, `ProcessInstance`, `ProcessTaskExecution`, `ProcessTaskItemAnswer`, `ProcessTrigger`, `Checklist*`, `ProcessEmailReply`, `ProcessPostponement`, `ExternalEvent`, `OutboundCall`, `WebhookEndpoint`, `ApiLog`, `AiActionDraft`, `ChatMessage`, `User`, più `activity_log`. Le migration di `database/migrations/` gestiscono solo queste. |
+| `core` | `CORE_DB_*` (altrimenti `DB_*`) | Schema condiviso di unico-core: `Company`, `Employee`, `Client`, `EmployeeType` (ruoli/uffici), `Document`, `DocumentType`, `EmailTemplate`, `Resource`, permessi. I model locali in `app/Models` estendono i model del pacchetto (`Unico\Core\Models\*`). |
+| `mysql_unicooam`, `proforma` | storiche | Ancora definite in `config/database.php`, ma i model condivisi ora leggono dal core (in sviluppo è lo stesso database `unicosuite`). **Non dichiarare `$connection` su queste.** |
 
-| Connessione | Database | Cosa ci vive | Note |
-|---|---|---|---|
-| `mysql` (default) | `unicobpm` | Il motore BPM vero e proprio: `Process`, `ProcessTask`, `ProcessTaskItem`, `ProcessTaskRaci`, `ProcessInstance`, `ProcessTaskExecution`, `ProcessTaskItemAnswer`, `ProcessTrigger`, `Checklist*`, `BusinessFunction`, `BusinessFunctionMember`, `User`, oltre alla tabella `activity_log` del plugin di audit. | Le migration in `database/migrations/` gestiscono **solo** queste tabelle. |
-| `proforma` | `proforma` | Anagrafiche mediatori/clienti: `Client`, `Clienti` (namespace `App\Models\PROFORMA`), `Fornitore`. | Gestito da un altro sistema. Non creare migration Laravel per queste tabelle in questo repo. |
-| `mysql_unicooam` | `unicooam` | DMS documentale e altre anagrafiche: `Document`, `DocumentType`, `EmailTemplate`, `Employee`, `App\Models\UNICOOAM\Company`, `App\Models\UNICOOAM\Task`, `App\Models\UNICOOAM\TaskDocumentType`. | Idem: sistema esterno, schema non modificabile da qui. |
+Regole:
+- Questa app **non esegue le migration del core** (`UNICO_CORE_MIGRATE=false`) e i suoi seeder non vanno
+  lanciati sul database condiviso. Lo schema condiviso si cambia solo in unico-core (`unico-core:migrate`,
+  migration protette da `hasTable`/`hasColumn`).
+- Tra connessioni diverse niente `->constrained()`: colonna intera con indice, senza vincolo
+  (es. `process_task_items.document_type_id`, `process_task_item_answers.document_id`). Id sempre interi.
+- Prima di usare `Document`, `DocumentType`, `EmailTemplate`, `Client`, `Employee`: leggere il model (e quello
+  del pacchetto in `vendor/meo-icar/unico-core`) per i nomi reali. Esempio storico: `documentable_type`/
+  `documentable_id`/`document_url`, non `subject_*`/`file_path`.
+- Le altre app si leggono via API, non per tabella (vedi CLAUDE.md).
 
-**Regola pratica**: se un model dichiara `protected $connection = 'proforma'` o `'mysql_unicooam'`,
-il suo schema **non è definito nelle migration di questo repository** e **non può essere referenziato
-con una vera foreign key** da una tabella `unicobpm` (MySQL non supporta FK cross-database nel modo in
-cui Laravel le genera con `->constrained()`). Se serve un legame, usare una colonna
-`unsignedBigInteger`/`uuid` semplice con indice, senza vincolo — esattamente come già fatto per
-`process_task_items.document_type_id` e `process_task_item_answers.document_id`.
-
-Prima di scrivere codice che tocca `Document`, `DocumentType`, `EmailTemplate`, `Client*`, `Fornitore`:
-**leggere il model per i nomi di colonna reali**, non assumerli per analogia con il resto del motore
-BPM. Esempio concreto del bug trovato: il codice creava `Document` con `subject_type`/`subject_id`/
-`file_path`, ma i campi reali sono `documentable_type`/`documentable_id`/`document_url`.
-
-## 3. Modello di dominio (motore BPM, connessione `unicobpm`)
+## 3. Modello di dominio
 
 ```
-Process (template di processo)
- ├─ ProcessTask (step ordinati per "ordine", NON "order")
- │   ├─ ProcessTaskItem (azioni dentro lo step: document_upload, automated_email, validation_rule, ...)
- │   └─ ProcessTaskRaci (chi è R/A/C/I per questo task, per business_function_id)
- └─ ProcessInstance (una "pratica" reale)
-     ├─ subject (polimorfo, NULLABLE: pratiche interne/ricorrenti non hanno un soggetto)
+Process (template)
+ ├─ ProcessTask (step ordinati per "ordine"; employee_type_id = ruolo responsabile)
+ │   ├─ ProcessTaskItem (azioni: document_upload, fill_checklist, text_input, automated_email,
+ │   │                   validation_rule, system_task, external_check, external_command, await_email_reply)
+ │   └─ ProcessTaskRaci (R/A/C/I per employee_type_id)
+ └─ ProcessInstance (la pratica)
+     ├─ subject polimorfo NULLABLE; per le istanze senza soggetto: title, external_ref, external_data
      ├─ currentTask → ProcessTask
-     ├─ ProcessTaskExecution (una riga per ogni task attraversato dalla pratica)
-     └─ ProcessTaskItemAnswer (risposte alle singole azioni di un task)
+     ├─ ProcessTaskExecution (una riga per step attraversato; postponed_until, claimed_at, mandatory_days_to_complete)
+     ├─ ProcessTaskItemAnswer
+     ├─ ProcessEmailReply / ProcessPostponement (risposte email e rinvii)
+     └─ logs() → activity_log
 
-BusinessFunction (funzione aziendale / ufficio)
- ├─ employees()/clients() → membership polimorfica via business_function_members (member_type/member_id)
- └─ loginUsers() → utenti applicativi (User) risolti tramite la relazione user() su Employee/Client
+EmployeeType = ruolo / ufficio (ex BusinessFunction): codice, area, email ufficio, outsourcable_status,
+manager. Chi lo ricopre sta in `employee_roles` di employees/clients. Corrispondenza vecchie funzioni in
+`EmployeeType::OFFICE_ROLES`; nei seeder `EmployeeType::office($codice, [...])`.
 
-Checklist → ChecklistItem (con regole KO) → ChecklistAnswer (per ProcessInstance)
-ProcessTrigger → avvia un Process quando un modello configurato soddisfa condizioni (created/updated/idle)
+Checklist → ChecklistItem (regole KO) → ChecklistAnswer (per istanza)
+ProcessTrigger → avvia un Process su evento di un model (created/updated/idle) o su evento esterno
+(`event_type=external`, da `POST /api/events`)
 ```
+
+La tabella `business_functions` esiste solo per storico: **il model `BusinessFunction` non c'è più**.
 
 ### Convenzioni di naming da NON violare
-
-Questi nomi sono stati causa di bug reali (query che referenziano una colonna inesistente, silenziosamente
-o meno a seconda del contesto). Usare sempre questi, mai le varianti tra parentesi (trovate nel codice
-prima della rianalisi):
-
 - Ordinamento dei task: **`ordine`** (mai `order`).
-- Ruolo RACI: colonna **`raci_role`**, valori **`R`/`A`/`C`/`I`** (mai `role_type`/`'responsible'`).
-- Relazione funzioni aziendali su Employee/Client: **`businessFunctions()`** (camelCase; mai la stringa
-  `'business_functions'` passata a `whereHas`/`whereIn` — Eloquent non converte snake→camel per te).
-- Tabella pivot RACI: **`process_task_raci`** (mai `raci_assignments`, che non esiste).
-- Stato pratica (`process_instances.status`, enum): **`pending`, `in_progress`, `completed`, `rejected`,
-  `cancelled`, `suspended`** (mai `running` — non è nell'enum e genererebbe un errore SQL).
-- Stato esecuzione task (`process_task_executions.execution_status`, string): **`pending`, `in_progress`,
-  `completed`, `rejected_and_rewinded`** (colonna `execution_status`, non `status`).
-- Ricorrenza processo (`processes`): flag **`is_periodic`** (mai `is_recurring`, non esiste); due
-  meccanismi complementari di innesco: **`recurrence_frequency`** + **`recurrence_day`** per la
-  ricorrenza a calendario, **`cron_expression`** per l'innesco basato su condizioni valutate
-  periodicamente (vedi §7).
-- Filtri dinamici sul modello target di un processo: **`trigger_filters`** (mai `target_filters`).
+- Ruolo RACI: colonna **`raci_role`**, valori **`R`/`A`/`C`/`I`**; tabella **`process_task_raci`**; il ruolo si
+  indica con **`employee_type_id`** (non più `business_function_id`).
+- Stato istanza (`process_instances.status`): **`pending`, `in_progress`, `completed`, `rejected`,
+  `cancelled`, `suspended`** (mai `running`).
+- Stato esecuzione (`process_task_executions.execution_status`): **`pending`, `in_progress`, `completed`,
+  `rejected_and_rewinded`** (colonna `execution_status`, non `status`).
+- Ricorrenza: **`is_periodic`** + `recurrence_frequency`/`recurrence_day` (calendario); **`cron_expression`** per
+  la valutazione periodica di condizioni. Filtri sul model target: **`trigger_filters`**.
+- Scadenza tassativa di step: `mandatory_days_to_complete` (esecuzione) e `hard_deadline_at` (pratica).
+  `ProcessTask.days_to_complete` non esiste.
+- Gli stati delle pratiche delle altre app stanno in `pratica_stati`, mai nella vecchia `pratiches_statos`.
 
-## 4. Motore di scheduling
+## 4. Motore di scheduling (`routes/console.php`)
 
-Tre meccanismi coesistono in `routes/console.php` + `app/Console/Commands/`:
+- `bpm:run-scheduler` ogni giorno alle 06:00: trigger «idle» e processi ricorrenti (`is_periodic`).
+- Ogni minuto: rilancia `ExecutePeriodicProcessJob` per i processi con `next_run_at` passato; inoltre un
+  `Schedule::job(...)->cron(...)` per ogni processo con `cron_expression`.
+- Ogni ora: `TaskEscalationWatchdogJob` (solleciti e escalation, via `EscalationNotifier`, salta gli step con
+  rinvio valido) e `MandatoryDeadlineWatchdogJob`.
+- `bpm:send-reminders` (lunedì 08:30), `bpm:check-stale-records` (08:00).
+- `bpm:dispatch-external-command unicocoge vcoge:calculate --option=invia` il 5 di ogni mese alle 06:00;
+  `venasarco-trimestre:calculate` il 5 di gennaio/aprile/luglio/ottobre.
+- `unico-core:mail-fetch --type=processo` ogni 5 minuti: le risposte alle email dei processi.
+- Le scritture verso le altre app e i webhook passano da `OutboundCallService` → `SendOutboundCall`
+  (tabella `outbound_calls`, ritentativi 1, 5, 15 min, 1 h, 4 h).
 
-1. **`Schedule::command('bpm:run-scheduler')->dailyAt('06:00')`** — `BpmSchedulerCommand`: gestisce sia i
-   trigger "idle" (pratiche di sollecito per record fermi da troppo tempo) sia i processi ricorrenti
-   (`is_periodic` + `recurrence_frequency`/`recurrence_day`), chiamando `StartProcessAction::execute(null, $processId)`
-   per i processi senza soggetto specifico.
-2. **`Schedule::call(...)->everyMinute()`** in `routes/console.php` — rilancia `ExecutePeriodicProcessJob`
-   per i processi con `next_run_at` nel passato (rischedulazioni manuali da pannello).
-3. **`Schedule::job(new TaskEscalationWatchdogJob)->hourly()`** — controlla gli SLA sui task pendenti e
-   applica le regole di escalation configurate su `process_tasks.escalation_rules`.
-
-`DataAnomalyWatchdogJob` (scansione anagrafiche con P.IVA incompleta) **non è schedulato**: dipende da un
-model `Customer` che non esiste in questo codebase (vive sul sistema esterno). Va ripreso quando
-l'integrazione con quel sistema sarà definita.
-
-`bpm:send-reminders` e `bpm:read-emails` **non sono schedulati**: dipendono rispettivamente da una
-Mailable (`App\Mail\ReminderDocumentsMail`) e da una route pubblica firmata (`public.process.upload`) mai
-create, e da configurazione IMAP (`config/imap.php`, variabili `IMAP_*`) mai pubblicata. Sono funzionalità
-scritte ma incomplete, non bug di collegamento come lo erano gli Observer.
+`DataAnomalyWatchdogJob` non esiste più (dipendeva da `Customer`, esterno). `bpm:read-emails` è sostituito da
+`HandleProcessEmailReply` + `ProcessAttachmentIngestor`.
 
 ## 5. Audit log
 
-Il tracciamento eventi usa **`alizharb/filament-activity-log`** (wrapper su `spatie/laravel-activitylog`),
-tabella `activity_log`. Non esiste (e non va reintrodotto) un model custom tipo `ProcessInstanceLog`: è
-stato usato e poi rimosso durante la rianalisi in favore di questo plugin.
-
-Pattern da usare per loggare un evento di dominio:
+`alizharb/filament-activity-log` (su `spatie/laravel-activitylog`), tabella `activity_log`. I model del
+processo scrivono sulla connessione predefinita; se il database dell'app è diverso dal core la migration
+`create_activity_log_if_missing` la crea anche qui. Niente model custom tipo `ProcessInstanceLog`.
 
 ```php
-activity('bpm')
-    ->causedBy(auth()->user())       // omettere se l'evento è generato dal sistema/da un job
-    ->performedOn($processInstance)  // il subject polimorfo dell'attività
-    ->event('nome_evento')           // es. instance_started, action_completed, task_advanced, escalation_triggered
-    ->withProperties([...])          // payload arbitrario, finisce in properties (json)
-    ->log('descrizione leggibile');  // finisce in description
+activity('bpm')->causedBy(auth()->user())->performedOn($processInstance)
+    ->event('nome_evento')->withProperties([...])->log('descrizione leggibile');
 ```
 
-`ProcessInstance::logs()` espone questi eventi come `morphMany(Activity::class, 'subject')`.
+Le chiamate in uscita finiscono anche in `api_logs` (`ApiLogger`), con `X-Correlation-Id` (`Correlation`).
+Niente dati personali nei log, nessuna chiave in codice o commit.
 
-## 6. Confini di integrazione esterna — regole d'ingaggio
+## 6. Confini di integrazione esterna
 
-Prima di scrivere codice che coinvolge dati su `proforma` o `mysql_unicooam`:
+1. Le altre app (unicofinance, unicooam, unicocoge, unicopec, unicogdpr) si chiamano solo con
+   `ExternalAppClient` / `ExternalAppResolver`; gli indirizzi sono in `config/services.php` (`apps`).
+2. Un model che manca in `app/Models` va prima collocato: se è schema condiviso sta in unico-core, se è di
+   un'altra app arriva via API. Nel dubbio chiedere. Un riferimento a una classe interna al motore (log,
+   stato di workflow) è invece un gap locale.
+3. Nessuna app esterna ha un indirizzo di ripiego di produzione (unicofinance, unicooam, unicocoge, unicopec,
+   unicogdpr, daishboard): se la variabile `*_API_URL` manca, l'app risulta sconosciuta. Sul server di sviluppo
+   gli indirizzi sono `https://<app>.unicocompilance.it`. `whistle` e `unicoaiact` hanno ancora un ripiego,
+   che punta già a questo dominio.
+4. Il passaggio SSO verso le app con `sso_post` va da `/passa-a/{app}` (token in POST); `switchTo` risponde 404.
 
-1. **Leggere il model reale** per nomi di colonna/relazioni — non assumerli dai commenti né per analogia
-   col motore BPM locale.
-2. **Non creare foreign key Laravel (`->constrained()`)** verso tabelle su un'altra connessione: usare
-   colonna + indice semplice.
-3. **Non creare migration in questo repo per tabelle che vivono su `proforma`/`mysql_unicooam`**: quello
-   schema è di competenza di un altro sistema.
-4. Se una funzionalità richiede un model che non esiste in `app/Models` (es. `Customer`), **prima di
-   crearlo in locale, verificare se concettualmente appartiene a uno dei due sistemi esterni**. Non è
-   detto che vada creato qui: potrebbe dover arrivare via API/integrazione futura. In caso di dubbio,
-   chiedere piuttosto che indovinare — un model locale creato per errore duplica una fonte di verità che
-   dovrebbe restare esterna.
-5. Al contrario, un riferimento a una classe interna al motore BPM (es. un log di audit, uno stato
-   interno di workflow) **è quasi certamente un gap locale da colmare**, non un'integrazione esterna.
+## 7. Problemi noti
 
-## 7. Problemi noti — stato dopo la rianalisi
+Verificati sul codice il 2026-11-05.
 
-### Risolti in questa sessione
-- Import `MorphTo` mancante, scope RACI duplicate/incoerenti, Observer mai registrati, colonne
-  `role_type`/`order`/`execution_status` sbagliate in `StartProcessAction`, `AdvanceProcessAction`,
-  `User::getResponsibleUsersForInstance`, `ProcessTaskExecutionObserver`, `TaskEscalationWatchdogJob`.
-- `ProcessInstance.subject_type`/`subject_id` erano `NOT NULL` ma il codice crea pratiche senza soggetto
-  (processi interni/ricorrenti): resi nullable via migration.
-- `Fornitore.company_id` hardcoded a un UUID fisso; auto-assegnazione da `auth()->user()` ripristinata
-  su `Client`/`Fornitore`.
-- Ledger delle migration disallineato dal DB reale (tabelle esistenti ma non registrate) e foreign key
-  cross-database verso `documents`/`document_types`: sistemati.
-- `Consultant` (model mai esistito) sostituito con `Client` ovunque referenziato: **`Client` è la
-  tipologia "consulente esterno" coinvolta nelle attività RACI** (confermato) — non serve un model
-  separato.
-- Audit log migrato da model custom a `alizharb/filament-activity-log`.
-- `BpmSchedulerCommand` usava `is_recurring` invece di `is_periodic`.
-- **`processes.cron_expression`**: colonna aggiunta via migration. Il suo scopo (confermato) è valutare
-  periodicamente delle condizioni (es. presenza/valore di un campo, tramite `trigger_field`/
-  `trigger_state`/`trigger_value`/`trigger_filters` già esistenti sul model `Process`) per scatenare
-  l'avvio del processo — un meccanismo complementare a `recurrence_frequency`/`recurrence_day`, non un
-  duplicato. Il blocco in `routes/console.php` che la usa ora funziona (`Schedule::job(...)->cron(...)`
-  per ogni processo con `cron_expression` valorizzato). **Nota**: la valutazione delle condizioni di
-  trigger al momento dell'esecuzione non è ancora implementata in `ExecutePeriodicProcessJob` — il job
-  oggi crea comunque le istanze per tutti i soggetti che passano `trigger_filters`, senza controllare
-  `trigger_field`/`trigger_state`/`trigger_value` per singolo soggetto. Se serve quel controllo puntuale,
-  va aggiunto esplicitamente.
-- **`Process.target_filters` → `trigger_filters`**: corretto in `ExecutePeriodicProcessJob`.
-- **`ProcessInstance.title`**: colonna aggiunta via migration (nullable, per le pratiche senza soggetto
-  polimorfo) e inclusa nel `$fillable` del model.
-- **`ProcessTask.days_to_complete`** letto da `StartProcessAction` per calcolare `due_at`, ma non è né
-  in `$fillable` né in migration — oggi `due_at` è sempre `null`. Non ancora risolto: aggiungere la
-  colonna se il calcolo scadenza per task è una funzionalità voluta.
-- **`bpm:send-reminders`/`bpm:read-emails`**: mancano `App\Mail\ReminderDocumentsMail`, la route pubblica
-  firmata `public.process.upload` (con relativo controller/vista), e `config/imap.php`. Funzionalità
-  intenzionalmente non completate durante la rianalisi per non indovinare uno schema di upload pubblico
-  senza requisiti chiari.
-- Nessuna **Policy** Filament: l'accesso alle risorse del pannello non è scoperto per company/ruolo.
-  Se l'app è multi-tenant (più mediatori sullo stesso DB), verificare se serve isolamento dati per
-  `company_id` a livello di query dei Resource, non solo di default in creazione.
+### Risolti dall'ultima versione
+- Observer registrati, nomi colonna corretti, `subject_*` nullable, `title` su `ProcessInstance`,
+  `cron_expression` aggiunta, `trigger_filters` corretto, audit sul plugin.
+- Funzioni aziendali confluite in `employee_types`; `unicoloan` → `unicofinance`; `Proforma` → `UnicoCoge`.
+- Sollecito: `SendProcessReminders` ora parte dalla creazione dello step se non c'è un sollecito precedente.
+- Mancavano `ReminderDocumentsMail` e il caricamento pubblico: i documenti arrivano ora dalle risposte email.
+- Default di produzione tolti per tutte le app esterne (unicooam, unicogdpr, daishboard compresi).
+- Rinvii, risposte email (`EmailReplyAgent`), webhook, chiamate in uscita in coda, eventi esterni, whistleblowing.
 
-### Aperti — TODO
-- **Nessun queue worker attivo**: `ExecutePeriodicProcessJob`, `TaskEscalationWatchdogJob` e
-  `MandatoryDeadlineWatchdogJob` implementano tutti `ShouldQueue`, e `.env` ha
-  `QUEUE_CONNECTION=database`. Verificato che nessun processo `queue:work` gira su questa macchina e la
-  tabella `jobs` è vuota nonostante questi job siano schedulati (`Schedule::job(...)`) da diverse
-  sessioni: `Schedule::job()` su una classe `ShouldQueue` la accoda soltanto, non la esegue — senza un
-  worker persistente (`php artisan queue:work` sotto Supervisor/systemd o equivalente in produzione)
-  **questi tre job non vengono mai eseguiti davvero**. Da fare: attivare un worker persistente in
-  produzione, oppure — data la leggerezza di questi job — valutare di togliere `ShouldQueue` per farli
-  girare in-process nello scheduler come già avviene per il Command `bpm:run-scheduler`.
-- **`BpmSchedulerCommand`: `recurrence_frequency = 'yearly'` non fa mai partire nulla** — il
-  `case 'yearly':` nello switch è vuoto (`$devePartire` resta `false`), a differenza di
-  `daily`/`weekly`/`monthly` già implementati.
-- **`ProcessIncomingEmails::processEmailAttachments()` prende sempre il primo `ProcessTaskItem` con
-  `action_type='document_upload'`** del task corrente, ignorando quale documento è stato effettivamente
-  richiesto. Se un task ne chiede più di uno (es. "Carta d'Identità" e "Visura Camerale" come item
-  distinti), un allegato per il secondo verrebbe registrato come risposta al primo.
-- **`SendProcessReminders`: il primissimo sollecito di ogni pratica non viene mai inviato.**
-  `now()->diffInDays($pratica->last_reminder_sent_at)` con `last_reminder_sent_at` nullo (mai sollecitata
-  prima) non lancia errore ma restituisce ~0 (verificato: `now()->diffInDays(null)` ≈ `4.17e-10`), quindi
-  `$giorniPassati >= $task->reminder_interval_days` è quasi sempre falso al primo giro — serve
-  `is_null($pratica->last_reminder_sent_at) || $giorniPassati >= $task->reminder_interval_days`.
-  Inoltre la query non esclude le pratiche senza soggetto (es. quelle ricorrenti avviate da
-  `BpmSchedulerCommand`): se una di queste ha un task con `has_reminders=true`, `$pratica->subject->email`
-  fallisce su soggetto nullo.
-- **`ExternalAppResolver`/`config('services.apps')`**: `UNICOFINANCE_API_URL` (unicoloan è dismesso) non ha
-  default ed è in `.env.example`; `UNICOOAM_API_URL` e `PROFORMA_API_URL` invece ricadono sui **domini di
-  produzione reali**: senza configurarle, ambienti locali/staging chiamano davvero quei servizi.
-  **Azione**: togliere i default di produzione di unicooam e proforma; valutare se in ambiente non-`production`
-  convenga far fallire esplicitamente `ExternalAppResolver::urlFor()` invece di usare il default reale.
-- **`AppSwitcherWidget::switchTo($app)` non cattura l'eccezione di `ExternalAppResolver::urlFor()`**: con
-  una chiave app non valida (chiamata diretta al metodo Livewire, bypassando i pulsanti già filtrati)
-  produce un errore 500 non gestito, a differenza degli altri due punti di utilizzo del resolver che
-  avvolgono la chiamata in un `catch (\Throwable $e)`.
-  **Azione**: validare `$app` contro `ExternalAppResolver::allApps()` (o avvolgere in try/catch) a inizio
-  metodo, mostrando una `Notification` Filament d'errore invece di lasciar propagare l'eccezione.
-- **Messaggio di log fuorviante** in `ProcessInstanceObserver`/`ProcessTaskExecutionObserver`: un errore
-  di configurazione (app sconosciuta in `completion_write_app` o `config['app']` del blacklist_check,
-  che fa lanciare `InvalidArgumentException` da `urlFor()`) viene loggato con lo stesso testo previsto
-  per un errore di rete ("... fallita per errore di rete"), rendendo più difficile diagnosticare la causa
-  reale in produzione.
-  **Azione**: distinguere i due `catch` (uno su `InvalidArgumentException` per "app sconosciuta", uno su
-  `\Throwable` generico per errori di rete/timeout) con messaggi di log separati e più precisi.
-- **`HasBpmTriggers::evaluateBpmConditions()` (trait, oggi usato solo da `Fornitore`): il confronto
-  `equals` (`$value != $model->$field`) è un confronto debole tra stringa e valore grezzo dell'attributo.**
-  Su un campo con cast `date`/`datetime` (es. `oam_dismissed_at`) **non può mai risultare vero**: un
-  `Carbon` confrontato con `!=` contro una stringa usa `__toString()`, che include l'orario
-  (`"2024-01-01 00:00:00"`), quindi non coincide mai con una condizione tipo `"2024-01-01"` — verificato:
-  `Carbon::parse('2024-01-01') != '2024-01-01'` → `true` (cioè "diversi").
-  **Azione**: per i campi con cast data/datetime, confrontare con `Carbon::parse($value)->equalTo(...)`
-  o normalizzare entrambi i lati a stringa nello stesso formato prima del confronto.
-- **`HasBpmTriggers::evaluateBpmConditions()`: con più condizioni su un evento `updated`, basta che UNA
-  sola non sia stata modificata in questo salvataggio per bloccare il trigger**, anche se tutte le altre
-  (incluso il campo che dovrebbe scatenare l'evento) sono cambiate e corrispondono. Il ciclo esce al
-  primo `! $model->isDirty($field)`, applicando "deve essere dirty" a *ogni* condizione invece che
-  richiedere che *almeno una* delle condizioni configurate sia stata effettivamente modificata.
-  **Azione**: separare la verifica "almeno un campo tra quelli in conditions è dirty" (una volta sola,
-  con `$model->isDirty(array_column($conditions, 'field'))`) dalla verifica "tutti i valori configurati
-  corrispondono" (il confronto attuale, senza l'uscita anticipata per-condizione).
+### Aperti
+- **Queue worker**: `QUEUE_CONNECTION=database` e `SendOutboundCall`, `SaveSentMailCopy`,
+  `ExecutePeriodicProcessJob`, `TaskEscalationWatchdogJob`, `MandatoryDeadlineWatchdogJob` sono `ShouldQueue`.
+  Su questa macchina non gira nessun `queue:work`: senza un worker persistente (Supervisor/systemd) i job
+  restano in coda e le scritture verso le altre app non partono. Ora più rilevante di prima.
+- **`yearly`** in `BpmSchedulerCommand` non fa partire nulla (`case` vuoto).
+- **`HasBpmTriggers::evaluateBpmConditions()`**: `equals` debole su campi data/datetime (un `Carbon` non
+  coincide mai con `'2024-01-01'`); con più condizioni su `updated` basta una non modificata per bloccare il
+  trigger (andrebbe «almeno una dirty», poi «tutte corrispondono»).
+- **`ExecutePeriodicProcessJob`** non valuta `trigger_field`/`trigger_state`/`trigger_value` per soggetto.
+- **Log fuorviante**: gli errori di configurazione (app sconosciuta, `InvalidArgumentException`) e gli errori
+  di rete usano lo stesso testo «fallita per errore di rete» in `ProcessTaskExecutionObserver`,
+  `ExternalCheckRunner` e `CheckStaleExternalRecords`.
+- **Policy Filament**: l'accesso alle risorse non è isolato per company a livello di query.
 
 ## 8. Linee guida operative per sessioni di coding assistito da AI
 
-Queste regole nascono direttamente dai bug trovati in questa rianalisi — quasi tutti condividevano lo
-stesso pattern: **codice scritto assumendo nomi di colonna plausibili invece di verificarli**.
+1. Non fidarsi dei commenti per nomi di colonna/enum: verificare con la migration o `database-schema`.
+2. Se una query usa una relazione/colonna, aprire il model e controllare il nome esatto (`businessFunctions`
+   non esiste più; il ruolo è `employeeType`).
+3. Niente foreign key tra connessioni diverse.
+4. Migration solo dell'app, mai quelle del core; provarle su un DB isolato e controllare `migrate:status`.
+5. Dopo modifiche a `StartProcessAction`, `AdvanceProcessAction`, agli Observer o a `ExternalAppClient`,
+   smoke test reale con dati di prova (poi ripuliti).
+6. Se una classe non esiste in `app/Models`, prima capire a chi appartiene (§6).
+7. Un comando/job non schedulato o non registrato è un segnale d'allarme: verificarne le dipendenze.
+8. Dopo ogni modifica a spec o manuali: `php artisan manual:sync` (l'assistente li indicizza; la spec è tra le
+   fonti) e, per la parte «Fatti dal codice», `python3 /var/www/html/unico-core/tools/manuals/gen_facts.py /var/www/html/unicobpm`.
 
-1. **Non fidarsi dei commenti nel codice per i nomi di colonna/enum**: verificarli sempre contro la
-   migration corrispondente o con `mcp__laravel-boost__database-schema` prima di scrivere una query.
-2. **Se una query o un metodo referenzia una relazione/colonna, aprire il model target e controllare che
-   esista davvero con quel nome esatto** (case-sensitive, `businessFunctions` ≠ `business_functions`).
-3. **Prima di aggiungere una foreign key in una migration**, controllare la connessione del model target:
-   se è diversa da quella della tabella che si sta creando, niente `->constrained()`.
-4. **Testare le migration su un DB isolato prima di quello reale** (es. sqlite temporaneo via
-   `DB_CONNECTION=sqlite DB_DATABASE=/tmp/x.sqlite php artisan migrate`), poi verificare lo stato del DB
-   reale con `php artisan migrate:status` prima di lanciare `migrate --force` — questo codebase ha già
-   avuto un disallineamento tra tabelle fisiche e ledger delle migration.
-5. **Dopo aver scritto/modificato un'azione critica del motore BPM (`StartProcessAction`,
-   `AdvanceProcessAction`, gli Observer), fare uno smoke test reale** (creare un `Process`/`ProcessTask`
-   di prova, chiamare l'azione, verificare il risultato, ripulire i dati di prova) invece di fidarsi solo
-   della lettura statica del codice: più bug qui erano invisibili a un semplice `php -l` o a Pint perché
-   sintatticamente validi ma semanticamente sbagliati (nome colonna inesistente).
-6. **Se una classe referenziata non esiste in `app/Models`**, non crearla per riflesso: prima capire se
-   concettualmente appartiene al motore BPM locale o a uno dei sistemi esterni (§6), poi eventualmente
-   chiedere se il dubbio persiste.
-7. **Un comando/Job/Observer scritto ma non schedulato/registrato è un segnale d'allarme**, non
-   necessariamente qualcosa da attivare a scatola chiusa: verificarne le dipendenze (classi, colonne,
-   config) prima di collegarlo allo scheduler, altrimenti si trasforma un bug silenzioso (mai eseguito)
-   in un errore rumoroso (eseguito e fallito) — a volte peggio per l'utente finale.
+## 9. Intelligenza artificiale
 
-## 9. Testing
+Tutti gli agenti (`app/Neuron`, NeuronAI) usano Anthropic con `ANTHROPIC_API_KEY` e `ANTHROPIC_MODEL`
+(default nel codice `claude-sonnet-4-6`); gli embedding sono Gemini (`GEMINI_EMBEDDINGS_MODEL`,
+`gemini-embedding-001`). Un solo modello per tutti gli agenti.
 
-`tests/` contiene solo gli scheletri di default di Laravel (`ExampleTest` in Feature e Unit), senza
-copertura reale del motore BPM. Prima di qualunque refactoring futuro su `StartProcessAction`,
-`AdvanceProcessAction` o sugli Observer, andrebbero scritti almeno test Feature che coprano: avvio di
-una pratica (con e senza soggetto), avanzamento al task successivo, rigetto per KO su checklist,
-raggiungimento del completamento pratica. Al momento l'unica rete di sicurezza è lo smoke test manuale
-descritto al punto 5 di §8.
+| Agente | Compito | max_tokens |
+|---|---|---|
+| `EmailReplyAgent` | interpreta il testo di una risposta email (esito, rinvio, confidenza) | 512 |
+| `DocumentClassifierAgent` | classifica un documento allegato | 1024 |
+| `ManualAssistantAgent` | assistente RAG sui manuali, SQL in sola lettura su tabelle in lista bianca | — |
+| `SegretariaAiAgent` | assistente operativo: bozze di email (`AiActionDraft`), conversazioni passate | — |
+| `DataNavigatorAgent` | esplora i dati con strumenti SQL in sola lettura | 8192 |
 
-Da tenere presente scrivendo nuovi test PHPUnit: `BusinessFunction`, `Client`, `Clienti`, `Fornitore`,
-`Employee`, `Document`, `DocumentType`, `EmailTemplate` dichiarano `protected $connection = '...'`
-esplicito (`mysql`, `proforma`, `mysql_unicooam`) **indipendentemente** dalla connessione di default
-configurata per l'ambiente di test (`DB_CONNECTION=sqlite` in `phpunit.xml`). Un test che tocca uno di
-questi model — anche indirettamente, es. tramite `BusinessFunction::where(...)` dentro un componente che
-si sta testando — si connette quindi al database MySQL reale configurato in `.env`, bypassando
-`RefreshDatabase` e lo storage in-memory. Se possibile evitare di seedare/asserire dati su questi model
-nei test automatici; se non è evitabile, isolare esplicitamente il dataset di test (es. codici/prefissi
-dedicati) e ripulirlo a fine test, così da non lasciare residui nel DB reale.
+## 10. Testing
 
-## 10. Seeders
+`tests/Feature` ha circa 50 test (API eventi, chiamate in uscita, risposte email, rinvii, watchdog, solleciti,
+seeder dei processi, smoke delle risorse Filament, assistente AI). `tests/Unit` è vuota. Mancano ancora test
+mirati su `StartProcessAction`, `AdvanceProcessAction` e sul rigetto KO delle checklist. Quando un test tocca
+model del core, ricordare che usano il database configurato (non l'in-memory) anche con `DB_CONNECTION=sqlite`:
+isolare i dati con codici dedicati e ripulirli.
 
-`database/seeders/` fornisce dati demo/di riferimento per il motore BPM (non anagrafiche esterne, che
-restano di competenza di `proforma`/`mysql_unicooam`). Ordine di esecuzione in `DatabaseSeeder` rispetta
-le dipendenze: anagrafiche di base (DocumentType, BusinessFunction, Checklist, Process) → dipendenze di
-primo livello (ProcessTask, ChecklistItem) → RACI → processi completi (task + RACI + azioni):
-`BpmDesignSeeder` (Onboarding Nuovo Agente) e `CreditBrokerProcessesSeeder` (AML, Trasparenza, OAM,
-Istruttoria Pratica di Finanziamento — i processi operativi tipici di un mediatore creditizio).
+## 11. Seeder
 
-**Attenzione alle collisioni tra seeder sullo stesso processo**: `ProcessTaskSeeder` +
-`ProcessTaskRaciSeeder` seminano già i primi due task (ordine 10/20) di `PRC-AML` con una matrice RACI a
-4 ruoli; `CreditBrokerProcessesSeeder::seedAmlProcess()` aggiunge solo il terzo step (ordine 30) senza
-toccare quelli — un `updateOrCreate` chiave su `(process_id, ordine)` scritto da due seeder diversi sullo
-stesso `ordine` sovrascrive silenziosamente dati dell'altro (è successo in fase di sviluppo: un RACI
-`C` è stato riscritto a `R` per errore). Prima di aggiungere task a un processo già seminato altrove,
-verificare quali `ordine` sono già occupati.
-
-Tutti i seeder BPM sono scritti per essere **idempotenti** (`updateOrCreate`/`firstOrCreate` con una
-chiave naturale — `code`, o `process_id`+`ordine` dove non esiste un `code`): rieseguire
-`php artisan db:seed` non deve mai duplicare righe. Verificato eseguendo l'intera catena due volte di
-seguito e confrontando i conteggi. Se si aggiunge un nuovo seeder BPM, mantenere questa proprietà: mai
-`DB::table(...)->insert()` con ID hardcoded, mai `->create()`/`->createMany()` senza un controllo di
-unicità a monte.
-
-`ChecklistAnswerSeeder` e `VendorOnboardingProcessSeeder` sono stati **rimossi**: il primo inseriva dati
-transazionali (risposte a una pratica specifica) come se fossero dati di riferimento statici, con colonne
-che non esistono nello schema attuale; il secondo referenziava model (`Company`, `PrivacyDataType`) e
-colonne (`company_id` su `processes`/`process_tasks`/`checklists`, `sequence_number`, `instruction`, ecc.)
-che non sono mai esistiti in questo codebase — probabilmente residuo di un altro template/esperimento.
+`database/seeders/` contiene dati di riferimento e processi: `BpmDesignSeeder`, `CreditBrokerProcessesSeeder`,
+`WhistleblowingProcessSeeder`, `ComplianceDocumentazioneProcessSeeder`, `ScadenziarioCogeProcessSeeder`,
+`RettificaIbanProcessSeeder`, `IbanAllineamentoProcessSeeder`, `ValidazioneFatturaProformaProcessSeeder`,
+`ProcedureAziendaliSeeder`, `OrganigrammaSeeder`, `OfficeRoleSeeder`, `ProcessEmailTemplateSeeder` e altri.
+Tutti idempotenti (`updateOrCreate`/`firstOrCreate` su chiave naturale, mai ID fissi). **Non lanciare
+`db:seed` generico sul database condiviso**: solo seeder singoli e noti (`--class=`).
+Attenzione alle collisioni: due seeder sullo stesso `(process_id, ordine)` si sovrascrivono; controllare gli
+`ordine` occupati prima di aggiungere step a un processo già seminato.
