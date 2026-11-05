@@ -77,6 +77,7 @@ return [
             'model' => 'sales_invoice',
             'label' => 'Fatture di vendita',
             'process_code' => 'PRC-COMPLIANCE',
+            'date_field' => 'registration_date',
             'max_age_days' => 30,
             'recipient' => env('STALE_RECORDS_REMINDER_TO', 'rino.muscetti@races.it'),
         ],

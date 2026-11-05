@@ -30,8 +30,8 @@ class BpmSchedulerCommand extends Command
         $oggi = now();
         // Inserisci questo blocco dentro il metodo handle() di app/Console/Commands/BpmSchedulerCommand.php
 
-        $idleTriggers = ProcessTrigger::where('event_type', 'idle')
-            ->where('is_active', true)
+        $idleTriggers = ProcessTrigger::active()
+            ->where('event_type', 'idle')
             ->get();
 
         foreach ($idleTriggers as $trigger) {
@@ -70,7 +70,7 @@ class BpmSchedulerCommand extends Command
             }
         }
         // Recuperiamo tutti i processi ripetitivi attivi
-        $recurringProcesses = Process::where('is_periodic', true)->get();
+        $recurringProcesses = Process::where('is_periodic', true)->where('is_active', true)->get();
 
         foreach ($recurringProcesses as $process) {
             $devePartire = false;

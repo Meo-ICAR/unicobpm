@@ -24,7 +24,7 @@ class CheckStaleExternalRecords extends Command
                 continue;
             }
 
-            $createdAt = $this->fetchLatestCreatedAt($appResolver, $rule['app'], $rule['model']);
+            $createdAt = $this->fetchLatestDate($appResolver, $rule['app'], $rule['model'], $rule['date_field'] ?? null);
 
             if (! $createdAt) {
                 continue;
@@ -39,7 +39,7 @@ class CheckStaleExternalRecords extends Command
             $emailSender->send(
                 $rule['recipient'],
                 "Reminder: nessun nuovo dato {$rule['label']} da {$daysAgo} giorni",
-                "L'ultimo record creato per \"{$rule['label']}\" ({$rule['app']}/{$rule['model']}) risale al "
+                "L'ultimo record per \"{$rule['label']}\" ({$rule['app']}/{$rule['model']}) risale al "
                     .$createdAt->format('d/m/Y').", cioè {$daysAgo} giorni fa (soglia: {$rule['max_age_days']} giorni).\n"
                     .'Verificare che il caricamento dei dati sia attivo.'
             );
@@ -50,13 +50,16 @@ class CheckStaleExternalRecords extends Command
         return self::SUCCESS;
     }
 
-    private function fetchLatestCreatedAt(ExternalAppResolver $appResolver, string $app, string $model): ?Carbon
+    /**
+     * Data più recente del modello: quella della colonna `date_field` della regola (es. la data della fattura) o, se manca, la data di creazione.
+     */
+    private function fetchLatestDate(ExternalAppResolver $appResolver, string $app, string $model, ?string $dateField): ?Carbon
     {
         try {
             $client = app(\App\Services\ExternalAppClient::class);
-            $response = $client->for($app, 8)->get($client->url($app, "api/models/{$model}/latest"));
+            $response = $client->for($app, 8)->get($client->url($app, "api/models/{$model}/latest"), array_filter(['order_by' => $dateField]));
 
-            $createdAt = $response->json('fields.created_at');
+            $createdAt = $response->json('fields.'.($dateField ?: 'created_at'));
 
             if ($response->failed() || ! $createdAt) {
                 Log::warning("Ultimo record di {$app}/{$model} non disponibile.", ['status' => $response->status()]);
