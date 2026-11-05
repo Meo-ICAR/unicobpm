@@ -15,7 +15,7 @@ use Tests\TestCase;
 use Unico\Core\Models\Company;
 
 /**
- * Gli EmailTemplate vivono su mysql_unicooam (DB reale, vedi BPM-DOMAIN-SPEC §9):
+ * Gli EmailTemplate stanno nel core (stesso database dei test, vedi BPM-DOMAIN-SPEC §10):
  * i dati di test usano un code dedicato e vengono ripuliti a fine test.
  */
 class ExternalCheckRunnerTest extends TestCase

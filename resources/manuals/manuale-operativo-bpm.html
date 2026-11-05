@@ -332,13 +332,29 @@ avviso se l'ultima fattura caricata ha più di 25 giorni (regular), warning da 3
 maturate (CSV allegato) a chi ha i ruoli R, A e C (contabilità e direttore commerciale); il 5 il promemoria a R e A (contabile e contabile responsabile) per rettificare o escludere; il 10 la creazione dei proforma dalle provvigioni maturate degli agenti (non di coordinamento) e l'invio ai produttori, con A e I in copia. I membri dei ruoli si assegnano
 nella scheda del dipendente (campo Ruoli); i testi delle email (template <code>COMPL_*</code>) si rifiniscono dal pannello.</p>
 
+<h2 id="i-processi-della-cessione-del-quinto">I processi della Cessione del Quinto</h2>
+
+<p>La filiera di una Cessione del Quinto o delegazione di pagamento è divisa in sei processi, uno per fase. Ogni processo si avvia da solo quando UnicoFinance comunica un evento; nessuno scrive lo stato della pratica da qui.</p>
+<table>
+<thead><tr><th>Processo (codice)</th><th>Si avvia quando</th><th>Passi (scadenza)</th></tr></thead>
+<tbody>
+<tr><td>Origination e qualificazione lead (<code>PROC_ORIGINATION</code>)</td><td>nasce un lead (<code>lead.creato</code>)</td><td>prospect e privacy (24 h) · documenti precontrattuali (48 h) · quota cedibile (24 h) · proposta e firma (72 h)</td></tr>
+<tr><td>Istruttoria e verifiche documentali (<code>PROC_ISTRUTTORIA</code>)</td><td>la pratica passa a «RICHIESTA ISTRUTTORIA»</td><td>identità e firme (24 h) · impegni in busta paga (24 h) · TFR e fondo pensione (48 h) · frodi e datore di lavoro (24 h)</td></tr>
+<tr><td>Delibera bancaria e polizza (<code>PROC_DELIBERA</code>)</td><td>«FASCICOLO COMPLETO»</td><td>trasmissione al partner (12 h) · delibera (72 h) · polizza (48 h) · contratto definitivo (48 h)</td></tr>
+<tr><td>Notifica dell'atto (<code>PROC_NOTIFICA</code>)</td><td>«ATTO FISSATO»</td><td>plico (12 h) · notifica all'ATC (24 h) · fondo pensione (24 h)</td></tr>
+<tr><td>In attesa benestare ed estinzioni (<code>PROC_BENESTARE</code>)</td><td>«IN ATTESA BENESTARE»</td><td>conteggi estintivi (48 h) · rientro del benestare (10 giorni) · validità dei conteggi (24 h)</td></tr>
+<tr><td>Liquidazione e perfezionamento (<code>PROC_LIQUIDAZIONE</code>)</td><td>«RIENTRO BENESTARE»</td><td>verifica finale (12 h) · richiesta di liquidazione (12 h) · erogazione (48 h) · originali cartacei (5 giorni) · spedizione al partner (48 h)</td></tr>
+</tbody>
+</table>
+<p>I processi dal secondo in poi partono solo per le pratiche di tipo Cessione. Ruoli: il CdC è il ruolo «rete collaboratori», BO/Delegato il «back office», Resp. BO/Compliance la compliance; «ATC / Ente» e «Partner / Banca» sono ruoli esterni. Scaduto un passo, il sollecito va a chi ha in carico e, al doppio del tempo, al responsabile; dove la specifica lo prevede (istruttoria, delibera con deroga, benestare oltre i 10 giorni, blocco della banca) il passo passa alla compliance. Le email partono da sole in quattro punti: proposta al cliente, trasmissione al partner, PEC all'ATC, conferma di liquidazione.</p>
+<p>Gli esiti anomali (sospensione, rifiuto, frode, deroga) si registrano nel passo con il campo di testo previsto e la pratica si segue dal pannello: il cambio di stato della pratica resta in UnicoFinance.</p>
+
 <h2 id="10-limitazioni-note-da-non-presentare-come-funzionanti-all-u">10. Limitazioni note (da non presentare come funzionanti all'utente)</h2>
 
 <p><em>Questa sezione risale a una versione precedente del motore: se un punto non corrisponde al comportamento attuale, fa fede il manuale tecnico.</em></p>
 
 <p>Alcune funzionalità sono presenti nel codice ma non ancora pienamente operative:
-l'invio automatico di email di sollecito ha un difetto per cui il primissimo sollecito
-di ogni pratica non parte mai; la lettura automatica di allegati arrivati via email non
+la lettura automatica di allegati arrivati via email non
 distingue quale documento specifico sia stato ricevuto se un task ne richiede più di
 uno; la ricorrenza annuale dei processi periodici non produce mai un'attivazione; e, come
 già indicato al §8, i controlli periodici basati su coda richiedono un worker sempre

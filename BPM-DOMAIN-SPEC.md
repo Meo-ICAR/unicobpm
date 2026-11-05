@@ -199,3 +199,18 @@ Tutti idempotenti (`updateOrCreate`/`firstOrCreate` su chiave naturale, mai ID f
 `db:seed` generico sul database condiviso**: solo seeder singoli e noti (`--class=`).
 Attenzione alle collisioni: due seeder sullo stesso `(process_id, ordine)` si sovrascrivono; controllare gli
 `ordine` occupati prima di aggiungere step a un processo già seminato.
+
+## 12. Processi della Cessione del Quinto
+
+Sei processi (`PROC_ORIGINATION`, `PROC_ISTRUTTORIA`, `PROC_DELIBERA`, `PROC_NOTIFICA`, `PROC_BENESTARE`, `PROC_LIQUIDAZIONE`) in
+`CessioneQuintoProcessesSeeder`, dalla specifica `bpm_process_specification.md` (non nel repo). Scelte da conoscere:
+- **Avvio**: eventi esterni `lead.creato` e `pratica.stato_cambiato` (condizioni `tipo_finanziamento = Cessione` e `stato`). Gli stati
+  della specifica (PROPOSAL_SIGNED...) non esistono in `pratica_stati`: la corrispondenza è in `CessioneQuintoProcessesSeeder::STATI`
+  (RICHIESTA ISTRUTTORIA, FASCICOLO COMPLETO, ATTO FISSATO, IN ATTESA BENESTARE, RIENTRO BENESTARE). UnicoFinance non emette ancora gli eventi.
+- **Ruoli**: CdC = `BUS-RETE-EXT`, BO/Delegato = `BUS-BO`, Resp. BO/Compliance = `COMPLIANCE`; creati i ruoli esterni `ATC-ENTE` e `PARTNER-BANCA`.
+  Un ruolo ha una sola riga per passo (vincolo unico): se R e A coincidono resta la riga R e il livello 2 di escalation va a chi ha in carico.
+- **Scadenze**: l'SLA di ogni passo è il livello 1 di `escalation_rules` (a chi ha in carico), il livello 2 è al doppio (al responsabile); le
+  escalation alla compliance della specifica sono azioni `reassign`.
+- **Non realizzato**: scrittura di `practice.*` e dei nuovi stati (SUSPENDED_*, CLOSED_LOST...), perché le istanze nate da evento non hanno un
+  soggetto locale; le email condizionali (richiesta integrazione, sollecito all'ATC) perché le azioni email partono all'ingresso nel passo.
+  Gli esiti anomali si registrano in campi di testo del passo. I tipi documento mancanti nel core (SECCI) diventano campi di testo.

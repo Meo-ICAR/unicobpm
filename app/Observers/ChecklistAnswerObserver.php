@@ -126,7 +126,7 @@ class ChecklistAnswerObserver
 
     /**
      * Verifica in modo sicuro se un modello (potenzialmente su una connessione diversa da quella
-     * di default, es. Fornitore su "proforma") possiede davvero la colonna indicata.
+     * di default) possiede davvero la colonna indicata.
      */
     protected function hasColumn(Model $model, string $column): bool
     {

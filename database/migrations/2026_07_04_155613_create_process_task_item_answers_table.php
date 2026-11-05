@@ -18,8 +18,8 @@ return new class extends Migration
             $table->foreignId('process_task_item_id')->constrained('process_task_items')->cascadeOnDelete();
 
             // DMS Link: se l'azione è un upload, punta al file salvato centralmente.
-            // "documents" vive su un database separato (connessione mysql_unicooam), quindi qui
-            // teniamo solo l'ID senza vincolo di chiave esterna (non referenziabile cross-database).
+            // "documents" è una tabella del core (schema condiviso), quindi qui
+            // teniamo solo l'ID senza vincolo di chiave esterna (le tabelle del core non si referenziano da qui).
             $table->unsignedBigInteger('document_id')->nullable()->index();
 
             // Valori generici di risposta

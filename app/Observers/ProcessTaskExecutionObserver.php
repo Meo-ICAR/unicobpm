@@ -209,7 +209,7 @@ class ProcessTaskExecutionObserver
                         // B) Allegati Dinamici (Documenti Pratica)
                         $targetDocCodes = $config['attach_document_types'] ?? [];
                         if (! empty($targetDocCodes)) {
-                            // Document vive su una connessione DB separata (mysql_unicooam): recuperiamo prima
+                            // Document vive nel core (altro modello): recuperiamo prima
                             // gli ID sulla connessione locale, per poi filtrare i Document senza subquery cross-DB.
                             $documentIds = ProcessTaskItemAnswer::where('process_instance_id', $instance->id)
                                 ->whereNotNull('document_id')
