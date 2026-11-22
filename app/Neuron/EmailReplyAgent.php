@@ -7,7 +7,7 @@ namespace App\Neuron;
 use NeuronAI\Agent\Agent;
 use NeuronAI\Agent\SystemPrompt;
 use NeuronAI\Providers\AIProviderInterface;
-use NeuronAI\Providers\Anthropic\Anthropic;
+use Unico\Core\Ai\Neuron\RecordingAnthropic;
 use RuntimeException;
 
 /**
@@ -24,7 +24,7 @@ class EmailReplyAgent extends Agent
             throw new RuntimeException('Chiave API Anthropic mancante: imposta ANTHROPIC_API_KEY nel file .env');
         }
 
-        return new Anthropic(
+        return new RecordingAnthropic(usageSource: 'neuron:EmailReplyAgent',
             key: (string) $key,
             model: (string) env('ANTHROPIC_MODEL', 'claude-sonnet-4-6'),
             max_tokens: 512,

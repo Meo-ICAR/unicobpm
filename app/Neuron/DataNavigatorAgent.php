@@ -14,7 +14,7 @@ use NeuronAI\Agent\SystemPrompt;
 use NeuronAI\Chat\History\ChatHistoryInterface;
 use NeuronAI\Chat\History\EloquentChatHistory;
 use NeuronAI\Providers\AIProviderInterface;
-use NeuronAI\Providers\Anthropic\Anthropic;
+use Unico\Core\Ai\Neuron\RecordingAnthropic;
 use NeuronAI\Tools\ToolInterface;
 use NeuronAI\Tools\Toolkits\MySQL\MySQLSchemaTool;
 use NeuronAI\Tools\Toolkits\MySQL\MySQLSelectTool;
@@ -120,7 +120,7 @@ class DataNavigatorAgent extends Agent
             throw new RuntimeException('Chiave API Anthropic mancante: imposta ANTHROPIC_API_KEY nel file .env');
         }
 
-        return new Anthropic(
+        return new RecordingAnthropic(usageSource: 'neuron:DataNavigatorAgent',
             key: (string) $key,
             model: (string) env('ANTHROPIC_MODEL', 'claude-sonnet-4-6'),
             max_tokens: 8192,
