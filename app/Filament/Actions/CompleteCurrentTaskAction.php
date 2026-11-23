@@ -275,6 +275,25 @@ class CompleteCurrentTaskAction
             }
         }
 
+        // Gate bloccante: si approva solo con tutte le voci a «sì»; altrimenti niente risposta riassuntiva e la fase non avanza.
+        if ($item->checklist->is_gate) {
+            $approved = $submission->answers()->where('value_boolean', true)->count() >= $item->checklist->items()->count();
+
+            if (! $approved) {
+                $submission->update(['status' => 'rejected']);
+
+                Notification::make()
+                    ->title('Gate non approvato')
+                    ->body("«{$item->checklist->name}»: tutte le condizioni devono essere soddisfatte e il gate approvato dall'accountable. La fase resta aperta.")
+                    ->warning()
+                    ->send();
+
+                return;
+            }
+
+            $submission->update(['status' => 'approved']);
+        }
+
         $summaryAnswer = ProcessTaskItemAnswer::create([
             'process_instance_id' => $record->id,
             'process_task_execution_id' => $executionId,

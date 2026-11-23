@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Mail\ProcessMail;
+use App\Models\ProcessInstance;
 use App\Support\ProcessThread;
 use Illuminate\Support\Facades\Mail;
 use Unico\Core\Enums\MailType;
@@ -30,16 +31,33 @@ class EmailSendingService
     public function send(string $to, string $subject, string $body, array $attachments = [], int|string|null $companyId = null, ?array $thread = null): void
     {
         $messageId = $thread === null ? null : ProcessThread::messageId($thread['instance'], $thread['execution'] ?? null);
+
+        // Processi con codice pratica e copie di visibilità (es. reclutamento della rete): codice nell'oggetto, copia nascosta a unicopec.
+        $instance = $thread === null ? null : ProcessInstance::query()->with('process')->find($thread['instance']);
+
+        if ($instance?->reference && filled($instance->process?->reference_prefix) && ! str_contains($subject, $instance->reference)) {
+            $subject = "[{$instance->reference}] {$subject}";
+        }
+
+        $copies = collect(explode(',', (string) $instance?->process?->visibility_bcc))
+            ->map(fn (string $email): string => trim($email))
+            ->filter(fn (string $email): bool => filter_var($email, FILTER_VALIDATE_EMAIL) !== false && mb_strtolower($email) !== mb_strtolower($to))
+            ->values()->all();
+
         $sender = $companyId === null ? null : app(SenderAccountResolver::class)->resolve($companyId, MailType::Processo);
 
         if ($sender !== null) {
-            app(OutgoingMailer::class)->send($sender, $to, new ProcessMail($subject, $body, $attachments, $messageId));
+            app(OutgoingMailer::class)->send($sender, $to, new ProcessMail($subject, $body, $attachments, $messageId, $copies));
 
             return;
         }
 
-        Mail::raw($body, function ($message) use ($to, $subject, $attachments, $messageId) {
+        Mail::raw($body, function ($message) use ($to, $subject, $attachments, $messageId, $copies) {
             $message->to($to)->subject($subject);
+
+            if ($copies !== []) {
+                $message->bcc($copies);
+            }
 
             if ($messageId !== null) {
                 $message->getSymfonyMessage()->getHeaders()->addIdHeader('Message-ID', $messageId);

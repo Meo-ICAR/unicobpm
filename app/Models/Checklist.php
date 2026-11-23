@@ -12,10 +12,12 @@ class Checklist extends Model
         'code',
         'description',
         'is_active',
+        'is_gate',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'is_gate' => 'boolean',
     ];
 
     public function items(): HasMany

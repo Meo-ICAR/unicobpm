@@ -9,6 +9,7 @@ use App\Models\EmployeeType;
 use App\Models\Process;
 use App\Models\ProcessState;
 use App\Models\ProcessTask;
+use App\Models\ProcessTrigger;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -25,6 +26,12 @@ use Illuminate\Support\Facades\DB;
 class ReclutamentoReteProcessSeeder extends Seeder
 {
     public const CODE = 'PRC-RECLUTAMENTO-RETE';
+
+    /** Processo di campagna (brief, campagna, SLA e reporting con Bankeo/Move): è per campagna, non per candidato. */
+    public const CODE_CAMPAGNA = 'PRC-RECLUTAMENTO-CAMPAGNA';
+
+    /** Presidio condiviso: riceve in copia nascosta ogni email dei due processi, così sono visibili in unicopec. */
+    public const PRESIDIO = 'recruiting@races.it';
 
     /** Processi di onboarding sostituiti da questo. */
     public const SOSTITUITI = ['AGENT_ONBOARDING', 'PRC-ONBOARD-COLL'];
@@ -118,6 +125,8 @@ class ReclutamentoReteProcessSeeder extends Seeder
                 'version' => 1,
                 'is_active' => true,
                 'is_periodic' => false,
+                'reference_prefix' => 'REC',
+                'visibility_bcc' => self::PRESIDIO,
             ]);
 
             $this->checklistGate();
@@ -129,6 +138,8 @@ class ReclutamentoReteProcessSeeder extends Seeder
             $process->tasks()->where('ordine', '>', count($this->fasi()) * 10)->delete();
 
             $this->stati($process);
+            $this->campagna($ruoli);
+            $this->trigger($process);
         });
     }
 
@@ -151,6 +162,73 @@ class ReclutamentoReteProcessSeeder extends Seeder
         }
 
         ProcessState::where('process_id', $process->id)->whereNotIn('code', $kept)->delete();
+    }
+
+    /** Processo di campagna: brief, pianificazione e gestione della campagna, SLA, reporting e riesame con Bankeo/Move. */
+    private function campagna(array $ruoli): void
+    {
+        $process = Process::updateOrCreate(['code' => self::CODE_CAMPAGNA], [
+            'name' => 'Campagna di reclutamento della rete commerciale',
+            'description' => "Campagna di recruiting gestita con Bankeo/Move S.r.l.: brief, canali, copy, landing, informativa privacy, controllo degli SLA e della qualità delle candidature, reporting e conversioni, riesame periodico con l'outsourcer. È per campagna: le candidature generano pratiche nel processo ".self::CODE.'. Ogni email del processo riporta recruiting@races.it in copia (visibile in unicopec). Fonte: modello operativo del 22/11/2026.',
+            'version' => 1,
+            'is_active' => true,
+            'is_periodic' => false,
+            'reference_prefix' => 'CAM',
+            'visibility_bcc' => self::PRESIDIO,
+        ]);
+
+        $com = $this->comunicazione();
+        $fasi = [
+            [
+                'nome' => 'Brief recruiting',
+                'descr' => 'Profilo, territorio, prodotto e campagna. Output/gate: brief approvato.',
+                'acc' => 'COM', 'attori' => 'Area Commerciale (Riccardo Voce), Marketing (Davide Bastione), Bankeo/Move', 'sla' => [2, 3, 72],
+                'attivita' => ['Definizione profili', 'Pianificazione campagne'],
+                'items' => [['Brief recruiting: profili, territorio, prodotto e campagna', 'text_input'], ['Brief approvato (Area Commerciale e Marketing)', 'text_input'], $com],
+            ],
+            [
+                'nome' => 'Campagna, canali e landing',
+                'descr' => 'Copy, landing, informativa privacy, canali e UTM. Output: campagna approvata e pubblicata. Nessun WhatsApp come archivio.',
+                'acc' => 'MKT', 'attori' => 'Bankeo/Move S.r.l. (Antonio Perreca), Davide Bastione', 'sla' => [2, 3, 48],
+                'attivita' => ['Gestione campagne e landing'],
+                'items' => [
+                    ['Copy e landing approvati', 'text_input'],
+                    ['Informativa privacy pubblicata', 'text_input'],
+                    ['Canali, campagna e UTM configurati (Landing/CRM Bankeo)', 'text_input'],
+                    ['Riepilogo e-mail con recruiting@races.it in CC', 'text_input'],
+                ],
+            ],
+            [
+                'nome' => 'SLA, reporting e riesame Bankeo/Move',
+                'descr' => 'Controllo di SLA e qualità delle candidature (primo contatto entro 2 giorni, almeno 3 tentativi), reporting delle conversioni e riesame con l\'outsourcer.',
+                'acc' => 'MKT', 'attori' => 'Davide Bastione, Eustacchio Allegretti, Bankeo/Move S.r.l.', 'sla' => [7, 4, 168],
+                'attivita' => ['Controllo SLA e qualità candidature', 'Reporting recruiting e conversioni', 'Riesame Bankeo/Move'],
+                'items' => [
+                    ['Controllo SLA e qualità della pipeline (tempo primo contatto, tentativi, no-show, qualità per canale)', 'text_input'],
+                    ['Reporting recruiting e conversioni (candidature → contatti → colloqui → pre-onboarding)', 'text_input'],
+                    ['Riesame con Bankeo/Move: esito e azioni', 'text_input'],
+                    $com,
+                ],
+            ],
+        ];
+
+        foreach ($fasi as $indice => $fase) {
+            $this->fase($process, $indice + 1, $fase, $ruoli, conStati: false);
+        }
+
+        $process->tasks()->where('ordine', '>', count($fasi) * 10)->delete();
+    }
+
+    /** Una email letta da unicopec riconosciuta come candidatura alla rete (intento candidatura_rete) avvia la pratica del candidato. */
+    private function trigger(Process $process): void
+    {
+        ProcessTrigger::updateOrCreate(['process_id' => $process->id, 'external_event' => 'email.richiesta'], [
+            'name' => 'Candidatura alla rete commerciale ricevuta (email)',
+            'model_class' => 'external',
+            'event_type' => 'external',
+            'conditions' => [['field' => 'richiesta', 'value' => 'candidatura_rete', 'operator' => '=']],
+            'is_active' => true,
+        ]);
     }
 
     /** Disattiva i processi di onboarding precedenti, senza cancellarli (restano per lo storico). */
@@ -193,6 +271,7 @@ class ReclutamentoReteProcessSeeder extends Seeder
                 'name' => "Gate {$gate} – {$passaggio}",
                 'description' => "Gate bloccante {$gate} (passaggio: {$passaggio}) del processo di reclutamento della rete. Accountable: {$accountable}.",
                 'is_active' => true,
+                'is_gate' => true,
             ]);
 
             $voci = array_map(fn (string $c): array => [$c, "Soddisfatto: {$c}?"], $condizioni);
@@ -210,10 +289,10 @@ class ReclutamentoReteProcessSeeder extends Seeder
      * @param  array{nome: string, descr: string, acc: string, attori: string, attivita: list<string>, items: list<array>, sla: array, gate?: list<string>}  $fase
      * @param  array<string, EmployeeType>  $ruoli
      */
-    private function fase(Process $process, int $numero, array $fase, array $ruoli): void
+    private function fase(Process $process, int $numero, array $fase, array $ruoli, bool $conStati = true): void
     {
         $ordine = $numero * 10;
-        $stati = collect(self::STATI)->filter(fn (array $s): bool => $s[3] === $numero)->map(fn (array $s): string => "{$s[0]} {$s[1]} ({$s[2]})")->implode('; ');
+        $stati = ! $conStati ? collect() : collect(self::STATI)->filter(fn (array $s): bool => $s[3] === $numero)->map(fn (array $s): string => "{$s[0]} {$s[1]} ({$s[2]})")->implode('; ');
 
         $task = $process->tasks()->updateOrCreate(['process_id' => $process->id, 'ordine' => $ordine], [
             'code' => strtolower(self::CODE).'-'.$numero,
@@ -229,7 +308,7 @@ class ReclutamentoReteProcessSeeder extends Seeder
                 ['level' => 1, 'action' => 'notify_assignee', 'delay_hours' => $fase['sla'][2]],
                 ['level' => 2, 'action' => 'notify_manager', 'delay_hours' => $fase['sla'][2] * 2],
             ],
-            'is_active' => true,
+            'is_active' => $fase['attiva'] ?? true,
         ]);
 
         $raci = $this->raciDellaFase($fase['attivita'], $fase['acc']);
@@ -337,8 +416,9 @@ class ReclutamentoReteProcessSeeder extends Seeder
 
         return [
             [
-                'nome' => 'Brief recruiting',
-                'descr' => 'Profilo, territorio, prodotto e campagna. Output/gate: brief approvato.',
+                'nome' => 'Brief recruiting (nel processo di campagna)',
+                'attiva' => false,
+                'descr' => 'Fase di campagna, non di candidato: si svolge nel processo PRC-RECLUTAMENTO-CAMPAGNA. Qui resta disattivata per mantenere la numerazione delle 14 fasi; la pratica del candidato nasce dalla fase 2.',
                 'acc' => 'COM', 'attori' => 'Area Commerciale (Riccardo Voce), Marketing (Davide Bastione), Bankeo/Move', 'sla' => [2, 3, 72],
                 'attivita' => ['Definizione profili', 'Pianificazione campagne'],
                 'items' => [
@@ -348,14 +428,14 @@ class ReclutamentoReteProcessSeeder extends Seeder
                 ],
             ],
             [
-                'nome' => 'Campagna e candidatura',
-                'descr' => 'Landing, informativa, CV, fonte, UTM. Attori: Bankeo/Move S.r.l. (Antonio Perreca), Davide Bastione. Output: candidatura tracciata.',
+                'nome' => 'Candidatura e tracciamento',
+                'descr' => 'La pratica del candidato nasce qui (stato 01): fonte, UTM e CV dalla landing/CRM Bankeo, codice REC. Campagna, copy, landing e informativa sono nel processo PRC-RECLUTAMENTO-CAMPAGNA. Output: candidatura tracciata.',
                 'acc' => 'MKT', 'attori' => 'Bankeo/Move S.r.l. (Antonio Perreca), Davide Bastione', 'sla' => [2, 3, 48],
-                'attivita' => ['Gestione campagne e landing', 'Controllo SLA e qualità candidature'],
+                'attivita' => ['Gestione campagne e landing'],
                 'items' => [
-                    ['Codice REC-AAAA-NNNN e fascicolo creati alla prima candidatura', 'text_input'],
+                    ['Codice pratica REC-AAAA-NNNN (assegnato alla nascita della pratica) e fascicolo creati', 'text_input'],
                     ['Dati candidatura: canale, campagna, UTM, territorio, prodotto, recapiti, esperienza dichiarata', 'text_input'],
-                    ['Brief approvato, copy e landing approvati, informativa privacy pubblicata', 'text_input'],
+                    ['Informativa privacy resa al candidato (testo pubblicato in campagna)', 'text_input'],
                     ['Curriculum vitae / scheda candidato acquisita', 'document_upload', 'Curriculum'],
                     ['Riepilogo e-mail con recruiting@races.it in CC (Landing/CRM Bankeo)', 'text_input'],
                 ],
@@ -505,7 +585,7 @@ class ReclutamentoReteProcessSeeder extends Seeder
                 'nome' => 'Ramp-up 90 giorni',
                 'descr' => 'Check a 15, 30, 60 e 90 giorni su KPI, qualità, produzione, lead e anomalie. Output: conferma, piano correttivo o sospensione (G8).',
                 'acc' => 'COM', 'attori' => 'Riccardo Voce, Paolo Sajeva/AM, Davide Bastione o Raffaele Gravina, Compliance', 'sla' => [7, 4, 168],
-                'attivita' => ['Ramp-up commerciale', 'Monitoraggio operativo ordinario', 'Monitoraggio Quinto/TFS', 'Valutazione a 90 giorni', 'Reporting recruiting e conversioni', 'Riesame Bankeo/Move'],
+                'attivita' => ['Ramp-up commerciale', 'Monitoraggio operativo ordinario', 'Monitoraggio Quinto/TFS', 'Valutazione a 90 giorni'],
                 'items' => [
                     ['Check a 15 giorni (KPI, qualità, produzione, lead, anomalie, azioni, scadenze)', 'text_input'],
                     ['Check a 30 giorni', 'text_input'],
@@ -540,6 +620,8 @@ class ReclutamentoReteProcessSeeder extends Seeder
 
         return <<<TXT
 Reclutamento e onboarding della rete agenziale di Races Finance, dalla candidatura gestita da Bankeo/Move S.r.l. al Go Live, al ramp-up di 90 giorni e all'eventuale offboarding. Fonte: «Modello operativo per l'onboarding della rete agenziale», versione consolidata del 22/11/2026 (sostituisce l'allegato sintetico in bozza). Sostituisce i processi AGENT_ONBOARDING e PRC-ONBOARD-COLL.
+
+La campagna (brief, canali, landing, SLA e reporting con Bankeo/Move) è nel processo PRC-RECLUTAMENTO-CAMPAGNA; qui c'è la pratica del candidato, che nasce dalla fase 2 con il codice REC-AAAA-NNNN. Le email del processo hanno il codice nell'oggetto e recruiting@races.it in copia nascosta (visibili in unicopec); una email di candidatura letta da unicopec (intento candidatura_rete) avvia la pratica e ne resta il riferimento (incoming_email_id).
 
 Principi: Bankeo/Move genera e organizza la pipeline ma non decide idoneità, condizioni, LOI, contratto o Go Live; l'Area Commerciale decide il reciproco interesse e le condizioni, Compliance presidia requisiti e rischi, la Direzione approva gli impegni. La LOI non abilita l'operatività. Il fascicolo digitale è unico, versionato e accessibile per ruolo.
 

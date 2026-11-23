@@ -31,6 +31,7 @@ class ProcessInstance extends Model
         'subject_id',
         'title',
         'external_ref',
+        'reference',
         'incoming_email_id',
         'process_state_id',
         'external_data',

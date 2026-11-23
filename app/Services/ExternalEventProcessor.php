@@ -7,6 +7,7 @@ use App\Models\ExternalEvent;
 use App\Models\ProcessTrigger;
 use Illuminate\Support\Facades\Log;
 use Throwable;
+use Unico\Core\Models\IncomingEmail;
 use Unico\Core\Models\Company;
 
 /**
@@ -34,6 +35,8 @@ class ExternalEventProcessor
                     'title' => $this->title($event),
                     'external_ref' => $event->source && $event->subject_ref ? "{$event->source}:{$event->subject_ref}" : $event->subject_ref,
                     'external_data' => $event->data,
+                    // Gli eventi sulle email (email.ricevuta, email.richiesta...) hanno per riferimento l'id dell'email di unicopec.
+                    'incoming_email_id' => $this->emailId($event),
                     'company_id' => $this->companyId((array) $event->data),
                     'hard_deadline_at' => $this->hardDeadline((array) $event->data),
                 ], fn ($value) => $value !== null));
@@ -67,6 +70,16 @@ class ExternalEventProcessor
         }
 
         return true;
+    }
+
+    /** Id dell'email letta da unicopec a cui si riferisce l'evento, se è un evento sulle email e l'email esiste. */
+    private function emailId(ExternalEvent $event): ?int
+    {
+        if (! str_starts_with($event->name, 'email.') || ! ctype_digit((string) $event->subject_ref)) {
+            return null;
+        }
+
+        return IncomingEmail::query()->whereKey((int) $event->subject_ref)->value('id');
     }
 
     /** Data tassativa indicata dall'evento (`data.hard_deadline`, AAAA-MM-GG): se c'è, la pratica nasce con quel termine. */

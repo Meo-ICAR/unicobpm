@@ -11,7 +11,8 @@ use Illuminate\Mail\Mailables\Envelope;
 class ProcessMail extends Mailable
 {
     /** @param array<int, string|array{path: string, as?: string}> $files */
-    public function __construct(public string $subjectLine, public string $text, public array $files = [], public ?string $messageId = null)
+    /** @param array<int, string> $copies indirizzi in copia nascosta (visibilità in unicopec) */
+    public function __construct(public string $subjectLine, public string $text, public array $files = [], public ?string $messageId = null, public array $copies = [])
     {
         if ($messageId !== null) {
             $this->withSymfonyMessage(fn ($message) => $message->getHeaders()->addIdHeader('Message-ID', $messageId));
@@ -20,7 +21,7 @@ class ProcessMail extends Mailable
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: $this->subjectLine);
+        return new Envelope(subject: $this->subjectLine, bcc: $this->copies);
     }
 
     public function content(): Content

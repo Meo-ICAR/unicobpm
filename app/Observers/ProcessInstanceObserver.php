@@ -36,10 +36,25 @@ class ProcessInstanceObserver
             }
         }
 
+        // Codice pratica (es. REC-2026-0001) se il processo ha un prefisso: progressivo per anno.
+        if (blank($instance->reference) && filled($instance->process?->reference_prefix)) {
+            $instance->reference = $this->nextReference($instance->process->reference_prefix);
+        }
+
         // Stato applicativo iniziale (se il processo li definisce): il primo della fase corrente o delle successive.
         if (! $instance->process_state_id) {
             $instance->process_state_id = $this->stateFor($instance, null)?->id;
         }
+    }
+
+    /** Prossimo codice pratica «PREFISSO-AAAA-NNNN» (progressivo dell'anno, su tutte le pratiche con quel prefisso). */
+    private function nextReference(string $prefix): string
+    {
+        $head = $prefix.'-'.now()->year.'-';
+        $last = ProcessInstance::query()->where('reference', 'like', $head.'%')->lockForUpdate()->pluck('reference')
+            ->map(fn (string $reference): int => (int) substr($reference, strlen($head)))->max() ?? 0;
+
+        return $head.str_pad((string) ($last + 1), 4, '0', STR_PAD_LEFT);
     }
 
     /**

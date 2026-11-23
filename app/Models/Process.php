@@ -34,6 +34,8 @@ class Process extends Model
         'completion_write_app',
         'include_eligible_count_in_reminders',
         'reminder_repeat_days',
+        'visibility_bcc',
+        'reference_prefix',
         'last_activated_at',
         'next_run_at',
     ];

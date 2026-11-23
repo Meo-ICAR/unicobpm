@@ -43,6 +43,9 @@ class ReclutamentoReteRuoliSeeder extends Seeder
 
     public function run(): void
     {
+        $this->allegretti();
+        $this->nuoviDipendenti();
+
         foreach (self::ASSEGNAZIONI as [$model, $campo, $valore, $ruoli]) {
             $persona = $model::query()->where($campo, $valore)->first();
 
@@ -59,6 +62,50 @@ class ReclutamentoReteRuoliSeeder extends Seeder
                 $persona->forceFill(['employee_roles' => $nuovi->all()])->save();
                 $this->command?->info("{$valore}: ".implode(', ', $ruoli));
             }
+        }
+    }
+
+    /** Eustacchio Allegretti (organizzazione e risorse umane): si riattiva il record dipendente più recente (id 15, cancellato il 24/10). */
+    private function allegretti(): void
+    {
+        $record = Employee::withTrashed()->where('email', 'eustacchio.allegretti@races.it')->orderByDesc('id')->first();
+
+        if ($record === null) {
+            $this->command?->warn('Allegretti: record non trovato.');
+
+            return;
+        }
+
+        if ($record->trashed()) {
+            $record->restore();
+        }
+
+        $roles = collect((array) $record->employee_roles)->filter(fn ($r) => filled($r))->merge(['organizzazione e risorse umane'])->unique()->values()->all();
+        $record->forceFill(['is_active' => true, 'employee_roles' => $roles])->save();
+        $this->command?->info("Allegretti riattivato (id {$record->id}): organizzazione e risorse umane");
+    }
+
+    /**
+     * Record in organigramma per chi non ne aveva: Gioia Quarto (legale) e Antonio Perreca (referente Bankeo/Move, outsourcer recruiting).
+     * La loro email non è nota: va aggiunta (senza non ricevono i solleciti).
+     */
+    private function nuoviDipendenti(): void
+    {
+        foreach ([
+            ['QUARTO GIOIA', 'Gioia', 'Quarto', 'Legale', 'Legale', ['legale']],
+            ['PERRECA ANTONIO', 'Antonio', 'Perreca', 'Referente Bankeo / Move S.r.l. (outsourcer recruiting)', 'Outsourcing recruiting', ['outsourcer recruiting']],
+        ] as [$nome, $first, $last, $titolo, $reparto, $ruoli]) {
+            $esiste = Employee::withTrashed()->where('name', $nome)->first();
+
+            if ($esiste !== null) {
+                continue;
+            }
+
+            Employee::query()->create([
+                'company_id' => 1, 'name' => $nome, 'first_name' => $first, 'last_name' => $last, 'role_title' => $titolo,
+                'department' => $reparto, 'is_active' => true, 'employee_roles' => $ruoli,
+            ]);
+            $this->command?->info("Creato in organigramma: {$nome} (".implode(', ', $ruoli).'), email da inserire');
         }
     }
 }
