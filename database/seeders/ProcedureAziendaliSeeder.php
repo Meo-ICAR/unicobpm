@@ -219,7 +219,8 @@ class ProcedureAziendaliSeeder extends Seeder
                 'name' => $nome,
                 'description' => $descrizione,
                 // Quelli a scadenza sono seguiti dalla Segreteria di Rete (R su ogni passo).
-                'is_active' => true,
+                // PRC-ONBOARD-COLL è sostituito da PRC-RECLUTAMENTO-RETE (ReclutamentoReteProcessSeeder): resta per lo storico, disattivo.
+                'is_active' => ! in_array($codice, ReclutamentoReteProcessSeeder::SOSTITUITI, true),
                 'is_periodic' => $periodico,
                 'cron_expression' => $cron,
             ]);

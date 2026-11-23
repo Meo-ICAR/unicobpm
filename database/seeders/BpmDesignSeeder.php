@@ -43,7 +43,8 @@ class BpmDesignSeeder extends Seeder
         // 3. Creazione del Macro-Processo
         $process = Process::firstOrCreate(
             ['code' => 'AGENT_ONBOARDING', 'version' => 1],
-            ['name' => 'Onboarding Nuovo Agente', 'is_active' => true]
+            // Sostituito da PRC-RECLUTAMENTO-RETE (ReclutamentoReteProcessSeeder): resta per lo storico, disattivo.
+            ['name' => 'Onboarding Nuovo Agente', 'is_active' => false]
         );
 
         // Un agente con 'stipulated_at' già valorizzato ha già un mandato attivo e non
