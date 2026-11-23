@@ -49,7 +49,7 @@ trait HasBpmKnowledgeBase
 
     protected function provider(): AIProviderInterface
     {
-        $key = env('ANTHROPIC_API_KEY');
+        $key = config('unico-core.documents.ai.api_key');
 
         if (blank($key)) {
             throw new RuntimeException('Chiave API Anthropic mancante: imposta ANTHROPIC_API_KEY nel file .env');
@@ -57,7 +57,7 @@ trait HasBpmKnowledgeBase
 
         return new RecordingAnthropic(usageSource: 'neuron:HasBpmKnowledgeBase',
             key: (string) $key,
-            model: (string) env('ANTHROPIC_MODEL', 'claude-sonnet-4-6'),
+            model: (string) config('unico-core.documents.ai.model'),
             max_tokens: 4096,
         );
     }

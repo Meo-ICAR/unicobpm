@@ -4,12 +4,12 @@ namespace Tests\Unit;
 
 use App\Models\DocumentType;
 use App\Models\ProcessTaskItem;
-use App\Neuron\DocumentClassificationResult;
-use App\Neuron\DocumentClassifierAgent;
 use App\Services\DocumentClassifier;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
+use Illuminate\Support\Collection;
 use Tests\TestCase;
+use Unico\Core\Documents\Contracts\DocumentReader;
 
 /**
  * DocumentClassifier non deve mai scrivere né leggere DocumentType/Document dal DB reale
@@ -57,7 +57,7 @@ class DocumentClassifierTest extends TestCase
 
         $item = $this->pendingItem(5, ['name' => 'Visura Camerale', 'is_ai_check' => true, 'ai_pattern' => 'Documento CCIAA', 'min_confidence' => 70]);
 
-        $this->fakeClassifierAgent(new DocumentClassificationResult(item_id: 5, confidence: 85, abstract: 'Visura camerale aggiornata'));
+        $this->fakeReader(['type_id' => 5, 'confidence' => 85, 'abstract' => 'Visura camerale aggiornata']);
 
         $result = (new DocumentClassifier)->classify(collect([$item]), 'documents/foo.pdf', 'scan.pdf');
 
@@ -74,7 +74,7 @@ class DocumentClassifierTest extends TestCase
 
         $item = $this->pendingItem(5, ['name' => 'Visura Camerale', 'is_ai_check' => true, 'min_confidence' => 90]);
 
-        $this->fakeClassifierAgent(new DocumentClassificationResult(item_id: 5, confidence: 60, abstract: null));
+        $this->fakeReader(['type_id' => 5, 'confidence' => 60, 'abstract' => null]);
 
         $result = (new DocumentClassifier)->classify(collect([$item]), 'documents/foo.pdf', 'scan.pdf');
 
@@ -88,7 +88,7 @@ class DocumentClassifierTest extends TestCase
 
         $item = $this->pendingItem(5, ['name' => 'Visura Camerale', 'is_ai_check' => true]);
 
-        $this->fakeClassifierAgent(new RuntimeException('API non raggiungibile'));
+        $this->fakeReader(new RuntimeException('API non raggiungibile'));
 
         $result = (new DocumentClassifier)->classify(collect([$item]), 'documents/foo.pdf', 'scan.pdf');
 
@@ -104,16 +104,41 @@ class DocumentClassifierTest extends TestCase
         return $item;
     }
 
-    private function fakeClassifierAgent(DocumentClassificationResult|RuntimeException $outcome): void
+    /** Lettore di unico-core finto: risponde con la classificazione data (o solleva l'errore) e non chiama nessun servizio. */
+    private function fakeReader(array|RuntimeException $outcome): void
     {
-        $agent = $this->createMock(DocumentClassifierAgent::class);
+        $this->app->instance(DocumentReader::class, new class($outcome) implements DocumentReader
+        {
+            public function __construct(private array|RuntimeException $outcome) {}
 
-        if ($outcome instanceof RuntimeException) {
-            $agent->method('structured')->willThrowException($outcome);
-        } else {
-            $agent->method('structured')->willReturn($outcome);
-        }
+            public function enabled(): bool
+            {
+                return true;
+            }
 
-        $this->app->instance(DocumentClassifierAgent::class, $agent);
+            public function read(string $kind, string $mime, string $bytes): ?array
+            {
+                return null;
+            }
+
+            public function extract(string $source, string $system, string $prompt, array $schema, string $mime, string $bytes, ?string $knownText = null, ?callable $complete = null, ?string $kind = null): ?array
+            {
+                return null;
+            }
+
+            public function classify(Collection $candidates, string $mime, string $bytes): ?array
+            {
+                if ($this->outcome instanceof RuntimeException) {
+                    throw $this->outcome;
+                }
+
+                return $this->outcome;
+            }
+
+            public function lastUsage(): ?array
+            {
+                return null;
+            }
+        });
     }
 }

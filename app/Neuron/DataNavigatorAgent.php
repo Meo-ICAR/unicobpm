@@ -114,7 +114,7 @@ class DataNavigatorAgent extends Agent
 
     protected function provider(): AIProviderInterface
     {
-        $key = env('ANTHROPIC_API_KEY') ?: env('ANTHROPIC_KEY');
+        $key = config('unico-core.documents.ai.api_key');
 
         if (blank($key)) {
             throw new RuntimeException('Chiave API Anthropic mancante: imposta ANTHROPIC_API_KEY nel file .env');
@@ -122,7 +122,7 @@ class DataNavigatorAgent extends Agent
 
         return new RecordingAnthropic(usageSource: 'neuron:DataNavigatorAgent',
             key: (string) $key,
-            model: (string) env('ANTHROPIC_MODEL', 'claude-sonnet-4-6'),
+            model: (string) config('unico-core.documents.ai.model'),
             max_tokens: 8192,
         );
     }

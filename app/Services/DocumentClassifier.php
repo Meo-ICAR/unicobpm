@@ -3,17 +3,11 @@
 namespace App\Services;
 
 use App\Models\ProcessTaskItem;
-use App\Neuron\DocumentClassificationResult;
-use App\Neuron\DocumentClassifierAgent;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use NeuronAI\Chat\Enums\MediaType;
-use NeuronAI\Chat\Enums\SourceType;
-use NeuronAI\Chat\Messages\ContentBlocks\FileContent;
-use NeuronAI\Chat\Messages\ContentBlocks\TextContent;
-use NeuronAI\Chat\Messages\UserMessage;
 use Throwable;
+use Unico\Core\Documents\Contracts\DocumentReader;
 
 /**
  * Capisce a quale ProcessTaskItem (document_upload) pendente corrisponde un allegato,
@@ -72,38 +66,30 @@ class DocumentClassifier
     {
         $candidates = $pendingUploadItems->filter(fn (ProcessTaskItem $item) => (bool) $item->documentType?->is_ai_check);
 
-        $mediaType = $this->guessMediaType($originalFilename);
+        $mime = $this->guessMime($originalFilename);
 
-        if ($candidates->isEmpty() || ! $mediaType) {
+        if ($candidates->isEmpty() || ! $mime) {
             return $this->noMatch();
         }
 
         try {
             $content = Storage::disk('public')->get($storedDiskPath);
+            $reader = app(DocumentReader::class);
 
-            if ($content === null) {
+            if ($content === null || ! $reader->enabled()) {
                 return $this->noMatch();
             }
 
-            $descriptions = $candidates
-                ->map(fn (ProcessTaskItem $item) => sprintf(
-                    '- item_id %d: "%s" — %s',
-                    $item->id,
-                    $item->documentType->name,
-                    $item->documentType->ai_pattern ?: 'nessuna descrizione fornita'
-                ))
-                ->implode("\n");
-
-            $instructions = "Classifica il documento allegato tra questi candidati:\n{$descriptions}\n\n".
-                'Se non corrisponde chiaramente a nessuno, usa item_id null e confidence bassa.';
-
-            /** @var DocumentClassificationResult $result */
-            $result = app(DocumentClassifierAgent::class)->structured(
-                new UserMessage([
-                    new TextContent($instructions),
-                    new FileContent(base64_encode($content), SourceType::BASE64, $mediaType, $originalFilename),
-                ]),
-                DocumentClassificationResult::class,
+            // Classificazione di unico-core: testo o prime pagine ridotte con il modello economico, cache per impronta del file e
+            // modello principale solo se non riconosce. Ogni candidato è un'azione di caricamento: l'id passato è quello dell'azione.
+            $answer = $reader->classify(
+                $candidates->map(fn (ProcessTaskItem $item) => (object) [
+                    'id' => $item->id,
+                    'name' => $item->documentType->name,
+                    'ai_pattern' => $item->documentType->ai_pattern,
+                ])->values(),
+                $mime,
+                $content,
             );
         } catch (Throwable $e) {
             Log::warning('DocumentClassifier: classificazione AI fallita.', [
@@ -114,33 +100,33 @@ class DocumentClassifier
             return $this->noMatch();
         }
 
-        if (! $result->item_id) {
+        if (! $answer || ! $answer['type_id']) {
             return $this->noMatch();
         }
 
-        $item = $candidates->firstWhere('id', $result->item_id);
+        $item = $candidates->firstWhere('id', $answer['type_id']);
         $minConfidence = $item?->documentType->min_confidence ?? 70;
 
-        if (! $item || $result->confidence < $minConfidence) {
+        if (! $item || $answer['confidence'] < $minConfidence) {
             return $this->noMatch();
         }
 
         return [
             'item' => $item,
             'operator_type' => 'ai',
-            'confidence' => $result->confidence,
-            'abstract' => $result->abstract,
+            'confidence' => $answer['confidence'],
+            'abstract' => $answer['abstract'],
         ];
     }
 
-    protected function guessMediaType(string $filename): ?MediaType
+    protected function guessMime(string $filename): ?string
     {
         return match (strtolower(pathinfo($filename, PATHINFO_EXTENSION))) {
-            'pdf' => MediaType::PDF,
-            'png' => MediaType::PNG,
-            'jpg', 'jpeg' => MediaType::JPEG,
-            'gif' => MediaType::GIF,
-            'webp' => MediaType::WEBP,
+            'pdf' => 'application/pdf',
+            'png' => 'image/png',
+            'jpg', 'jpeg' => 'image/jpeg',
+            'gif' => 'image/gif',
+            'webp' => 'image/webp',
             default => null,
         };
     }

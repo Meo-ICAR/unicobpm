@@ -11,7 +11,6 @@ use App\Models\ProcessTask;
 use App\Models\ProcessTaskItem;
 use App\Models\ProcessTaskItemAnswer;
 use App\Models\User;
-use App\Neuron\EmailReplyAgent;
 use App\Services\EmailSendingService;
 use App\Services\Replies\CompositeReplyInterpreter;
 use App\Services\Replies\Interpretation;
@@ -45,7 +44,6 @@ class ProcessEmailReplyTest extends TestCase
         parent::setUp();
 
         // L'AI è sostituita da un finto: nei test non si chiama nessun servizio.
-        $this->app->bind(EmailReplyAgent::class, fn () => throw new \RuntimeException('AI non disponibile nei test'));
         $this->app->bind(ReplyInterpreter::class, fn () => new CompositeReplyInterpreter([
             new RuleBasedReplyInterpreter,
             new class($this) implements ReplyInterpreter
