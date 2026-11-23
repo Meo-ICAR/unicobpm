@@ -57,7 +57,7 @@ trait HasBpmKnowledgeBase
 
         return new RecordingAnthropic(usageSource: 'neuron:HasBpmKnowledgeBase',
             key: (string) $key,
-            model: (string) config('unico-core.documents.ai.model'),
+            model: (string) config('unico-core.documents.ai.rag_model'),
             max_tokens: 4096,
         );
     }

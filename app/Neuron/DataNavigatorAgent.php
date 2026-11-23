@@ -122,7 +122,7 @@ class DataNavigatorAgent extends Agent
 
         return new RecordingAnthropic(usageSource: 'neuron:DataNavigatorAgent',
             key: (string) $key,
-            model: (string) config('unico-core.documents.ai.model'),
+            model: (string) config('unico-core.documents.ai.rag_model'),
             max_tokens: 8192,
         );
     }
