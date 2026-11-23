@@ -71,6 +71,24 @@ class ProcessStatesTest extends TestCase
         $this->assertSame('04', $instance->fresh()->processState->code);
     }
 
+    public function test_a_state_of_another_process_cannot_be_assigned(): void
+    {
+        $other = Process::create(['name' => 'Altro', 'code' => 'PRC-OT-'.uniqid(), 'is_active' => true]);
+        $otherState = ProcessState::create(['process_id' => $other->id, 'code' => '01', 'name' => 'Altro stato', 'ordine' => 1]);
+        $instance = $this->newInstance();
+
+        $this->expectException(\InvalidArgumentException::class);
+        $instance->update(['process_state_id' => $otherState->id]);
+    }
+
+    public function test_a_state_of_the_same_process_can_be_assigned_by_hand(): void
+    {
+        $instance = $this->newInstance();
+        $instance->update(['process_state_id' => $this->states['03']->id]);
+
+        $this->assertSame('03', $instance->fresh()->processState->code);
+    }
+
     public function test_a_process_without_states_leaves_the_field_empty(): void
     {
         $process = Process::create(['name' => 'Senza stati', 'code' => 'PRC-NS-'.uniqid(), 'is_active' => true]);

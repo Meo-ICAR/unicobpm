@@ -10,6 +10,7 @@ use App\Services\ExternalAppResolver;
 use App\Services\OutboundCallService;
 use App\Services\WebhookDispatcher;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use InvalidArgumentException;
 
 class ProcessInstanceObserver
 {
@@ -64,6 +65,12 @@ class ProcessInstanceObserver
      */
     public function saving(ProcessInstance $instance): void
     {
+        // Lo stato applicativo deve essere di questo processo: gli stati sono per processo (process_states.process_id).
+        if ($instance->process_state_id && $instance->isDirty(['process_state_id', 'process_id'])
+            && ! ProcessState::query()->whereKey($instance->process_state_id)->where('process_id', $instance->process_id)->exists()) {
+            throw new InvalidArgumentException('Lo stato applicativo non appartiene al processo della pratica.');
+        }
+
         if (! $instance->exists || ! $instance->isDirty('current_task_id') || ! $instance->current_task_id) {
             return;
         }
