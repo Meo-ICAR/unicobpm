@@ -127,6 +127,13 @@ class ReclutamentoReteProcessSeeder extends Seeder
                 'is_periodic' => false,
                 'reference_prefix' => 'REC',
                 'visibility_bcc' => self::PRESIDIO,
+                // Il candidato è un produttore non ancora operativo: is_active = false e data di decorrenza (stipulated_at) vuota.
+                'target_model' => 'fornitore',
+                'trigger_field' => 'stipulated_at',
+                'trigger_state' => 'empty',
+                'exclude_field' => 'is_active',
+                'exclude_state' => 'equals',
+                'exclude_value' => '1',
             ]);
 
             $this->checklistGate();
@@ -622,6 +629,8 @@ class ReclutamentoReteProcessSeeder extends Seeder
 Reclutamento e onboarding della rete agenziale di Races Finance, dalla candidatura gestita da Bankeo/Move S.r.l. al Go Live, al ramp-up di 90 giorni e all'eventuale offboarding. Fonte: «Modello operativo per l'onboarding della rete agenziale», versione consolidata del 22/11/2026 (sostituisce l'allegato sintetico in bozza). Sostituisce i processi AGENT_ONBOARDING e PRC-ONBOARD-COLL.
 
 La campagna (brief, canali, landing, SLA e reporting con Bankeo/Move) è nel processo PRC-RECLUTAMENTO-CAMPAGNA; qui c'è la pratica del candidato, che nasce dalla fase 2 con il codice REC-AAAA-NNNN. Le email del processo hanno il codice nell'oggetto e recruiting@races.it in copia nascosta (visibili in unicopec); una email di candidatura letta da unicopec (intento candidatura_rete) avvia la pratica e ne resta il riferimento (incoming_email_id).
+
+Candidato = produttore (tabella fornitoris) con is_active = false e data di decorrenza (stipulated_at) vuota; diventa operativo con la decorrenza e is_active = true. Retention delle candidature non inserite: 6 mesi dalla chiusura (comando reclutamento:retention, config reclutamento.retention_months); chi ha una pratica in corso o è stato inserito non si cancella.
 
 Principi: Bankeo/Move genera e organizza la pipeline ma non decide idoneità, condizioni, LOI, contratto o Go Live; l'Area Commerciale decide il reciproco interesse e le condizioni, Compliance presidia requisiti e rischi, la Direzione approva gli impegni. La LOI non abilita l'operatività. Il fascicolo digitale è unico, versionato e accessibile per ruolo.
 

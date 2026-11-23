@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Filament\Actions\StartProcessAction;
 use App\Models\ExternalEvent;
+use App\Models\Process;
 use App\Models\ProcessTrigger;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -17,7 +18,7 @@ use Unico\Core\Models\Company;
  */
 class ExternalEventProcessor
 {
-    public function __construct(private StartProcessAction $start) {}
+    public function __construct(private StartProcessAction $start, private CandidateResolver $candidates) {}
 
     public function process(ExternalEvent $event): ExternalEvent
     {
@@ -29,9 +30,21 @@ class ExternalEventProcessor
                 continue;
             }
 
+            // Processi sui produttori (es. il reclutamento della rete) avviati da un'email: il soggetto è il candidato (produttore non
+            // ancora operativo), trovato o creato dall'indirizzo del mittente. Se è già un produttore operativo non è una candidatura.
+            $subject = null;
+
+            if (Process::query()->whereKey($trigger->process_id)->where('target_model', 'fornitore')->exists() && ($emailId = $this->emailId($event)) !== null) {
+                $subject = $this->candidates->forEmail(IncomingEmail::findOrFail($emailId));
+
+                if ($subject === null) {
+                    continue;
+                }
+            }
+
             try {
                 // Gli attributi si danno all'avvio: le azioni automatiche del primo passo (es. l'email al responsabile) partono subito e li leggono.
-                $this->start->execute(null, $trigger->process_id, array_filter([
+                $this->start->execute($subject, $trigger->process_id, array_filter([
                     'title' => $this->title($event),
                     'external_ref' => $event->source && $event->subject_ref ? "{$event->source}:{$event->subject_ref}" : $event->subject_ref,
                     'external_data' => $event->data,

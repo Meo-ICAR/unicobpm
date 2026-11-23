@@ -87,25 +87,30 @@ class ReclutamentoReteRuoliSeeder extends Seeder
 
     /**
      * Record in organigramma per chi non ne aveva: Gioia Quarto (legale) e Antonio Perreca (referente Bankeo/Move, outsourcer recruiting).
-     * La loro email non è nota: va aggiunta (senza non ricevono i solleciti).
+     * Email: legale@races.it e antonio.perreca@races.it.
      */
     private function nuoviDipendenti(): void
     {
         foreach ([
-            ['QUARTO GIOIA', 'Gioia', 'Quarto', 'Legale', 'Legale', ['legale']],
-            ['PERRECA ANTONIO', 'Antonio', 'Perreca', 'Referente Bankeo / Move S.r.l. (outsourcer recruiting)', 'Outsourcing recruiting', ['outsourcer recruiting']],
-        ] as [$nome, $first, $last, $titolo, $reparto, $ruoli]) {
+            ['QUARTO GIOIA', 'Gioia', 'Quarto', 'Legale', 'Legale', ['legale'], 'legale@races.it'],
+            ['PERRECA ANTONIO', 'Antonio', 'Perreca', 'Referente Bankeo / Move S.r.l. (outsourcer recruiting)', 'Outsourcing recruiting', ['outsourcer recruiting'], 'antonio.perreca@races.it'],
+        ] as [$nome, $first, $last, $titolo, $reparto, $ruoli, $email]) {
             $esiste = Employee::withTrashed()->where('name', $nome)->first();
 
             if ($esiste !== null) {
+                if (blank($esiste->email)) {
+                    $esiste->forceFill(['email' => $email])->save();
+                    $this->command?->info("{$nome}: email {$email}");
+                }
+
                 continue;
             }
 
             Employee::query()->create([
                 'company_id' => 1, 'name' => $nome, 'first_name' => $first, 'last_name' => $last, 'role_title' => $titolo,
-                'department' => $reparto, 'is_active' => true, 'employee_roles' => $ruoli,
+                'department' => $reparto, 'is_active' => true, 'employee_roles' => $ruoli, 'email' => $email,
             ]);
-            $this->command?->info("Creato in organigramma: {$nome} (".implode(', ', $ruoli).'), email da inserire');
+            $this->command?->info("Creato in organigramma: {$nome} (".implode(', ', $ruoli).')');
         }
     }
 }
