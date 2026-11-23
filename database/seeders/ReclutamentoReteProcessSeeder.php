@@ -7,6 +7,7 @@ use App\Models\ChecklistItem;
 use App\Models\DocumentType;
 use App\Models\EmployeeType;
 use App\Models\Process;
+use App\Models\ProcessState;
 use App\Models\ProcessTask;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -126,7 +127,30 @@ class ReclutamentoReteProcessSeeder extends Seeder
             }
 
             $process->tasks()->where('ordine', '>', count($this->fasi()) * 10)->delete();
+
+            $this->stati($process);
         });
+    }
+
+    /** Stati applicativi (21) con la fase di appartenenza; finali: 05, 19, 21; di eccezione: 20 (sospeso). */
+    private function stati(Process $process): void
+    {
+        $kept = [];
+
+        foreach (self::STATI as $numero => [$codice, $nome, $owner, $fase]) {
+            $kept[] = $codice;
+
+            ProcessState::updateOrCreate(['process_id' => $process->id, 'code' => $codice], [
+                'process_task_id' => $process->tasks()->where('ordine', $fase * 10)->value('id'),
+                'name' => $nome,
+                'owner' => $owner,
+                'ordine' => $numero,
+                'is_final' => in_array($codice, ['05', '19', '21'], true),
+                'is_exception' => $codice === '20',
+            ]);
+        }
+
+        ProcessState::where('process_id', $process->id)->whereNotIn('code', $kept)->delete();
     }
 
     /** Disattiva i processi di onboarding precedenti, senza cancellarli (restano per lo storico). */

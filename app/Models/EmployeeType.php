@@ -70,6 +70,7 @@ class EmployeeType extends CoreEmployeeType
     {
         $emails = $this->employees()->pluck('email')
             ->merge($this->clients()->pluck('email'))
+            ->merge($this->fornitori()->pluck('email'))
             ->filter(fn ($email) => filter_var($email, FILTER_VALIDATE_EMAIL))
             ->unique()
             ->values();

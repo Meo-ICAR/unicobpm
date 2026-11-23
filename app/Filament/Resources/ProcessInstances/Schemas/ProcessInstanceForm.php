@@ -5,6 +5,7 @@ namespace App\Filament\Resources\ProcessInstances\Schemas;
 use App\Models\Client;
 use App\Models\Employee;
 use App\Models\EmployeeType;
+use App\Models\ProcessState;
 use App\Models\ProcessTask;
 use App\Models\User;
 use Filament\Forms\Components\DatePicker;
@@ -14,10 +15,17 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Unico\Core\Models\IncomingEmail;
 use Filament\Schemas\Schema;
 
 class ProcessInstanceForm
 {
+    private static function emailLabel(IncomingEmail $email): string
+    {
+        return mb_substr(trim(($email->received_at?->format('d/m/Y').' – ').($email->from_email ?? '').' – '.($email->subject ?? '(senza oggetto)')), 0, 120);
+    }
+
     public static function configure(Schema $schema): Schema
     {
         return $schema
@@ -86,6 +94,25 @@ class ProcessInstanceForm
                                             ])
                                             ->default('pending')
                                             ->required(),
+                                        // Stato applicativo (se il processo li definisce, es. i 21 stati del reclutamento della rete).
+                                        Select::make('process_state_id')
+                                            ->label('Stato applicativo')
+                                            ->options(fn (Get $get): array => ProcessState::query()
+                                                ->where('process_id', (int) $get('process_id'))->orderBy('ordine')->get()
+                                                ->mapWithKeys(fn (ProcessState $state): array => [$state->id => $state->label().($state->owner ? " ({$state->owner})" : '')])->all())
+                                            ->searchable()
+                                            ->placeholder('Nessuno')
+                                            ->helperText('Avanza da solo al cambio di fase; dentro la fase, e per sospeso/archiviato/cessato, si cambia a mano.')
+                                            ->visible(fn (Get $get): bool => $get('process_id') && ProcessState::where('process_id', (int) $get('process_id'))->exists()),
+                                        // Email letta da unicopec da cui nasce la pratica (es. la candidatura).
+                                        Select::make('incoming_email_id')
+                                            ->label('Email di origine (unicopec)')
+                                            ->searchable()
+                                            ->getSearchResultsUsing(fn (string $search): array => IncomingEmail::query()
+                                                ->where(fn ($q) => $q->where('subject', 'like', "%{$search}%")->orWhere('from_email', 'like', "%{$search}%"))
+                                                ->orderByDesc('received_at')->limit(30)->get()
+                                                ->mapWithKeys(fn (IncomingEmail $e): array => [$e->id => static::emailLabel($e)])->all())
+                                            ->getOptionLabelUsing(fn ($value): ?string => ($e = IncomingEmail::find($value)) ? static::emailLabel($e) : null),
                                         MorphToSelect::make('currentAssignee')
                                             ->label('In Carico A (vuoto = disponibile in coda)')
                                             ->types([

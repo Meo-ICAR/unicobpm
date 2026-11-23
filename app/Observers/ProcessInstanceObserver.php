@@ -3,6 +3,8 @@
 namespace App\Observers;
 
 use App\Models\ProcessInstance;
+use App\Models\ProcessState;
+use App\Models\ProcessTask;
 use App\Models\ProcessTaskExecution;
 use App\Services\ExternalAppResolver;
 use App\Services\OutboundCallService;
@@ -33,6 +35,60 @@ class ProcessInstanceObserver
                 $instance->status = 'in_progress';
             }
         }
+
+        // Stato applicativo iniziale (se il processo li definisce): il primo della fase corrente o delle successive.
+        if (! $instance->process_state_id) {
+            $instance->process_state_id = $this->stateFor($instance, null)?->id;
+        }
+    }
+
+    /**
+     * Quando la pratica passa a un'altra fase lo stato applicativo avanza al primo stato di quella fase, ma solo se lo stato attuale è di una
+     * fase precedente e non è finale o di eccezione (es. «sospeso»): quelli si cambiano a mano. Dentro la stessa fase (es. LOI autorizzata,
+     * in firma, sottoscritta) gli stati si cambiano a mano.
+     */
+    public function saving(ProcessInstance $instance): void
+    {
+        if (! $instance->exists || ! $instance->isDirty('current_task_id') || ! $instance->current_task_id) {
+            return;
+        }
+
+        $current = $instance->process_state_id ? ProcessState::query()->with('task')->find($instance->process_state_id) : null;
+
+        if ($current?->is_final || $current?->is_exception) {
+            return;
+        }
+
+        // Lo stato attuale è già della nuova fase (o di una successiva): resta.
+        $newTask = ProcessTask::find($instance->current_task_id);
+
+        if ($current?->task !== null && $newTask !== null && $current->task->ordine >= $newTask->ordine) {
+            return;
+        }
+
+        $next = $this->stateFor($instance, $current);
+
+        if ($next !== null) {
+            $instance->process_state_id = $next->id;
+        }
+    }
+
+    /** Primo stato della fase corrente (o della prima fase successiva che ne ha) che segue lo stato attuale, se ce n'è uno. */
+    private function stateFor(ProcessInstance $instance, ?ProcessState $current): ?ProcessState
+    {
+        $task = $instance->current_task_id ? ProcessTask::find($instance->current_task_id) : null;
+
+        if ($task === null) {
+            return null;
+        }
+
+        return ProcessState::query()
+            ->where('process_id', $instance->process_id)
+            ->whereHas('task', fn ($q) => $q->where('ordine', '>=', $task->ordine))
+            ->with('task')
+            ->get()
+            ->sort(fn (ProcessState $a, ProcessState $b): int => [$a->task->ordine, $a->ordine] <=> [$b->task->ordine, $b->ordine])
+            ->first(fn (ProcessState $s): bool => ! $s->is_final && ! $s->is_exception);
     }
 
     /**

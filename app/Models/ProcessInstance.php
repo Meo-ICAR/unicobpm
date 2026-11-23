@@ -31,6 +31,8 @@ class ProcessInstance extends Model
         'subject_id',
         'title',
         'external_ref',
+        'incoming_email_id',
+        'process_state_id',
         'external_data',
         'current_assignee_type',
         'current_assignee_id',
@@ -73,6 +75,18 @@ class ProcessInstance extends Model
     /**
      * Il processo (Template) di riferimento per questa istanza.
      */
+    /** Stato applicativo corrente (se il processo li definisce). */
+    public function processState(): BelongsTo
+    {
+        return $this->belongsTo(ProcessState::class, 'process_state_id');
+    }
+
+    /** Email letta da unicopec da cui nasce la pratica (es. la candidatura). */
+    public function incomingEmail(): BelongsTo
+    {
+        return $this->belongsTo(\Unico\Core\Models\IncomingEmail::class, 'incoming_email_id');
+    }
+
     public function process(): BelongsTo
     {
         return $this->belongsTo(Process::class, 'process_id');

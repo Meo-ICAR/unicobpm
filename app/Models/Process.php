@@ -237,6 +237,12 @@ class Process extends Model
     /**
      * Relazione con i Task (gli step) che compongono questo processo.
      */
+    /** Stati applicativi del processo, nell'ordine (vuoto se il processo non li definisce). */
+    public function states(): HasMany
+    {
+        return $this->hasMany(ProcessState::class)->orderBy('ordine');
+    }
+
     public function tasks(): HasMany
     {
         return $this->hasMany(ProcessTask::class, 'process_id');

@@ -44,6 +44,11 @@ class ProcessInstancesTable
                     }),
 
                 // 3. STATO CON BADGE COLORATI
+                TextColumn::make('processState.name')
+                    ->label('Stato applicativo')
+                    ->formatStateUsing(fn ($state, $record): ?string => $record->processState?->label())
+                    ->placeholder('—')
+                    ->toggleable(),
                 TextColumn::make('status')
                     ->label('Stato Globale')
                     ->badge()
