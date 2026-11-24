@@ -30,6 +30,11 @@ class EmailSendingService
      */
     public function send(string $to, string $subject, string $body, array $attachments = [], int|string|null $companyId = null, ?array $thread = null): void
     {
+        // Invio email sospeso (UNICO_CORE_MAIL_DISABLED): nessun messaggio parte.
+        if (config('unico-core.mail.sending_disabled')) {
+            return;
+        }
+
         $messageId = $thread === null ? null : ProcessThread::messageId($thread['instance'], $thread['execution'] ?? null);
 
         // Processi con codice pratica e copie di visibilità (es. reclutamento della rete): codice nell'oggetto, copia nascosta a unicopec.

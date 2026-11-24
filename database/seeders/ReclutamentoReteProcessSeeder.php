@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\DB;
  * Processo di reclutamento e onboarding della rete commerciale (mediatore creditizio), dal «Modello operativo per l'onboarding della rete
  * agenziale» (versione consolidata del 22/11/2026, che sostituisce l'allegato sintetico «Workflow e RACI» in bozza):
  * 14 fasi (= passi del processo), RACI per fase, gate bloccanti G1-G8 (checklist), schede dati e documenti per fase, regola
- * recruiting@races.it sempre in CC (presidio condiviso) e sollecito automatico dopo 5 giorni dei documenti preliminari mancanti.
+ * pechub@races.it sempre in CC (presidio condiviso) e sollecito automatico dopo 5 giorni dei documenti preliminari mancanti.
  *
  * Sostituisce i processi di onboarding precedenti (AGENT_ONBOARDING e PRC-ONBOARD-COLL), che vengono disattivati.
  * Idempotente: rieseguirlo aggiorna fasi, RACI, azioni e checklist senza duplicarli. Le persone non si assegnano qui: i ruoli
@@ -31,7 +31,7 @@ class ReclutamentoReteProcessSeeder extends Seeder
     public const CODE_CAMPAGNA = 'PRC-RECLUTAMENTO-CAMPAGNA';
 
     /** Presidio condiviso: riceve in copia nascosta ogni email dei due processi, così sono visibili in unicopec. */
-    public const PRESIDIO = 'recruiting@races.it';
+    public const PRESIDIO = 'pechub@races.it';
 
     /** Processi di onboarding sostituiti da questo. */
     public const SOSTITUITI = ['AGENT_ONBOARDING', 'PRC-ONBOARD-COLL'];
@@ -54,7 +54,7 @@ class ReclutamentoReteProcessSeeder extends Seeder
         'BOC' => ['RECL-BOC', 'Coordinatore back office', 'Business / Commerciale', 'Operativa', 'no', false, 'Coordinamento del back office di prodotto (esclusi Quinto/TFS): formazione e qualità operativa.'],
         'BOQ' => ['RECL-BO-QTFS', 'Back office Quinto e TFS', 'Business / Commerciale', 'Operativa', 'no', false, 'Responsabile BO Quinto/TFS: formazione e monitoraggio dei prodotti Quinto e TFS.'],
         'IT' => ['IT', 'IT e comunicazione digitale', 'Supporto', 'Supporto', 'partial', false, null],
-        'REC' => ['RECL-PRESIDIO', 'Presidio recruiting', 'Supporto', 'Supporto', 'no', false, 'Presidio condiviso recruiting@races.it: riceve in CC ogni comunicazione, richiesta, risposta, verifica e approvazione del recruiting e dell\'onboarding.'],
+        'REC' => ['RECL-PRESIDIO', 'Presidio recruiting', 'Supporto', 'Supporto', 'no', false, 'Presidio condiviso pechub@races.it: riceve in CC ogni comunicazione, richiesta, risposta, verifica e approvazione del recruiting e dell\'onboarding.'],
     ];
 
     /** Attività della RACI consolidata, nell'ordine delle colonne FUNZIONI. A* = Direzione accountable solo nei casi strategici o fuori standard. */
@@ -176,7 +176,7 @@ class ReclutamentoReteProcessSeeder extends Seeder
     {
         $process = Process::updateOrCreate(['code' => self::CODE_CAMPAGNA], [
             'name' => 'Campagna di reclutamento della rete commerciale',
-            'description' => "Campagna di recruiting gestita con Bankeo/Move S.r.l.: brief, canali, copy, landing, informativa privacy, controllo degli SLA e della qualità delle candidature, reporting e conversioni, riesame periodico con l'outsourcer. È per campagna: le candidature generano pratiche nel processo ".self::CODE.'. Ogni email del processo riporta recruiting@races.it in copia (visibile in unicopec). Fonte: modello operativo del 22/11/2026.',
+            'description' => "Campagna di recruiting gestita con Bankeo/Move S.r.l.: brief, canali, copy, landing, informativa privacy, controllo degli SLA e della qualità delle candidature, reporting e conversioni, riesame periodico con l'outsourcer. È per campagna: le candidature generano pratiche nel processo ".self::CODE.'. Ogni email del processo riporta pechub@races.it in copia (visibile in unicopec). Fonte: modello operativo del 22/11/2026.',
             'version' => 1,
             'is_active' => true,
             'is_periodic' => false,
@@ -202,7 +202,7 @@ class ReclutamentoReteProcessSeeder extends Seeder
                     ['Copy e landing approvati', 'text_input'],
                     ['Informativa privacy pubblicata', 'text_input'],
                     ['Canali, campagna e UTM configurati (Landing/CRM Bankeo)', 'text_input'],
-                    ['Riepilogo e-mail con recruiting@races.it in CC', 'text_input'],
+                    ['Riepilogo e-mail con pechub@races.it in CC', 'text_input'],
                 ],
             ],
             [
@@ -257,7 +257,7 @@ class ReclutamentoReteProcessSeeder extends Seeder
                 $attributi += ['description' => $descrizione, 'is_external' => $esterno, 'companytype' => 'FINANCE', 'managed_by_code' => 'COMMERCIALE'];
 
                 if ($funzione === 'REC') {
-                    $attributi['email'] = 'recruiting@races.it';
+                    $attributi['email'] = 'pechub@races.it';
                 }
 
                 $ruoli[$funzione] = EmployeeType::office($codice, $attributi);
@@ -306,7 +306,7 @@ class ReclutamentoReteProcessSeeder extends Seeder
             'name' => $fase['nome'],
             'description' => $fase['descr']."\nAttori: {$fase['attori']}.\nAccountable: ".self::RUOLI[$fase['acc']][1]
                 .($stati !== '' ? ".\nStati applicativi: {$stati}" : '')
-                ."\nRegola inderogabile: ogni comunicazione, richiesta, risposta, verifica e approvazione riporta SEMPRE recruiting@races.it in CC o come destinatario (codice REC nell'oggetto; per i dati sensibili solo notifica e link al fascicolo riservato).",
+                ."\nRegola inderogabile: ogni comunicazione, richiesta, risposta, verifica e approvazione riporta SEMPRE pechub@races.it in CC o come destinatario (codice REC nell'oggetto; per i dati sensibili solo notifica e link al fascicolo riservato).",
             'employee_type_id' => $ruoli[$fase['acc']]->id,
             'has_reminders' => true,
             'reminder_interval_days' => $fase['sla'][0],
@@ -361,7 +361,7 @@ class ReclutamentoReteProcessSeeder extends Seeder
             }
 
             if ($funzione === 'REC') {
-                $nota = 'Presidio condiviso recruiting@races.it: in CC o destinatario di ogni comunicazione.';
+                $nota = 'Presidio condiviso pechub@races.it: in CC o destinatario di ogni comunicazione.';
             }
 
             $out[$funzione] = [$ruolo, $nota];
@@ -409,7 +409,7 @@ class ReclutamentoReteProcessSeeder extends Seeder
 
     private function comunicazione(): array
     {
-        return ['Comunicazione dell\'esito con recruiting@races.it in CC (codice REC nell\'oggetto)', 'text_input'];
+        return ['Comunicazione dell\'esito con pechub@races.it in CC (codice REC nell\'oggetto)', 'text_input'];
     }
 
     /**
@@ -444,7 +444,7 @@ class ReclutamentoReteProcessSeeder extends Seeder
                     ['Dati candidatura: canale, campagna, UTM, territorio, prodotto, recapiti, esperienza dichiarata', 'text_input'],
                     ['Informativa privacy resa al candidato (testo pubblicato in campagna)', 'text_input'],
                     ['Curriculum vitae / scheda candidato acquisita', 'document_upload', 'Curriculum'],
-                    ['Riepilogo e-mail con recruiting@races.it in CC (Landing/CRM Bankeo)', 'text_input'],
+                    ['Riepilogo e-mail con pechub@races.it in CC (Landing/CRM Bankeo)', 'text_input'],
                 ],
             ],
             [
@@ -465,7 +465,7 @@ class ReclutamentoReteProcessSeeder extends Seeder
                 'attivita' => ['Fissazione colloquio'],
                 'items' => [
                     ['Appuntamento: data, ora, referente commerciale, invito Outlook/Teams con codice REC', 'text_input'],
-                    ['E-mail/invito con recruiting@races.it in CC; esito telefonata riepilogato', 'text_input'],
+                    ['E-mail/invito con pechub@races.it in CC; esito telefonata riepilogato', 'text_input'],
                 ],
                 'gate' => ['G1'],
             ],
@@ -479,7 +479,7 @@ class ReclutamentoReteProcessSeeder extends Seeder
                     ['CV del candidato', 'document_upload', 'Curriculum'],
                     ['Scheda esito colloquio e nota di reciproco interesse', 'text_input'],
                     ['Esito: stop (archivio senza seguito), approfondimento o pre-onboarding', 'text_input'],
-                    ['Scheda inviata a Segreteria con recruiting@races.it in CC (entro 1 giorno)', 'text_input'],
+                    ['Scheda inviata a Segreteria con pechub@races.it in CC (entro 1 giorno)', 'text_input'],
                 ],
                 'gate' => ['G2'],
             ],
@@ -496,7 +496,7 @@ class ReclutamentoReteProcessSeeder extends Seeder
                     ['Titolo di studio, prova OAM o esonero, attestati di formazione', 'document_upload', 'Titolo di Studio'],
                     ['Mandati, vincoli e rapporti in essere (esclusive, preavvisi, non concorrenza, restituzioni, liberazione)', 'document_upload', 'Liberatoria'],
                     ['Volumi dichiarati ed evidenze a campione (prodotti, territorio, owner, scadenza)', 'text_input'],
-                    ['E-mail ufficiale con recruiting@races.it in CC; upload protetto per gli allegati', 'text_input'],
+                    ['E-mail ufficiale con pechub@races.it in CC; upload protetto per gli allegati', 'text_input'],
                 ],
             ],
             [
@@ -510,7 +510,7 @@ class ReclutamentoReteProcessSeeder extends Seeder
                     ['Report Cerved (Basic Note)', 'document_upload', 'Basic Note'],
                     ['Anomalie, richieste e risposte di chiarimento, prescrizioni', 'text_input', null, null, false],
                     ['Esito check: Regolare / Regolare con prescrizioni / Da chiarire / Sospeso / Ostativo', 'text_input'],
-                    ['Fascicolo riservato; e-mail di esito con recruiting@races.it in CC (solo link e esito, mai dati sensibili nel corpo)', 'text_input'],
+                    ['Fascicolo riservato; e-mail di esito con pechub@races.it in CC (solo link e esito, mai dati sensibili nel corpo)', 'text_input'],
                 ],
                 'gate' => ['G3'],
             ],
@@ -524,7 +524,7 @@ class ReclutamentoReteProcessSeeder extends Seeder
                     ['Variante rispetto allo standard? (sì/no; se sì motivazione, rischio, impatto)', 'text_input'],
                     ['Verifica Compliance sulla scheda condizioni / sul modello', 'text_input'],
                     ['Parere Legale (solo varianti: bozza comparata, tabella varianti, parere Gioia Quarto)', 'text_input', null, null, false],
-                    ['LOI sottoscritta (catena unica versionata con recruiting@races.it in CC)', 'document_upload', 'Lettera di'],
+                    ['LOI sottoscritta (catena unica versionata con pechub@races.it in CC)', 'document_upload', 'Lettera di'],
                 ],
             ],
             [
@@ -540,7 +540,7 @@ class ReclutamentoReteProcessSeeder extends Seeder
                     ['Dichiarazione sostitutiva di onorabilità', 'document_upload', 'Dichiarazione sostitutiva'],
                     ['Incompatibilità, cessazioni e patti di non concorrenza (requisito, documento, emittente, data, scadenza, esito, validatore)', 'text_input'],
                     ['Checklist requisiti OAM (iscrizione, onorabilità, professionalità, formazione, PEC, RC)', 'fill_checklist', null, 'chk_oam_01'],
-                    ['Notifica con recruiting@races.it in CC; repository riservato', 'text_input'],
+                    ['Notifica con pechub@races.it in CC; repository riservato', 'text_input'],
                 ],
                 'gate' => ['G4'],
             ],
@@ -557,7 +557,7 @@ class ReclutamentoReteProcessSeeder extends Seeder
                     ['IBAN e dati fiscali (regime fiscale, ritenuta) per le provvigioni', 'text_input'],
                     ['Posizione Enasarco (agenti)', 'document_upload', 'Enasarco', null, false],
                     ['Ricevute OAM/RUI e relativo esito', 'document_upload'],
-                    ['Firma elettronica/PEC; ricevute e esito con recruiting@races.it in CC', 'text_input'],
+                    ['Firma elettronica/PEC; ricevute e esito con pechub@races.it in CC', 'text_input'],
                 ],
                 'gate' => ['G5'],
             ],
@@ -571,20 +571,20 @@ class ReclutamentoReteProcessSeeder extends Seeder
                     ['Attestati e test superati', 'document_upload', 'Attestato Formazione OAM'],
                     ['Ticket IT: utenza, MFA, profilazioni e test accessi (mai password via e-mail)', 'text_input'],
                     ['Assegnazione Back Office e tutor', 'text_input'],
-                    ['Chiusura via e-mail con recruiting@races.it in CC (LMS/Teams e ticket IT)', 'text_input'],
+                    ['Chiusura via e-mail con pechub@races.it in CC (LMS/Teams e ticket IT)', 'text_input'],
                 ],
                 'gate' => ['G6'],
             ],
             [
                 'nome' => 'Go Live',
-                'descr' => 'Checklist e comunicazione formale. E-mail «GO LIVE AUTORIZZATO» con oggetto standard e recruiting@races.it in CC. Output: operatività autorizzata.',
+                'descr' => 'Checklist e comunicazione formale. E-mail «GO LIVE AUTORIZZATO» con oggetto standard e pechub@races.it in CC. Output: operatività autorizzata.',
                 'acc' => 'CMP', 'attori' => 'Francesco Maiello, Roberto Perna, Riccardo Voce', 'sla' => [1, 3, 48],
                 'attivita' => ['Autorizzazione Go Live'],
                 'items' => [
                     ['Dati Go Live: data, prodotti, territorio, limiti, tutor, prescrizioni', 'text_input'],
                     ['Checklist Go Live firmata e clearance', 'document_upload'],
                     ['Esiti utenze verificati', 'text_input'],
-                    ['Comunicazione «GO LIVE AUTORIZZATO» a tutti i soggetti, con recruiting@races.it in CC', 'text_input'],
+                    ['Comunicazione «GO LIVE AUTORIZZATO» a tutti i soggetti, con pechub@races.it in CC', 'text_input'],
                 ],
                 'gate' => ['G7'],
             ],
@@ -600,7 +600,7 @@ class ReclutamentoReteProcessSeeder extends Seeder
                     ['Check a 90 giorni', 'text_input'],
                     ['Report Back Office e piano correttivo (se serve)', 'document_upload', null, null, false],
                     ['Esito finale: Confermato / Piano correttivo / Limitato / Sospeso / Cessato', 'text_input'],
-                    ['Teams + verbale con recruiting@races.it in CC (15/30/60/90)', 'text_input'],
+                    ['Teams + verbale con pechub@races.it in CC (15/30/60/90)', 'text_input'],
                 ],
                 'gate' => ['G8'],
             ],
@@ -614,7 +614,7 @@ class ReclutamentoReteProcessSeeder extends Seeder
                     ['Decisione di sospensione/cessazione', 'document_upload'],
                     ['Revoca accessi e riassegnazione pratiche (ticket IT, revoca alla decorrenza)', 'text_input'],
                     ['Cessazione OAM/RUI e chiusura economica', 'text_input'],
-                    ['PEC/e-mail e ticket con recruiting@races.it sempre in CC', 'text_input'],
+                    ['PEC/e-mail e ticket con pechub@races.it sempre in CC', 'text_input'],
                 ],
             ],
         ];
@@ -628,13 +628,13 @@ class ReclutamentoReteProcessSeeder extends Seeder
         return <<<TXT
 Reclutamento e onboarding della rete agenziale di Races Finance, dalla candidatura gestita da Bankeo/Move S.r.l. al Go Live, al ramp-up di 90 giorni e all'eventuale offboarding. Fonte: «Modello operativo per l'onboarding della rete agenziale», versione consolidata del 22/11/2026 (sostituisce l'allegato sintetico in bozza). Sostituisce i processi AGENT_ONBOARDING e PRC-ONBOARD-COLL.
 
-La campagna (brief, canali, landing, SLA e reporting con Bankeo/Move) è nel processo PRC-RECLUTAMENTO-CAMPAGNA; qui c'è la pratica del candidato, che nasce dalla fase 2 con il codice REC-AAAA-NNNN. Le email del processo hanno il codice nell'oggetto e recruiting@races.it in copia nascosta (visibili in unicopec); una email di candidatura letta da unicopec (intento candidatura_rete) avvia la pratica e ne resta il riferimento (incoming_email_id).
+La campagna (brief, canali, landing, SLA e reporting con Bankeo/Move) è nel processo PRC-RECLUTAMENTO-CAMPAGNA; qui c'è la pratica del candidato, che nasce dalla fase 2 con il codice REC-AAAA-NNNN. Le email del processo hanno il codice nell'oggetto e pechub@races.it in copia nascosta (visibili in unicopec); una email di candidatura letta da unicopec (intento candidatura_rete) avvia la pratica e ne resta il riferimento (incoming_email_id).
 
 Candidato = produttore (tabella fornitoris) con is_active = false e data di decorrenza (stipulated_at) vuota; diventa operativo con la decorrenza e is_active = true. Retention delle candidature non inserite: 6 mesi dalla chiusura (comando reclutamento:retention, config reclutamento.retention_months); chi ha una pratica in corso o è stato inserito non si cancella.
 
 Principi: Bankeo/Move genera e organizza la pipeline ma non decide idoneità, condizioni, LOI, contratto o Go Live; l'Area Commerciale decide il reciproco interesse e le condizioni, Compliance presidia requisiti e rischi, la Direzione approva gli impegni. La LOI non abilita l'operatività. Il fascicolo digitale è unico, versionato e accessibile per ruolo.
 
-REGOLA INDEROGABILE: tutte le comunicazioni, richieste, risposte, informazioni, verifiche, approvazioni e adempimenti relativi al recruiting e all'onboarding riportano SEMPRE recruiting@races.it in CC o come destinatario. Per i documenti sensibili (Cerved, casellario, carichi pendenti) l'account riceve la notifica e il link al fascicolo riservato, non necessariamente l'allegato.
+REGOLA INDEROGABILE: tutte le comunicazioni, richieste, risposte, informazioni, verifiche, approvazioni e adempimenti relativi al recruiting e all'onboarding riportano SEMPRE pechub@races.it in CC o come destinatario. Per i documenti sensibili (Cerved, casellario, carichi pendenti) l'account riceve la notifica e il link al fascicolo riservato, non necessariamente l'allegato.
 
 Convenzioni: codice pratica REC-AAAA-NNNN; oggetto e-mail [REC-AAAA-NNNN] COGNOME Nome | Fase | Azione | Scadenza; nome file AAAAMMGG_TipoDocumento_CognomeNome_vNN; cartelle 01_Candidatura, 02_Colloqui, 03_PreOnboarding, 04_Check, 05_LOI, 06_DueDiligence, 07_Contratto, 08_Formazione, 09_GoLive, 10_RampUp, 11_Offboarding. Esito controlli: Regolare; Regolare con prescrizioni; Da chiarire; Sospeso; Ostativo. Esito finale: Confermato; Piano correttivo; Limitato; Sospeso; Cessato.
 
@@ -644,7 +644,7 @@ Gate bloccanti:
 Stati applicativi richiesti (21):
 {$stati}
 
-Automazioni richieste dal modello (da completare con IT/Operations): creazione automatica del codice REC e del fascicolo alla prima candidatura; notifica a recruiting@races.it per ogni cambio stato, documento ricevuto, approvazione e scadenza; sollecito dopo 5 giorni per documenti preliminari mancanti (fase 6: attivo); blocco LOI se i check preliminari non sono chiusi; routing a Gioia Quarto per le varianti LOI; blocco contratto senza clearance, provisioning senza contratto e OAM/RUI, Go Live senza formazione, test, utenze e checklist (gate G4-G7); agenda dei check a 15, 30, 60 e 90 giorni; revoca coordinata delle utenze. KPI: funnel candidature→conferme a 90 gg, tempo primo contatto ≤2 giorni, esito colloquio ≤1 giorno, check preliminari ≤5 giorni dal fascicolo completo, provisioning ≤3 giorni dalla clearance, revisione varianti LOI ≤3 giorni lavorativi, comunicazioni con recruiting@races.it in CC al 100%.
+Automazioni richieste dal modello (da completare con IT/Operations): creazione automatica del codice REC e del fascicolo alla prima candidatura; notifica a pechub@races.it per ogni cambio stato, documento ricevuto, approvazione e scadenza; sollecito dopo 5 giorni per documenti preliminari mancanti (fase 6: attivo); blocco LOI se i check preliminari non sono chiusi; routing a Gioia Quarto per le varianti LOI; blocco contratto senza clearance, provisioning senza contratto e OAM/RUI, Go Live senza formazione, test, utenze e checklist (gate G4-G7); agenda dei check a 15, 30, 60 e 90 giorni; revoca coordinata delle utenze. KPI: funnel candidature→conferme a 90 gg, tempo primo contatto ≤2 giorni, esito colloquio ≤1 giorno, check preliminari ≤5 giorni dal fascicolo completo, provisioning ≤3 giorni dalla clearance, revisione varianti LOI ≤3 giorni lavorativi, comunicazioni con pechub@races.it in CC al 100%.
 
 Da formalizzare (TBD del modello): owner IT/Operations, presidio Corrado, owner operativo RUI, repository definitivo, integrazione Bankeo, retention documentale, firma elettronica, deroghe ai gate, matrice accessi, data breach, SLA ed escalation finali, UAT e pilota. I tempi dei solleciti e delle escalation delle fasi sono provvisori (TBD-11).
 TXT;

@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Schema;
  * Per il processo di reclutamento della rete (e valide per qualunque processo):
  *  - `checklists.is_gate`: gate bloccante, la checklist si approva solo con tutte le voci a «sì» (altrimenti la fase non avanza);
  *  - `processes.visibility_bcc`: indirizzi (separati da virgola) che ricevono in copia nascosta ogni email del processo, così le
- *    comunicazioni sono visibili anche in unicopec (es. recruiting@races.it);
+ *    comunicazioni sono visibili anche in unicopec (es. pechub@races.it);
  *  - `processes.reference_prefix` e `process_instances.reference`: codice pratica (es. REC-2026-0001), usato anche nell'oggetto delle email.
  */
 return new class extends Migration
