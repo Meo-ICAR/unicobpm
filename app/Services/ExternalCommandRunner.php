@@ -10,6 +10,7 @@ use App\Models\ProcessTaskItem;
  * unico-core) tramite la coda delle chiamate in uscita, quindi con ritentativi e una sola volta per pratica e azione.
  *
  * config dell'item: {"app": "unicocoge", "command": "proformas:send-pending", "options": {"dry-run": true}, "cc_raci": ["A", "I"]}
+ * I valori testuali delle opzioni accettano i segnaposto della pratica ({incoming_email_id}, {external_data.xxx}).
  * Con `cc_raci` (lettere della RACI del passo) le email di chi ha quei ruoli diventano l'opzione `cc` del comando, separate da virgola.
  */
 class ExternalCommandRunner
@@ -28,7 +29,8 @@ class ExternalCommandRunner
             return 'Comando non configurato (app o comando mancanti).';
         }
 
-        $options = (array) ($item->config['options'] ?? []);
+        // Nei valori testuali valgono i segnaposto della pratica, es. {incoming_email_id} o {external_data.produttori_ids}.
+        $options = array_map(fn ($value) => is_string($value) ? $item->compileTemplate($value, $instance) : $value, (array) ($item->config['options'] ?? []));
         $cc = $this->checks->recipientsForRoles($item->task, (array) ($item->config['cc_raci'] ?? []))->all();
 
         if ($cc !== []) {
