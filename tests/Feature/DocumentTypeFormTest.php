@@ -9,6 +9,7 @@ use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
+use Unico\Core\Models\DocumentType as CoreDocumentType;
 
 /**
  * Il tipo documento dice come si ottiene, a chi si applica, chi firma e chi approva; il form segnala le incoerenze.
@@ -35,7 +36,7 @@ class DocumentTypeFormTest extends TestCase
                 'is_monitored' => true,
                 'duration' => 12,
                 'duration_unit' => 'months',
-                'is_end_month' => true,
+                'is_end_month' => CoreDocumentType::END_MONTH,
             ])
             ->call('save')
             ->assertHasNoFormErrors();
@@ -44,7 +45,7 @@ class DocumentTypeFormTest extends TestCase
         $this->assertSame('persona_fisica', $type->client_scope);
         $this->assertSame('fornitore', $type->signer_model);
         $this->assertSame('employee', $type->approver_model);
-        $this->assertTrue($type->is_end_month);
+        $this->assertSame(CoreDocumentType::END_MONTH, $type->is_end_month);
         $this->assertTrue($type->is_template);
     }
 }

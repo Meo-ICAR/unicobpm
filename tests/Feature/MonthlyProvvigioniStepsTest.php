@@ -50,8 +50,8 @@ class MonthlyProvvigioniStepsTest extends TestCase
 
     public function test_the_monthly_steps_take_their_recipients_from_the_raci_of_the_step(): void
     {
-        $this->assertSame(['A', 'C', 'I'], $this->item(10)->config['to_raci']);
-        $this->assertSame(['R'], $this->item(20)->config['to_raci']);
+        $this->assertSame(['R', 'A', 'C'], $this->item(10)->config['to_raci']);
+        $this->assertSame(['R', 'A'], $this->item(20)->config['to_raci']);
         $this->assertSame(['A', 'I'], $this->item(30)->config['cc_raci']);
     }
 
@@ -64,7 +64,7 @@ class MonthlyProvvigioniStepsTest extends TestCase
         $this->assertFalse($this->item(30)->isDueOn(Carbon::parse('2026-11-11')));
     }
 
-    public function test_on_the_3rd_the_list_goes_as_csv_to_the_accounting_manager_admin_and_sales(): void
+    public function test_on_the_3rd_the_list_goes_as_csv_to_the_accountants_and_sales(): void
     {
         Http::fake(['*/api/checks/provvigioni:check-maturate' => Http::response([
             'value' => 2, 'severity' => 'regular', 'details' => "2 provvigioni maturate.\n- Agente — ROSSI: 2",
@@ -80,12 +80,12 @@ class MonthlyProvvigioniStepsTest extends TestCase
 
         app()->make(ExternalCheckRunner::class, ['emailSender' => $sender])->run($this->item(10));
 
-        $this->assertEqualsCanonicalizing(['resp@example.com', 'admin@example.com', 'direttore@example.com'], array_keys($sent));
+        $this->assertEqualsCanonicalizing(['contabile@example.com', 'resp@example.com', 'direttore@example.com'], array_keys($sent));
         $this->assertSame('provvigioni-maturate-2026-11.csv', $sent['resp@example.com'][1]);
         $this->assertStringContainsString('SP1;P1', $sent['resp@example.com'][2]);
     }
 
-    public function test_on_the_5th_only_the_accountant_is_reminded(): void
+    public function test_on_the_5th_the_accountant_and_the_manager_are_reminded(): void
     {
         Http::fake(['*/api/checks/provvigioni:check-maturate' => Http::response(['value' => 1, 'severity' => 'regular', 'details' => 'x'])]);
 
@@ -98,7 +98,7 @@ class MonthlyProvvigioniStepsTest extends TestCase
 
         app()->make(ExternalCheckRunner::class, ['emailSender' => $sender])->run($this->item(20));
 
-        $this->assertSame(['contabile@example.com'], $recipients);
+        $this->assertSame(['contabile@example.com', 'resp@example.com'], $recipients);
     }
 
     public function test_on_the_10th_proformas_are_queued_with_the_manager_and_admin_in_copy(): void
